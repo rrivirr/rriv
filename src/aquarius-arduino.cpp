@@ -219,15 +219,23 @@ void loop(void)
       char sdFilename[20];
       dirFile.getName(sdFilename, 20);
 
-      /*Serial.print(sdFilename);
+      /*
+      Serial.print(sdFilename);
       Serial.print(" ");
       Serial.print(strncmp(sdFilename, date, 10) );
-      Serial.println();*/
+      Serial.println();
+      */
 
       if(strncmp(sdFilename, date, 10) > 0){
-        Serial.println(sdFilename);
-        //Serial.println((int) d.creationDate, DEC);
-        //Serial.println((int) d.creationTime, DEC);
+        //Serial.println(sdFilename);
+
+        File datafile = sd.open(sdFilename);
+        // send size of transmission ?
+        // Serial.println(datafile.fileSize());
+        while (datafile.available()) {
+          Serial.write(datafile.read());
+        }
+        datafile.close();
       }
       dirFile.close();
 
@@ -237,30 +245,6 @@ void loop(void)
     }
     state = 0;
 
-/*
-    File dir = SD.open("/");
-    while (true) {
-
-      File entry =  dir.openNextFile();
-      if (! entry) {
-        // no more files
-        break;
-      }
-      for (uint8_t i = 0; i < numTabs; i++) {
-        Serial.print('\t');
-      }
-      Serial.print(entry.name());
-      if (entry.isDirectory()) {
-        Serial.println("/");
-        //printDirectory(entry, numTabs + 1);
-      } else {
-        // files have sizes, directories do not
-        Serial.print("\t\t");
-        Serial.println(entry.size(), DEC);
-      }
-      entry.close();
-    }
-*/
 
     // So what is our strategy for dealing with files?
     // Get the files past a certain date, I guess?
