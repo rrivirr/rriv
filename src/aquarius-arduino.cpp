@@ -49,6 +49,17 @@ String getNewFilname(){
   return filename;
 }
 
+void setDataFile(){
+  String filename = getNewFilname();
+  Serial.print("Logging to: ");
+  Serial.println(filename);
+  logfile = sd.open("Data/" + filename, FILE_WRITE);
+  if(!logfile){
+    Serial.println("file.open");
+    while(1);
+  }
+}
+
 int uniqueIdAddressStart = 0;
 int uniqueIdAddressEnd = 15;
 unsigned char uuid[16];
@@ -97,8 +108,6 @@ void initializeSDCard(void) {
     //Serial.println(RTC.now().m);
   }
 
-  String filename = getNewFilname();
-  Serial.println(filename);  // Maybe running out of memory already ?
 
   // initialize the SD card
   Serial.print("Initializing SD card...");
@@ -112,22 +121,7 @@ void initializeSDCard(void) {
   }
   Serial.println("card initialized.");
 
-  //String message = String("Creating new file ");
-  //message.concat(filename);
-  //Serial.println(message);
-  Serial.println(filename);
-  Serial.println("a");
-  logfile = sd.open("Data/" + filename, FILE_WRITE);
-  if(!logfile){
-    Serial.println("file.open");
-    while(1);
-  }
-  //message = String("Opened the File ");
-  //message.concat(filename);
-
-  Serial.print("Logging to: ");
-  Serial.println(filename);
-
+  setDataFile();
 
   logfile.println("time,data1,data2,data3,data4,data5,data6,data7,data8");
   #if ECHO_TO_SERIAL
@@ -170,32 +164,44 @@ void loop(void)
   DateTime now;
 
   // Just trigger the dump event using a basic button
-  int buttonState = digitalRead(buttonPin);
+  //int buttonState = digitalRead(buttonPin);
 
-  if(buttonState == HIGH && state == 0){
-    state = 1;
+  if(Serial.peek() == '>' && state == 0){
+    //Serial.println("Peek");
+    char request[22] = "";
+    Serial.readBytesUntil('<', request, 22);
+    //Serial.println(request);
+    if(strncmp(request, ">WT_REQUEST_DOWNLOAD",20) == 0) {
+      // Flush the input, would be better to use a delimiter
+      // May not be necessary now
+      unsigned long now = millis ();
+      while (millis () - now < 1000)
+      Serial.read ();  // read and discard any input
 
-    //Flush the input, would be better to use a delimiter
-    unsigned long now = millis ();
-    while (millis () - now < 1000)
-    Serial.read ();  // read and discard any input
-
-    Serial.print(">AQ_TRANSFER_READY<");
-    Serial.flush();
+      Serial.print(">WT_TRANSFER_READY<");
+      Serial.flush();
+      state = 1;
+      return;
+    }
 
   } else if(state == 1){
-    /*
-    Serial.setTimeout(10000);
+
     char ack[7] = "";
     Serial.readBytesUntil('<', ack, 7);
-    if(strcmp(ack, ">AQ_OK") != 0) {
+    if(strcmp(ack, ">WT_OK") != 0) {
       char message[30] = "";
       sprintf(message, "ERROR #%s#", ack);
       Serial.print(message);
+
+      //Flush
+      unsigned long now = millis ();
+      while (millis () - now < 1000)
+      Serial.read ();  // read and discard any input
+
       state = 0;
       return;
     }
-    */
+
 
     // Get list of files
 
@@ -283,7 +289,11 @@ if(elapsedTime < 5){
 lastTime = now.unixtime();
 
 
-// log time
+// log uuid and time
+for(int i=0; i<8; i++){
+  logfile.print((unsigned int) uuid[2*i], HEX);
+}
+logfile.print(",");
 logfile.print(now.unixtime()); // seconds since 2000
 logfile.print(",");
 
@@ -314,7 +324,6 @@ logfile.flush();
 delay(250);
 
 }
-
 
 
 /* Apply the value to the parameter by searching for the parameter name
