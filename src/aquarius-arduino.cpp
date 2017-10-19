@@ -32,6 +32,8 @@ int state = 0;
 
 const int buttonPin = 2;     // the number of the pushbutton pin
 
+char lastDownloadDateEmpty[11] = "0000000000";
+char lastDownloadDate[11] = "0000000000";
 
 
 /*
@@ -168,8 +170,8 @@ void loop(void)
 
   if(Serial.peek() == '>' && state == 0){
     //Serial.println("Peek");
-    char request[22] = "";
-    Serial.readBytesUntil('<', request, 22);
+    char request[34] = "";
+    Serial.readBytesUntil('<', request, 34);
     //Serial.println(request);
     if(strncmp(request, ">WT_REQUEST_DOWNLOAD",20) == 0) {
       // Flush the input, would be better to use a delimiter
@@ -177,6 +179,11 @@ void loop(void)
       unsigned long now = millis ();
       while (millis () - now < 1000)
       Serial.read ();  // read and discard any input
+
+      if(request[20] == ':'){
+        // we have a reference date
+        strncpy(lastDownloadDate, &request[21], 10);
+      }
 
       Serial.print(">WT_TRANSFER_READY<");
       Serial.flush();
@@ -205,8 +212,7 @@ void loop(void)
 
     // Get list of files
 
-    char date[11] = "1112632576";
-    Serial.println(date);
+    Serial.println(lastDownloadDate);
 
     //SdFile dataDirectory;
     //dirFile.open("Data");
@@ -232,7 +238,7 @@ void loop(void)
       Serial.println();
       */
 
-      if(strncmp(sdFilename, date, 10) > 0){
+      if(strncmp(sdFilename, lastDownloadDate, 10) > 0){
         //Serial.println(sdFilename);
 
         File datafile = sd.open(sdFilename);
@@ -249,6 +255,7 @@ void loop(void)
     if (!sd.chdir()) {
        Serial.println("chdir failed for ../\n");
     }
+    strcpy(lastDownloadDateEmpty, lastDownloadDate);
     state = 0;
 
 
