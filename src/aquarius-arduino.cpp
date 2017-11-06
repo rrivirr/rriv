@@ -5,6 +5,8 @@
 #include "RTClib.h"
 #include <EEPROM.h>
 #include "TrueRandom.h"
+#include <SoftwareSerial.h>
+
 
 #define LOG_INTERVAL  1000 // mills between entries
 #define ECHO_TO_SERIAL   1 // echo data to serial port
@@ -12,6 +14,9 @@
 
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
+
+SoftwareSerial mySerial(4, 3); // RX, TX for easier debuggin
+
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
 const int chipSelect = 10;
@@ -22,19 +27,19 @@ File logfile;
 
 int state = 0;
 
-
-const int buttonPin = 2;     // the number of the pushbutton pin
-
 char lastDownloadDateEmpty[11] = "0000000000";
 char lastDownloadDate[11] = "0000000000";
 
 
+int freeRam () {
+  extern int __heap_start, *__brkval;
+  int v;
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
+
 /*
 * Initialize the SD Card
-*
 */
-
-
 void setNewDataFile(){
   DateTime now = RTC.now();
   char uniquename[11];
@@ -148,10 +153,14 @@ Arduino setup function (automatically called at startup)
 /**************************************************************************/
 void setup(void)
 {
-  pinMode(buttonPin, INPUT);
-
   Serial.begin(115200);
+  Serial.println("Hello, world.  Primary Serial.");
   //Serial.begin(9600);
+
+  mySerial.begin(115200);
+  mySerial.println("Hello, world?  Secondary Serial!");
+
+  return;
 
   readUniqueId();
 
@@ -190,7 +199,7 @@ uint32_t lastTime = 0;
 const int maxRequestLength = 34;
 void loop(void)
 {
-  Serial.println("Loop");
+  //Serial.println("Loop");
   DateTime now;
 
   // Just trigger the dump event using a basic button
