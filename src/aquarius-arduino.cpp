@@ -1,17 +1,10 @@
-#include <Wire.h>
-
+#include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
+#include <SoftwareSerial.h> // Debugging
+#include <EEPROM.h>
 #include "SdFat.h"
 #include "RTClib.h"
-#include <EEPROM.h>
 #include "TrueRandom.h"
-#include <SoftwareSerial.h>
-
-
-#define LOG_INTERVAL  1000 // mills between entries
-#define ECHO_TO_SERIAL   1 // echo data to serial port
-#define WAIT_TO_START    0 // Wait for serial input in setup()
-
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
 
@@ -27,7 +20,6 @@ File logfile;
 
 int state = 0;
 
-char lastDownloadDateEmpty[11] = "0000000000";
 char lastDownloadDate[11] = "0000000000";
 
 
@@ -49,14 +41,22 @@ void setNewDataFile(){
   strncpy(filename, uniquename, 10);
   strncpy(&filename[10], suffix, 5);
 
-  Serial.print("Logging to: ");
+  Serial.print(F("Logging to: "));
   Serial.println(filename);
 
-  //d.chdir("Data", true);
+  char dataFolder[6] = "/Data";
+  if(!sd.exists(dataFolder)){
+    sd.chdir();
+    sd.mkdir("Data");
+  }
+
+  if (!sd.chdir(dataFolder)) {
+    Serial.println(F("chdir failed for Data."));
+  }
   logfile = sd.open(filename, FILE_WRITE);
   //sd.chdir();
   if(!logfile){
-    Serial.println("file did not open");
+    Serial.println(F("file did not open"));
     while(1);
   }
 }
@@ -82,20 +82,22 @@ void readUniqueId(){
     uuid[i] = EEPROM.read(address);
   }
 
-  Serial.println("Here's the uuid in EEPROM");
+  Serial.println(F("Here's the uuid in EEPROM"));
   for(int i=0; i<8; i++){
     Serial.print((unsigned int) uuid[2*i], HEX);
   }
   Serial.println("");
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-  //erial.println("Here's the uninitializedEEPROM string that should be");
-  for(int i=0; i<8; i++){
-    Serial.print((unsigned int) uninitializedEEPROM[2*i], HEX);
-  }
+  //Serial.println("Here's the uninitializedEEPROM string that should be");
+  //for(int i=0; i<8; i++){
+    //Serial.print((unsigned int) uninitializedEEPROM[2*i], HEX);
+  //}
+  //Serial.println("");
+
 
   if(memcmp(uuid, uninitializedEEPROM, 16) == 0){
-    Serial.println("Generate UUID");
+    Serial.println(F("Generate UUID"));
     // generate the unique ID
     TrueRandomClass::uuid(uuid);
     for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
@@ -111,37 +113,37 @@ void initializeSDCard(void) {
   Wire.begin();
 
   if (! RTC.initialized()) {
-    Serial.println("RTC is NOT running!");
+    Serial.println(F("RTC is NOT running!"));
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
   if (!RTC.begin()) {
     #if ECHO_TO_SERIAL
-    Serial.println("RTC failed");
+    Serial.println(F("RTC failed"));
     #endif  //ECHO_TO_SERIAL
   } else {
-    Serial.println("RTC started");
+    Serial.println(F("RTC started"));
     //Serial.println(RTC.now().m);
   }
 
   SdFile::dateTimeCallback(dateTime);
 
   // initialize the SD card
-  Serial.print("Initializing SD card...");
+  Serial.print(F("Initializing SD card..."));
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
   pinMode(10, OUTPUT);
 
   // see if the card is present and can be initialized:
   if (!sd.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
+    Serial.println(F("Card failed, or not present"));
   }
-  Serial.println("card initialized.");
+  Serial.println(F("card initialized."));
 
   setNewDataFile();
 
-  logfile.println("time,data1,data2,data3,data4,data5,data6,data7,data8");
+  logfile.println(F("time,data1,data2,data3,data4,data5,data6,data7,data8"));
 
 
 }
@@ -154,13 +156,11 @@ Arduino setup function (automatically called at startup)
 void setup(void)
 {
   Serial.begin(115200);
-  Serial.println("Hello, world.  Primary Serial.");
+  Serial.println(F("Hello, world.  Primary Serial."));
   //Serial.begin(9600);
 
-  mySerial.begin(115200);
-  mySerial.println("Hello, world?  Secondary Serial!");
-
-  return;
+  //mySerial.begin(115200);
+  //mySerial.println(F("Hello, world?  Secondary Serial!"));
 
   readUniqueId();
 
@@ -168,7 +168,7 @@ void setup(void)
   initializeSDCard();
 
   /* We're ready to go! */
-  Serial.println("done with setup");
+  Serial.println(F("done with setup"));
 
 }
 
@@ -179,7 +179,7 @@ void printCurrentDirListing(){
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dir_t d;
     if (!dirFile.dirEntry(&d)) {
-      Serial.println("f.dirEntry failed");
+      Serial.println(F("f.dirEntry failed"));
       while(1);
     }
 
@@ -200,8 +200,9 @@ const int maxRequestLength = 34;
 void loop(void)
 {
   //Serial.println("Loop");
-  DateTime now;
-
+  if(freeRam() < 100){
+    Serial.println(freeRam());
+  }
   // Just trigger the dump event using a basic button
   //int buttonState = digitalRead(buttonPin);
 
@@ -237,6 +238,7 @@ void loop(void)
       state = 1;
       return;
     } else {
+      char lastDownloadDateEmpty[11] = "0000000000";
       strcpy(lastDownloadDate, lastDownloadDateEmpty);
     }
 
@@ -260,16 +262,16 @@ void loop(void)
 
 
     // Debug
-    printCurrentDirListing();
+    //printCurrentDirListing();
 
     if (!sd.chdir("/Data")) {
-      Serial.println("chdir failed for Data.\n");
+      Serial.println(F("chdir failed for Data."));
       state = 0;
       return;
     }
 
     // Debug
-    printCurrentDirListing();
+    //  printCurrentDirListing();
 
 
     sd.vwd()->rewind();
@@ -278,7 +280,7 @@ void loop(void)
     while (dirFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!dirFile.dirEntry(&d)) {
-        Serial.println("f.dirEntry failed");
+        Serial.println(F("f.dirEntry failed"));
         while(1);
       }
 
@@ -299,7 +301,7 @@ void loop(void)
 
     }
     if (!sd.chdir()) {
-      Serial.println("chdir failed for ../\n");
+      Serial.println(F("chdir failed for ../"));
       state = 0;
       return;
     }
@@ -318,7 +320,7 @@ void loop(void)
 
 
   // Fetch the time
-  now = RTC.now();
+  DateTime now = RTC.now();
   uint32_t elapsedTime = now.unixtime() - lastTime;
   if(elapsedTime < 5){
     return;
@@ -330,9 +332,10 @@ void loop(void)
   for(int i=0; i<8; i++){
     logfile.print((unsigned int) uuid[2*i], HEX);
   }
-  logfile.print(",");
+  char comma[2] = ",";
+  logfile.print(comma);
   logfile.print(now.unixtime()); // seconds since 2000
-  logfile.print(",");
+  logfile.print(comma);
 
   logfile.println();
   logfile.flush();
