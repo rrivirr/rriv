@@ -143,7 +143,19 @@ void initializeSDCard(void) {
 
   setNewDataFile();
 
-  logfile.println(F("time,data1,data2,data3,data4,data5,data6,data7,data8"));
+  char line[100];
+  SdFile file("COLUMNS.TXT", O_READ);
+  if (!file.isOpen()){
+    Serial.println(F("COLUMNS.TXT did not open"));
+    while(1);
+  }
+  int n = file.fgets(line, sizeof(line));
+  if (line[n - 1] == '\n') {
+        // remove '\n'
+        line[n-1] = 0;
+  }
+  logfile.println(line);
+  //logfile.println(F("time,data1,data2,data3,data4,data5,data6,data7,data8"));
 
 
 }
