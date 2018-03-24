@@ -113,7 +113,7 @@ void initializeSDCard(void) {
   Wire.begin();
 
   if (! RTC.initialized()) {
-    Serial.println(F("RTC is NOT running!"));
+    Serial.println(F("RTC is NOT initialized!"));
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
@@ -199,7 +199,6 @@ uint32_t lastTime = 0;
 const int maxRequestLength = 34;
 void loop(void)
 {
-  //Serial.println("Loop");
   if(freeRam() < 100){
     Serial.println(freeRam());
   }
@@ -321,12 +320,17 @@ void loop(void)
 
   // Fetch the time
   DateTime now = RTC.now();
+
   uint32_t elapsedTime = now.unixtime() - lastTime;
   if(elapsedTime < 5){
     return;
   }
   lastTime = now.unixtime();
 
+
+  // get the new data
+  float value = analogRead(0) * .0049;
+  Serial.println(value);
 
   // log uuid and time
   for(int i=0; i<8; i++){
@@ -336,6 +340,7 @@ void loop(void)
   logfile.print(comma);
   logfile.print(now.unixtime()); // seconds since 2000
   logfile.print(comma);
+  logfile.print(value);
 
   logfile.println();
   logfile.flush();
