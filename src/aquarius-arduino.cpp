@@ -141,19 +141,27 @@ void initializeSDCard(void) {
   }
   Serial.println(F("card initialized."));
 
-  setNewDataFile();
-
   char line[100];
-  SdFile file("COLUMNS.TXT", O_READ);
+  if (!sd.chdir("/")) {
+    Serial.println(F("chdir failed for Columns."));
+  }
+  File file;
+  file = sd.open("COLUMNS.TXT");
+
   if (!file.isOpen()){
     Serial.println(F("COLUMNS.TXT did not open"));
-    while(1);
+    //while(1);
   }
+
   int n = file.fgets(line, sizeof(line));
   if (line[n - 1] == '\n') {
         // remove '\n'
         line[n-1] = 0;
   }
+  Serial.println(line);
+  file.close();
+
+  setNewDataFile();
   logfile.println(line);
   //logfile.println(F("time,data1,data2,data3,data4,data5,data6,data7,data8"));
 
@@ -211,6 +219,7 @@ uint32_t lastTime = 0;
 const int maxRequestLength = 34;
 void loop(void)
 {
+
   if(freeRam() < 100){
     Serial.println(freeRam());
   }
@@ -341,8 +350,6 @@ void loop(void)
 
 
   // get the new data
-  float value = analogRead(0) * .0049;
-  Serial.println(value);
 
   // log uuid and time
   for(int i=0; i<8; i++){
@@ -352,7 +359,36 @@ void loop(void)
   logfile.print(comma);
   logfile.print(now.unixtime()); // seconds since 2000
   logfile.print(comma);
-  logfile.print(value);
+
+  float value0 = analogRead(0) * .0049;
+  Serial.println(value0);
+  logfile.print(value0);
+  logfile.print(comma);
+
+  float value1 = analogRead(1) * .0049;
+  Serial.println(value1);
+  logfile.print(value1);
+  logfile.print(comma);
+
+  float value2 = analogRead(2) * .0049;
+  Serial.println(value2);
+  logfile.print(value2);
+  logfile.print(comma);
+
+  float value3 = analogRead(3) * .0049;
+  Serial.println(value3);
+  logfile.print(value3);
+  logfile.print(comma);
+
+  float value4 = analogRead(4) * .0049;
+  Serial.println(value4);
+  logfile.print(value4);
+  logfile.print(comma);
+
+  float value5 = analogRead(5) * .0049;
+  Serial.println(value5);
+  logfile.print(value5);
+  logfile.print(comma);
 
   logfile.println();
   logfile.flush();
