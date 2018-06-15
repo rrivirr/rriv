@@ -59,6 +59,28 @@ void setNewDataFile(){
     Serial.println(F("file did not open"));
     while(1);
   }
+
+  char line[100];
+  if (!sd.chdir("/")) {
+    Serial.println(F("chdir failed for Columns."));
+  }
+  File file;
+  file = sd.open("COLUMNS.TXT");
+
+  if (!file.isOpen()){
+    Serial.println(F("COLUMNS.TXT did not open"));
+    //while(1);
+  }
+
+  int n = file.fgets(line, sizeof(line));
+  if (line[n - 1] == '\n') {
+        // remove '\n'
+        line[n-1] = 0;
+  }
+  Serial.println(line);
+  file.close();
+  logfile.println(line); // write the headers to the new logfile
+
 }
 
 void dateTime(uint16_t* date, uint16_t* time) {
@@ -141,29 +163,9 @@ void initializeSDCard(void) {
   }
   Serial.println(F("card initialized."));
 
-  char line[100];
-  if (!sd.chdir("/")) {
-    Serial.println(F("chdir failed for Columns."));
-  }
-  File file;
-  file = sd.open("COLUMNS.TXT");
 
-  if (!file.isOpen()){
-    Serial.println(F("COLUMNS.TXT did not open"));
-    //while(1);
-  }
-
-  int n = file.fgets(line, sizeof(line));
-  if (line[n - 1] == '\n') {
-        // remove '\n'
-        line[n-1] = 0;
-  }
-  Serial.println(line);
-  file.close();
 
   setNewDataFile();
-  logfile.println(line);
-  //logfile.println(F("time,data1,data2,data3,data4,data5,data6,data7,data8"));
 
 
 }
@@ -326,12 +328,11 @@ void loop(void)
       return;
     }
 
-
-    setNewDataFile();
     char transferCompleteMessage[34] = ">WT_TRANSFER_COMPLETE:0000000000<";
     strncpy(&transferCompleteMessage[22], sdFilename, 10);
     Serial.write(transferCompleteMessage);
 
+    setNewDataFile();
 
     // Send last download date to phone for book keeeping
     state = 0;
@@ -360,33 +361,33 @@ void loop(void)
   logfile.print(now.unixtime()); // seconds since 2000
   logfile.print(comma);
 
-  float value0 = analogRead(0) * .0049;
-  Serial.println(value0);
+  float value0 = analogRead(0); // * .0049;
+  //Serial.println(value0);
   logfile.print(value0);
   logfile.print(comma);
 
-  float value1 = analogRead(1) * .0049;
-  Serial.println(value1);
+  float value1 = analogRead(1); // * .0049;
+  //Serial.println(value1);
   logfile.print(value1);
   logfile.print(comma);
 
-  float value2 = analogRead(2) * .0049;
-  Serial.println(value2);
+  float value2 = analogRead(2); // * .0049;
+  //Serial.println(value2);
   logfile.print(value2);
   logfile.print(comma);
 
-  float value3 = analogRead(3) * .0049;
-  Serial.println(value3);
+  float value3 = analogRead(3); // * .0049;
+  //Serial.println(value3);
   logfile.print(value3);
   logfile.print(comma);
 
-  float value4 = analogRead(4) * .0049;
-  Serial.println(value4);
+  float value4 = analogRead(4); // * .0049;
+  //Serial.println(value4);
   logfile.print(value4);
   logfile.print(comma);
 
-  float value5 = analogRead(5) * .0049;
-  Serial.println(value5);
+  float value5 = analogRead(5); // * .0049;
+  //Serial.println(value5);
   logfile.print(value5);
   logfile.print(comma);
 
