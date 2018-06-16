@@ -146,6 +146,13 @@ void initializeSDCard(void) {
     #endif  //ECHO_TO_SERIAL
   } else {
     Serial.println(F("RTC started"));
+
+
+    DateTime now = RTC.now();
+    char dateString[11];
+    sprintf(dateString, "%lu", now.unixtime());
+    Serial.print("Starting time: ");
+    Serial.println(dateString);
     //Serial.println(RTC.now().m);
   }
 
@@ -233,7 +240,12 @@ void loop(void)
 
     char request[maxRequestLength] = "";
     Serial.readBytesUntil('<', request, maxRequestLength);
-    Serial.println(request);
+    Serial.write(">COMMAND RECIEVED: ");
+    Serial.write(&request[1]);
+    Serial.write("<");
+    Serial.flush();
+    delay(250);
+
     if(strncmp(request, ">WT_OPEN_CONNECTION", 19) == 0) {
       Serial.write(">WT_IDENTIFY_DEVICE:");
       for(int i=0; i<8; i++){
@@ -259,6 +271,23 @@ void loop(void)
       Serial.flush();
       state = 1;
       return;
+    } else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
+      char UTCTime[11] = "0000000000";
+      strncpy(UTCTime, &request[12], 10);
+      //UTCTime[10] = '\0';
+      long time = atol(UTCTime);
+      delay(100);
+      Serial.print(">Received UTC time: ");
+      Serial.print(UTCTime);
+      Serial.print("---");
+      Serial.print(time);
+      Serial.print("<");
+      Serial.flush();
+
+      RTC.adjust(DateTime(time));
+      setNewDataFile();
+      return;
+
     } else {
       char lastDownloadDateEmpty[11] = "0000000000";
       strcpy(lastDownloadDate, lastDownloadDateEmpty);
@@ -353,6 +382,7 @@ void loop(void)
   // get the new data
 
   // log uuid and time
+
   for(int i=0; i<8; i++){
     logfile.print((unsigned int) uuid[2*i], HEX);
   }
@@ -362,12 +392,14 @@ void loop(void)
   logfile.print(comma);
 
   float value0 = analogRead(0); // * .0049;
-  //Serial.println(value0);
+  Serial.print(" 0: ");
+  Serial.print(value0);
   logfile.print(value0);
   logfile.print(comma);
 
   float value1 = analogRead(1); // * .0049;
-  //Serial.println(value1);
+  Serial.print("   1: ");
+  Serial.print(value1);
   logfile.print(value1);
   logfile.print(comma);
 
@@ -382,12 +414,14 @@ void loop(void)
   logfile.print(comma);
 
   float value4 = analogRead(4); // * .0049;
-  //Serial.println(value4);
+  Serial.print("   4: ");
+  Serial.print(value4);
   logfile.print(value4);
   logfile.print(comma);
 
   float value5 = analogRead(5); // * .0049;
-  //Serial.println(value5);
+  Serial.print("   5: ");
+  Serial.println(value5);
   logfile.print(value5);
   logfile.print(comma);
 
