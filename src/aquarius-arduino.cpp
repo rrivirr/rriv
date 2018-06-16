@@ -56,7 +56,7 @@ void setNewDataFile(){
   logfile = sd.open(filename, FILE_WRITE);
   //sd.chdir();
   if(!logfile){
-    Serial.println(F("file did not open"));
+    Serial.print(">File not found<");
     while(1);
   }
 
@@ -166,14 +166,11 @@ void initializeSDCard(void) {
 
   // see if the card is present and can be initialized:
   if (!sd.begin(chipSelect)) {
-    Serial.println(F("Card failed, or not present"));
+    Serial.println(F(">Card failed, or not present<"));
   }
-  Serial.println(F("card initialized."));
-
-
+  Serial.println(F(">card initialized.<"));
 
   setNewDataFile();
-
 
 }
 
@@ -253,6 +250,13 @@ void loop(void)
       }
       Serial.write("<");
       Serial.flush();
+      delay(100);
+
+      Serial.write(">WT_REPORT_TIMESTAMP:");
+      Serial.print(RTC.now().unixtime());
+      Serial.write("<");
+      Serial.flush();
+      delay(100);
 
     }
     else if(strncmp(request, ">WT_REQUEST_DOWNLOAD",20) == 0) {
@@ -277,14 +281,18 @@ void loop(void)
       //UTCTime[10] = '\0';
       long time = atol(UTCTime);
       delay(100);
+
+      RTC.adjust(DateTime(time));
+
       Serial.print(">Received UTC time: ");
       Serial.print(UTCTime);
       Serial.print("---");
       Serial.print(time);
+      Serial.print("---");
+      Serial.print(RTC.now().unixtime());
       Serial.print("<");
       Serial.flush();
 
-      RTC.adjust(DateTime(time));
       setNewDataFile();
       return;
 
