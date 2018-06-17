@@ -90,8 +90,8 @@ void setNewDataFile(){
   strncpy(&filename[10], suffix, 5);
 
   char dataFolder[6] = "/Data";
+  sd.chdir("/");
   if(!sd.exists(dataFolder)){
-    sd.chdir();
     sd.mkdir("/Data");
   }
 
@@ -109,12 +109,8 @@ void setNewDataFile(){
     Serial.println(deploymentIdentifier);
 
     if(!sd.exists(deploymentIdentifier)){
-      Serial.println(F("OK"));
       sd.mkdir(deploymentIdentifier);
-      Serial.println(F("OK"));
     }
-
-    Serial.println(F("OK"));
 
     if (!sd.chdir(deploymentIdentifier)) {
       Serial.print(F("chdir failed: "));
@@ -123,7 +119,6 @@ void setNewDataFile(){
       Serial.print(F("chdir: "));
       Serial.println(deploymentIdentifier);
     }
-    Serial.println(F("OK"));
 
   } else {
     Serial.print(F(">NoDeploymentIdentifierSet: "));
@@ -255,6 +250,7 @@ void printCurrentDirListing(){
     */
     dirFile.getName(sdFilename, 30);
     Serial.println(sdFilename);
+    dirFile.close();
   }
 
 }
@@ -271,39 +267,45 @@ void transferLoggedData(){
   }
 
   // Debug
-  printCurrentDirListing();
-  Serial.println(lastDownloadDate);
-/*
+  // printCurrentDirListing();
+  // Serial.println(lastDownloadDate);
+
   sd.vwd()->rewind();
   SdFile dirFile;
   char sdDirName[30];
   char sdFileName[30];
+  int rootDirIndex = 0;
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dir_t d;
     if (!dirFile.dirEntry(&d)) {
       Serial.println(F("dirEntry failed"));
-      while(1);
+      state = 0;
+      return;
     }
     if(!dirFile.isDir()){
       // Descend into all the deployment directories
       continue;
     }
     dirFile.getName(sdDirName, 30);
-    Serial.print("Dir: ");
-    Serial.println(sdDirName);
+    //Serial.print("Dir: ");
+    //Serial.println(sdDirName);
+
     if(! sd.chdir(sdDirName) ){
       Serial.print(F("chdir failed:"));
       Serial.println(sdDirName);
       state = 0;
       return;
     }
+    dirFile.close();
 
+    sd.vwd()->rewind();
     SdFile deploymentFile;
     while (deploymentFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!deploymentFile.dirEntry(&d)) {
         Serial.println(F("depl file failed"));
-        while(1);
+        state = 0;
+        return;
       }
       deploymentFile.getName(sdFileName, 24);
 
@@ -321,11 +323,27 @@ void transferLoggedData(){
        }
        deploymentFile.close();
     }
-    sd.chdir("../");
 
-    dirFile.close();
+    /*
+    char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
+    Serial.write(deploymentCompleteMessage);
+    */
 
+    sd.chdir("/Data");
+
+    rootDirIndex = rootDirIndex + 1;
+
+    // sd.vwd()->rewind();
+    // printCurrentDirListing();
+    // Advance to the last directoy we were at
+    sd.vwd()->rewind();
+
+    for(int i = 0; i < rootDirIndex; i = i + 1){
+      dirFile.openNext(sd.vwd(), O_READ);
+      dirFile.close();
+    }
   }
+
   if (!sd.chdir()) {
     Serial.println(F("chdir failed for ../"));
     state = 0;
@@ -340,7 +358,7 @@ void transferLoggedData(){
 
   // Send last download date to phone for book keeeping
   state = 0;
-*/
+
 }
 
 /**************************************************************************/
@@ -354,8 +372,8 @@ const int maxRequestLength = 50;
 void loop(void)
 {
 
-  transferLoggedData();
-  while(1);
+  //transferLoggedData();
+  //while(1);
 
   if(freeRam() < 100){
     Serial.println(freeRam());
@@ -364,7 +382,7 @@ void loop(void)
   //int buttonState = digitalRead(buttonPin);
 
   if(Serial.peek() == '>' && state == 0){
-    //Serial.println("Peek");
+    Serial.println("Peek");
 
     char request[maxRequestLength] = "";
     Serial.readBytesUntil('<', request, maxRequestLength);
@@ -425,7 +443,6 @@ void loop(void)
       Serial.flush();
 
       setNewDataFile();
-      return;
 
     } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
       char deploymentIdentifier[29];
@@ -435,6 +452,7 @@ void loop(void)
       Serial.write(deploymentIdentifier);
       Serial.write("<");
       Serial.flush();
+
       setNewDataFile();
 
     } else {
