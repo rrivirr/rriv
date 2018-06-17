@@ -52,7 +52,7 @@ void readUniqueId(){
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
   if(memcmp(uuid, uninitializedEEPROM, 16) == 0){
-    Serial.println(F("Generate UUID"));
+    //Serial.println(F("Generate UUID"));
     // generate the unique ID
     TrueRandomClass::uuid(uuid);
     for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
@@ -96,9 +96,9 @@ void setNewDataFile(){
   }
 
   if (!sd.chdir(dataFolder)) {
-    Serial.println(F("chdir failed for Data."));
+    Serial.println(F("chdir failed: Data."));
   } else {
-    Serial.println(F("chdir to /Data."));
+    Serial.println(F("chdir /Data."));
   }
 
   char deploymentIdentifier[29];// = "DEPLOYMENT";
@@ -120,7 +120,7 @@ void setNewDataFile(){
       Serial.print(F("chdir failed: "));
       Serial.println(deploymentIdentifier);
     } else {
-      Serial.print(F("chdir to "));
+      Serial.print(F("chdir: "));
       Serial.println(deploymentIdentifier);
     }
     Serial.println(F("OK"));
@@ -160,7 +160,7 @@ void setNewDataFile(){
   file.close();
   logfile.println(line); // write the headers to the new logfile
 
-  Serial.print(F("Logging to: "));
+  Serial.print(F("Filename: "));
   Serial.println(filename);
 
 }
@@ -245,15 +245,15 @@ void setup(void)
 void printCurrentDirListing(){
   sd.vwd()->rewind();
   SdFile dirFile;
-  char sdFilename[20];
+  char sdFilename[30];
   while (dirFile.openNext(sd.vwd(), O_READ)) {
-    dir_t d;
+    /*dir_t d;
     if (!dirFile.dirEntry(&d)) {
-      Serial.println(F("f.dirEntry fail"));
+      Serial.println(F("dirEntry fail"));
       while(1);
     }
-
-    dirFile.getName(sdFilename, 20);
+    */
+    dirFile.getName(sdFilename, 30);
     Serial.println(sdFilename);
   }
 
@@ -261,44 +261,48 @@ void printCurrentDirListing(){
 
 void transferLoggedData(){
 
-
-
   // Debug
   //printCurrentDirListing();
 
   if (!sd.chdir("/Data")) {
-    Serial.println(F("chdir failed for Data."));
+    Serial.println(F("chdir failed: Data."));
     state = 0;
     return;
   }
 
   // Debug
-  //  printCurrentDirListing();
-
-
+  printCurrentDirListing();
+  Serial.println(lastDownloadDate);
+/*
   sd.vwd()->rewind();
   SdFile dirFile;
-  char sdDirName[24];
-  char sdFileName[24];
+  char sdDirName[30];
+  char sdFileName[30];
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dir_t d;
     if (!dirFile.dirEntry(&d)) {
-      Serial.println(F("f.dirEntry failed"));
+      Serial.println(F("dirEntry failed"));
       while(1);
     }
     if(!dirFile.isDir()){
       // Descend into all the deployment directories
       continue;
     }
-    dirFile.getName(sdDirName, 24);
-    sd.chdir(sdDirName);
+    dirFile.getName(sdDirName, 30);
     Serial.print("Dir: ");
     Serial.println(sdDirName);
+    if(! sd.chdir(sdDirName) ){
+      Serial.print(F("chdir failed:"));
+      Serial.println(sdDirName);
+      state = 0;
+      return;
+    }
+
     SdFile deploymentFile;
     while (deploymentFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!deploymentFile.dirEntry(&d)) {
-        Serial.println(F("deployment file failed"));
+        Serial.println(F("depl file failed"));
         while(1);
       }
       deploymentFile.getName(sdFileName, 24);
@@ -336,7 +340,7 @@ void transferLoggedData(){
 
   // Send last download date to phone for book keeeping
   state = 0;
-
+*/
 }
 
 /**************************************************************************/
@@ -411,7 +415,7 @@ void loop(void)
 
       RTC.adjust(DateTime(time));
 
-      Serial.print(F(">Received UTC: "));
+      Serial.print(F(">RECV UTC: "));
       Serial.print(UTCTime);
       Serial.print(F("--"));
       Serial.print(time);
@@ -427,7 +431,7 @@ void loop(void)
       char deploymentIdentifier[29];
       strncpy(deploymentIdentifier, &request[11], 28);
       writeDeploymentIdentifier(deploymentIdentifier);
-      Serial.write(">Wrote deployment: ");
+      Serial.write(">Wrote: ");
       Serial.write(deploymentIdentifier);
       Serial.write("<");
       Serial.flush();
@@ -484,13 +488,13 @@ void loop(void)
   logfile.print(comma);
 
   float value0 = analogRead(0); // * .0049;
-  Serial.print(" 0: ");
+  Serial.print("0:");
   Serial.print(value0);
   logfile.print(value0);
   logfile.print(comma);
 
   float value1 = analogRead(1); // * .0049;
-  Serial.print("   1: ");
+  Serial.print(" 1:");
   Serial.print(value1);
   logfile.print(value1);
   logfile.print(comma);
@@ -506,13 +510,13 @@ void loop(void)
   logfile.print(comma);
 
   float value4 = analogRead(4); // * .0049;
-  Serial.print("   4: ");
+  Serial.print(" 4:");
   Serial.print(value4);
   logfile.print(value4);
   logfile.print(comma);
 
   float value5 = analogRead(5); // * .0049;
-  Serial.print("   5: ");
+  Serial.print(" 5:");
   Serial.println(value5);
   logfile.print(value5);
   logfile.print(comma);
