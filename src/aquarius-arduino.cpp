@@ -259,6 +259,86 @@ void printCurrentDirListing(){
 
 }
 
+void transferLoggedData(){
+
+
+
+  // Debug
+  //printCurrentDirListing();
+
+  if (!sd.chdir("/Data")) {
+    Serial.println(F("chdir failed for Data."));
+    state = 0;
+    return;
+  }
+
+  // Debug
+  //  printCurrentDirListing();
+
+
+  sd.vwd()->rewind();
+  SdFile dirFile;
+  char sdDirName[24];
+  char sdFileName[24];
+  while (dirFile.openNext(sd.vwd(), O_READ)) {
+    dir_t d;
+    if (!dirFile.dirEntry(&d)) {
+      Serial.println(F("f.dirEntry failed"));
+      while(1);
+    }
+    if(!dirFile.isDir()){
+      // Descend into all the deployment directories
+      continue;
+    }
+    dirFile.getName(sdDirName, 24);
+    sd.chdir(sdDirName);
+    Serial.print("Dir: ");
+    Serial.println(sdDirName);
+    SdFile deploymentFile;
+    while (deploymentFile.openNext(sd.vwd(), O_READ)) {
+      dir_t d;
+      if (!deploymentFile.dirEntry(&d)) {
+        Serial.println(F("deployment file failed"));
+        while(1);
+      }
+      deploymentFile.getName(sdFileName, 24);
+
+
+      if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
+          //Serial.println(sdFilename);
+
+          File datafile = sd.open(sdFileName);
+          // send size of transmission ?
+          // Serial.println(datafile.fileSize());
+          while (datafile.available()) {
+              Serial.write(datafile.read());
+          }
+          datafile.close();
+       }
+       deploymentFile.close();
+    }
+    sd.chdir("../");
+
+    dirFile.close();
+
+  }
+  if (!sd.chdir()) {
+    Serial.println(F("chdir failed for ../"));
+    state = 0;
+    return;
+  }
+
+  char transferCompleteMessage[34] = ">WT_TRANSFER_COMPLETE:0000000000<";
+  strncpy(&transferCompleteMessage[22], sdFileName, 10); // Send timestamp of last file sent
+  Serial.write(transferCompleteMessage);
+
+  setNewDataFile();
+
+  // Send last download date to phone for book keeeping
+  state = 0;
+
+}
+
 /**************************************************************************/
 /*
 Arduino loop function, called once 'setup' is complete (your own code
@@ -269,6 +349,9 @@ uint32_t lastTime = 0;
 const int maxRequestLength = 50;
 void loop(void)
 {
+
+  transferLoggedData();
+  while(1);
 
   if(freeRam() < 100){
     Serial.println(freeRam());
@@ -373,60 +456,7 @@ void loop(void)
       return;
     }
 
-
-    // Debug
-    //printCurrentDirListing();
-
-    if (!sd.chdir("/Data")) {
-      Serial.println(F("chdir failed for Data."));
-      state = 0;
-      return;
-    }
-
-    // Debug
-    //  printCurrentDirListing();
-
-
-    sd.vwd()->rewind();
-    SdFile dirFile;
-    char sdFilename[20];
-    while (dirFile.openNext(sd.vwd(), O_READ)) {
-      dir_t d;
-      if (!dirFile.dirEntry(&d)) {
-        Serial.println(F("f.dirEntry failed"));
-        while(1);
-      }
-
-      dirFile.getName(sdFilename, 20);
-
-      if(strncmp(sdFilename, lastDownloadDate, 10) > 0){
-        //Serial.println(sdFilename);
-
-        File datafile = sd.open(sdFilename);
-        // send size of transmission ?
-        // Serial.println(datafile.fileSize());
-        while (datafile.available()) {
-          Serial.write(datafile.read());
-        }
-        datafile.close();
-      }
-      dirFile.close();
-
-    }
-    if (!sd.chdir()) {
-      Serial.println(F("chdir failed for ../"));
-      state = 0;
-      return;
-    }
-
-    char transferCompleteMessage[34] = ">WT_TRANSFER_COMPLETE:0000000000<";
-    strncpy(&transferCompleteMessage[22], sdFilename, 10);
-    Serial.write(transferCompleteMessage);
-
-    setNewDataFile();
-
-    // Send last download date to phone for book keeeping
-    state = 0;
+    transferLoggedData();
 
   }
 
