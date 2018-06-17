@@ -29,73 +29,12 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-/*
-* Initialize the SD Card
-*/
-void setNewDataFile(){
-  DateTime now = RTC.now();
-  char uniquename[11];
-  sprintf(uniquename, "%lu", now.unixtime());
-  char suffix[5] = ".CSV";
-  char filename[15];
-  strncpy(filename, uniquename, 10);
-  strncpy(&filename[10], suffix, 5);
-
-  Serial.print(F("Logging to: "));
-  Serial.println(filename);
-
-  char dataFolder[6] = "/Data";
-  if(!sd.exists(dataFolder)){
-    sd.chdir();
-    sd.mkdir("Data");
-  }
-
-  if (!sd.chdir(dataFolder)) {
-    Serial.println(F("chdir failed for Data."));
-  }
-  logfile = sd.open(filename, FILE_WRITE);
-  //sd.chdir();
-  if(!logfile){
-    Serial.print(">File not found<");
-    while(1);
-  }
-
-  char line[100];
-  if (!sd.chdir("/")) {
-    Serial.println(F("chdir failed for Columns."));
-  }
-  File file;
-  file = sd.open("COLUMNS.TXT");
-
-  if (!file.isOpen()){
-    Serial.println(F("COLUMNS.TXT did not open"));
-    //while(1);
-  }
-
-  int n = file.fgets(line, sizeof(line));
-  if (line[n - 1] == '\n') {
-        // remove '\n'
-        line[n-1] = 0;
-  }
-  Serial.println(line);
-  file.close();
-  logfile.println(line); // write the headers to the new logfile
-
-}
-
-void dateTime(uint16_t* date, uint16_t* time) {
-  DateTime now = RTC.now();
-
-  // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(now.year(), now.month(), now.day());
-
-  // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(now.hour(), now.minute(), now.second());
-}
-
 int uniqueIdAddressStart = 0;
 int uniqueIdAddressEnd = 15;
 unsigned char uuid[16];
+
+int deploymentIdentifierAddressStart = 16;
+int deploymentIdentifierAddressEnd =  43;
 
 void readUniqueId(){
 
@@ -104,19 +43,13 @@ void readUniqueId(){
     uuid[i] = EEPROM.read(address);
   }
 
-  Serial.println(F("Here's the uuid in EEPROM"));
+  Serial.print(F("uuid:"));
   for(int i=0; i<8; i++){
     Serial.print((unsigned int) uuid[2*i], HEX);
   }
   Serial.println("");
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-  //Serial.println("Here's the uninitializedEEPROM string that should be");
-  //for(int i=0; i<8; i++){
-    //Serial.print((unsigned int) uninitializedEEPROM[2*i], HEX);
-  //}
-  //Serial.println("");
-
 
   if(memcmp(uuid, uninitializedEEPROM, 16) == 0){
     Serial.println(F("Generate UUID"));
@@ -130,12 +63,124 @@ void readUniqueId(){
 
 }
 
+void readDeploymentIdentifier(char * deploymentIdentifier){
+  for(int i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
+    int address = deploymentIdentifierAddressStart + i;
+    deploymentIdentifier[i] = EEPROM.read(address);
+  }
+}
+
+void writeDeploymentIdentifier(char * deploymentIdentifier){
+  for(int i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
+    int address = deploymentIdentifierAddressStart + i;
+    EEPROM.write(address, deploymentIdentifier[i]);
+  }
+}
+
+/*
+* Initialize the SD Card
+*/
+void setNewDataFile(){
+  DateTime now = RTC.now();
+  char uniquename[11];
+  sprintf(uniquename, "%lu", now.unixtime());
+  char suffix[5] = ".CSV";
+  char filename[15];
+  strncpy(filename, uniquename, 10);
+  strncpy(&filename[10], suffix, 5);
+
+  char dataFolder[6] = "/Data";
+  if(!sd.exists(dataFolder)){
+    sd.chdir();
+    sd.mkdir("/Data");
+  }
+
+  if (!sd.chdir(dataFolder)) {
+    Serial.println(F("chdir failed for Data."));
+  } else {
+    Serial.println(F("chdir to /Data."));
+  }
+
+  char deploymentIdentifier[29];// = "DEPLOYMENT";
+  readDeploymentIdentifier(deploymentIdentifier);
+  unsigned char empty[1] = {0xFF};
+  if(memcmp(deploymentIdentifier, empty, 1) != 0 ) {
+
+    Serial.println(deploymentIdentifier);
+
+    if(!sd.exists(deploymentIdentifier)){
+      Serial.println(F("OK"));
+      sd.mkdir(deploymentIdentifier);
+      Serial.println(F("OK"));
+    }
+
+    Serial.println(F("OK"));
+
+    if (!sd.chdir(deploymentIdentifier)) {
+      Serial.print(F("chdir failed: "));
+      Serial.println(deploymentIdentifier);
+    } else {
+      Serial.print(F("chdir to "));
+      Serial.println(deploymentIdentifier);
+    }
+    Serial.println(F("OK"));
+
+  } else {
+    Serial.print(F(">NoDeploymentIdentifierSet: "));
+    Serial.print(deploymentIdentifier);
+    Serial.print(F("<"));
+    Serial.flush();
+  }
+
+  logfile = sd.open(filename, FILE_WRITE);
+  //sd.chdir();
+  if(!logfile){
+    Serial.print(F(">File not found<"));
+    while(1);
+  }
+
+  char line[100];
+  if (!sd.chdir("/")) {
+    Serial.println(F("chdir failed /"));
+  }
+  File file;
+  file = sd.open("COLUMNS.TXT");
+
+  if (!file.isOpen()){
+    Serial.println(F("COLUMNS.TXT not found"));
+    //while(1);
+  }
+
+  int n = file.fgets(line, sizeof(line));
+  if (line[n - 1] == '\n') {
+        // remove '\n'
+        line[n-1] = 0;
+  }
+  Serial.println(line);
+  file.close();
+  logfile.println(line); // write the headers to the new logfile
+
+  Serial.print(F("Logging to: "));
+  Serial.println(filename);
+
+}
+
+void dateTime(uint16_t* date, uint16_t* time) {
+  DateTime now = RTC.now();
+
+  // return date using FAT_DATE macro to format fields
+  *date = FAT_DATE(now.year(), now.month(), now.day());
+
+  // return time using FAT_TIME macro to format fields
+  *time = FAT_TIME(now.hour(), now.minute(), now.second());
+}
+
 
 void initializeSDCard(void) {
   Wire.begin();
 
   if (! RTC.initialized()) {
-    Serial.println(F("RTC is NOT initialized!"));
+    Serial.println(F("RTC NOT initialized!"));
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
@@ -147,26 +192,25 @@ void initializeSDCard(void) {
   } else {
     Serial.println(F("RTC started"));
 
-
-    DateTime now = RTC.now();
-    char dateString[11];
-    sprintf(dateString, "%lu", now.unixtime());
-    Serial.print("Starting time: ");
-    Serial.println(dateString);
+    //DateTime now = RTC.now();
+    //char dateString[11];
+    //sprintf(dateString, "%lu", now.unixtime());
+    //Serial.print("Starting time: ");
+    //Serial.println(dateString);
     //Serial.println(RTC.now().m);
   }
 
   SdFile::dateTimeCallback(dateTime);
 
   // initialize the SD card
-  Serial.print(F("Initializing SD card..."));
+  //Serial.print(F("Initializing SD card..."));
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
   pinMode(10, OUTPUT);
 
   // see if the card is present and can be initialized:
   if (!sd.begin(chipSelect)) {
-    Serial.println(F(">Card failed, or not present<"));
+    Serial.println(F(">Card failed<"));
   }
   Serial.println(F(">card initialized.<"));
 
@@ -182,7 +226,7 @@ Arduino setup function (automatically called at startup)
 void setup(void)
 {
   Serial.begin(115200);
-  Serial.println(F("Hello, world.  Primary Serial."));
+  //Serial.println(F("Hello, world.  Primary Serial."));
   //Serial.begin(9600);
 
   //mySerial.begin(115200);
@@ -194,7 +238,7 @@ void setup(void)
   initializeSDCard();
 
   /* We're ready to go! */
-  Serial.println(F("done with setup"));
+  //Serial.println(F("done with setup"));
 
 }
 
@@ -205,7 +249,7 @@ void printCurrentDirListing(){
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dir_t d;
     if (!dirFile.dirEntry(&d)) {
-      Serial.println(F("f.dirEntry failed"));
+      Serial.println(F("f.dirEntry fail"));
       while(1);
     }
 
@@ -222,7 +266,7 @@ should go here)
 */
 /**************************************************************************/
 uint32_t lastTime = 0;
-const int maxRequestLength = 34;
+const int maxRequestLength = 50;
 void loop(void)
 {
 
@@ -284,17 +328,27 @@ void loop(void)
 
       RTC.adjust(DateTime(time));
 
-      Serial.print(">Received UTC time: ");
+      Serial.print(F(">Received UTC: "));
       Serial.print(UTCTime);
-      Serial.print("---");
+      Serial.print(F("--"));
       Serial.print(time);
-      Serial.print("---");
+      Serial.print(F("--"));
       Serial.print(RTC.now().unixtime());
-      Serial.print("<");
+      Serial.print(F("<"));
       Serial.flush();
 
       setNewDataFile();
       return;
+
+    } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
+      char deploymentIdentifier[29];
+      strncpy(deploymentIdentifier, &request[11], 28);
+      writeDeploymentIdentifier(deploymentIdentifier);
+      Serial.write(">Wrote deployment: ");
+      Serial.write(deploymentIdentifier);
+      Serial.write("<");
+      Serial.flush();
+      setNewDataFile();
 
     } else {
       char lastDownloadDateEmpty[11] = "0000000000";
