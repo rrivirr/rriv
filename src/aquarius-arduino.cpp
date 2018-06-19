@@ -1,6 +1,6 @@
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
-#include <SoftwareSerial.h> // Debugging
+//#include <SoftwareSerial.h> // Debugging
 #include <EEPROM.h>
 #include "SdFat.h"
 #include "RTClib.h"
@@ -8,46 +8,49 @@
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
 
-SoftwareSerial mySerial(4, 3); // RX, TX for easier debuggin
+//SoftwareSerial mySerial(4, 3); // RX, TX for easier debuggin
 
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
-const int chipSelect = 10;
+const short chipSelect = 10;
 
 // File system object.
 SdFat sd;
 File logfile;
 
-int state = 0;
+short state = 0;
 
 char lastDownloadDate[11] = "0000000000";
+char dataDirectory[6] = "/Data";
 
 
-int freeRam () {
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-}
+//int freeRam () {
+//  extern int __heap_start, *__brkval;
+//  int v
+//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+//}
 
-int uniqueIdAddressStart = 0;
-int uniqueIdAddressEnd = 15;
+short uniqueIdAddressStart = 0;
+short uniqueIdAddressEnd = 15;
 unsigned char uuid[16];
 
-int deploymentIdentifierAddressStart = 16;
-int deploymentIdentifierAddressEnd =  43;
+short deploymentIdentifierAddressStart = 16;
+short deploymentIdentifierAddressEnd =  43;
 
 void readUniqueId(){
 
-  for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
-    int address = uniqueIdAddressStart + i;
+  for(short i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
+    short address = uniqueIdAddressStart + i;
     uuid[i] = EEPROM.read(address);
   }
 
-  Serial.print(F("uuid:"));
-  for(int i=0; i<8; i++){
+/*
+  Serial.write( (char *) F("uuid:"));
+  for(short i=0; i<8; i++){
     Serial.print((unsigned int) uuid[2*i], HEX);
   }
   Serial.println("");
+*/
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
@@ -55,8 +58,8 @@ void readUniqueId(){
     //Serial.println(F("Generate UUID"));
     // generate the unique ID
     TrueRandomClass::uuid(uuid);
-    for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
-      int address = uniqueIdAddressStart + i;
+    for(short i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
+      short address = uniqueIdAddressStart + i;
       EEPROM.write(address, uuid[i]);
     }
   }
@@ -64,22 +67,36 @@ void readUniqueId(){
 }
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
-  for(int i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    int address = deploymentIdentifierAddressStart + i;
+  for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
+    short address = deploymentIdentifierAddressStart + i;
     deploymentIdentifier[i] = EEPROM.read(address);
   }
 }
 
 void writeDeploymentIdentifier(char * deploymentIdentifier){
-  for(int i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    int address = deploymentIdentifierAddressStart + i;
+  for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
+    short address = deploymentIdentifierAddressStart + i;
     EEPROM.write(address, deploymentIdentifier[i]);
   }
 }
 
 /*
+void printCurrentDirListing(){
+  sd.vwd()->rewind();
+  SdFile dirFile;
+  char sdFilename[30];
+  while (dirFile.openNext(sd.vwd(), O_READ)) {
+    dirFile.getName(sdFilename, 30);
+    Serial.println(sdFilename);
+    dirFile.close();
+  }
+}
+*/
+
+/*
 * Initialize the SD Card
 */
+
 void setNewDataFile(){
   DateTime now = RTC.now();
   char uniquename[11];
@@ -89,75 +106,93 @@ void setNewDataFile(){
   strncpy(filename, uniquename, 10);
   strncpy(&filename[10], suffix, 5);
 
-  char dataFolder[6] = "/Data";
-  sd.chdir("/");
-  if(!sd.exists(dataFolder)){
-    sd.mkdir("/Data");
-  }
+  //Serial.println("cd");
+  //sd.chdir("/");
+  //delay(10);
 
-  if (!sd.chdir(dataFolder)) {
-    Serial.println(F("chdir failed: Data."));
+  // printCurrentDirListing();
+  //Serial.println("OK");
+  // if(!sd.exists(dataDirectory)){
+  //  Serial.println("mkdir");
+  //  sd.mkdir(dataDirectory);
+    //delay(10);
+  //}
+  //Serial.println("OK");
+  if (!sd.chdir(dataDirectory)) {
+    Serial.println(F("failed: /Data."));
   } else {
-    Serial.println(F("chdir /Data."));
+    //Serial.println(F("cd /Data."));
   }
+  //delay(10);
+
+  //Serial.println("OK");
 
   char deploymentIdentifier[29];// = "DEPLOYMENT";
   readDeploymentIdentifier(deploymentIdentifier);
   unsigned char empty[1] = {0xFF};
-  if(memcmp(deploymentIdentifier, empty, 1) != 0 ) {
+  if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
+    //Serial.print(">NoDplyment<");
+    //Serial.flush();
 
-    Serial.println(deploymentIdentifier);
-
-    if(!sd.exists(deploymentIdentifier)){
-      sd.mkdir(deploymentIdentifier);
-    }
-
-    if (!sd.chdir(deploymentIdentifier)) {
-      Serial.print(F("chdir failed: "));
-      Serial.println(deploymentIdentifier);
-    } else {
-      Serial.print(F("chdir: "));
-      Serial.println(deploymentIdentifier);
-    }
-
-  } else {
-    Serial.print(F(">NoDeploymentIdentifierSet: "));
-    Serial.print(deploymentIdentifier);
-    Serial.print(F("<"));
-    Serial.flush();
+    char defaultDeployment[25] = "SITENAME_00000000000000";
+    writeDeploymentIdentifier(defaultDeployment);
+    readDeploymentIdentifier(deploymentIdentifier);
   }
 
+
+  if(!sd.exists(deploymentIdentifier)){
+    // printCurrentDirListing();
+    Serial.write("mkdir:");
+    Serial.println(deploymentIdentifier);
+    sd.mkdir(deploymentIdentifier);
+    //delay(10);
+  }
+
+  if (!sd.chdir(deploymentIdentifier)) {
+    Serial.print("failed:");
+    Serial.println(deploymentIdentifier);
+  } else {
+    Serial.print("cd:");
+    Serial.println(deploymentIdentifier);
+  }
+  //delay(10);
+
   logfile = sd.open(filename, FILE_WRITE);
+  //delay(10);
+
   //sd.chdir();
   if(!logfile){
-    Serial.print(F(">File not found<"));
+    Serial.print(">not found<");
+    while(1);
+  }
+
+  //if (!sd.chdir("/")) {
+  //  Serial.println("fail /");
+  //}
+
+
+  File file;
+  file = sd.open("/COLUMNS.TXT");
+
+  if (!file){
+    Serial.println("fail COLS");
     while(1);
   }
 
   char line[100];
-  if (!sd.chdir("/")) {
-    Serial.println(F("chdir failed /"));
-  }
-  File file;
-  file = sd.open("COLUMNS.TXT");
-
-  if (!file.isOpen()){
-    Serial.println(F("COLUMNS.TXT not found"));
-    //while(1);
-  }
-
   int n = file.fgets(line, sizeof(line));
   if (line[n - 1] == '\n') {
         // remove '\n'
-        line[n-1] = 0;
+        line[n - 1] = 0;
   }
   Serial.println(line);
   file.close();
   logfile.println(line); // write the headers to the new logfile
 
-  Serial.print(F("Filename: "));
-  Serial.println(filename);
-
+  Serial.print( ">log:");
+  Serial.print(filename);
+  Serial.println( "<");
+/* */
 }
 
 void dateTime(uint16_t* date, uint16_t* time) {
@@ -175,39 +210,30 @@ void initializeSDCard(void) {
   Wire.begin();
 
   if (! RTC.initialized()) {
-    Serial.println(F("RTC NOT initialized!"));
+    // Serial.println(F("RTC NOT init'd"));
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
   if (!RTC.begin()) {
-    #if ECHO_TO_SERIAL
-    Serial.println(F("RTC failed"));
-    #endif  //ECHO_TO_SERIAL
+    Serial.println(F("RTC fail"));
   } else {
-    Serial.println(F("RTC started"));
-
-    //DateTime now = RTC.now();
-    //char dateString[11];
-    //sprintf(dateString, "%lu", now.unixtime());
-    //Serial.print("Starting time: ");
-    //Serial.println(dateString);
-    //Serial.println(RTC.now().m);
+    Serial.println(F("RTC start"));
   }
 
   SdFile::dateTimeCallback(dateTime);
 
   // initialize the SD card
-  //Serial.print(F("Initializing SD card..."));
+  //Serial.write( (char *) F("Initializing SD card..."));
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
   pinMode(10, OUTPUT);
 
   // see if the card is present and can be initialized:
   if (!sd.begin(chipSelect)) {
-    Serial.println(F(">Card failed<"));
+    Serial.println(F(">Card fail<"));
   }
-  Serial.println(F(">card initialized.<"));
+  Serial.println(F(">Card init'd.<"));
 
   setNewDataFile();
 
@@ -237,31 +263,14 @@ void setup(void)
 
 }
 
-void printCurrentDirListing(){
-  sd.vwd()->rewind();
-  SdFile dirFile;
-  char sdFilename[30];
-  while (dirFile.openNext(sd.vwd(), O_READ)) {
-    /*dir_t d;
-    if (!dirFile.dirEntry(&d)) {
-      Serial.println(F("dirEntry fail"));
-      while(1);
-    }
-    */
-    dirFile.getName(sdFilename, 30);
-    Serial.println(sdFilename);
-    dirFile.close();
-  }
-
-}
-
+/*
 void transferLoggedData(){
 
   // Debug
-  //printCurrentDirListing();
+  // printCurrentDirListing();
 
-  if (!sd.chdir("/Data")) {
-    Serial.println(F("chdir failed: Data."));
+  if (!sd.chdir(dataDirectory)) {
+    Serial.println(F("fail: Data."));
     state = 0;
     return;
   }
@@ -274,11 +283,11 @@ void transferLoggedData(){
   SdFile dirFile;
   char sdDirName[30];
   char sdFileName[30];
-  int rootDirIndex = 0;
+  short rootDirIndex = 0;
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dir_t d;
     if (!dirFile.dirEntry(&d)) {
-      Serial.println(F("dirEntry failed"));
+      //Serial.println(F("dirEntry failed"));
       state = 0;
       return;
     }
@@ -287,11 +296,11 @@ void transferLoggedData(){
       continue;
     }
     dirFile.getName(sdDirName, 30);
-    //Serial.print("Dir: ");
+    //Serial.write("Dir: ");
     //Serial.println(sdDirName);
 
     if(! sd.chdir(sdDirName) ){
-      Serial.print(F("chdir failed:"));
+      Serial.write("fail:");
       Serial.println(sdDirName);
       state = 0;
       return;
@@ -303,7 +312,7 @@ void transferLoggedData(){
     while (deploymentFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!deploymentFile.dirEntry(&d)) {
-        Serial.println(F("depl file failed"));
+        // Serial.println(F("depl file fail"));
         state = 0;
         return;
       }
@@ -324,12 +333,10 @@ void transferLoggedData(){
        deploymentFile.close();
     }
 
-    /*
-    char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
-    Serial.write(deploymentCompleteMessage);
-    */
+    //char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
+    //Serial.write(deploymentCompleteMessage);
 
-    sd.chdir("/Data");
+    sd.chdir(dataDirectory);
 
     rootDirIndex = rootDirIndex + 1;
 
@@ -338,19 +345,19 @@ void transferLoggedData(){
     // Advance to the last directoy we were at
     sd.vwd()->rewind();
 
-    for(int i = 0; i < rootDirIndex; i = i + 1){
+    for(short i = 0; i < rootDirIndex; i = i + 1){
       dirFile.openNext(sd.vwd(), O_READ);
       dirFile.close();
     }
   }
 
-  if (!sd.chdir()) {
-    Serial.println(F("chdir failed for ../"));
+  if (!sd.chdir("/")) {
+    Serial.println(F("fail /"));
     state = 0;
     return;
   }
 
-  char transferCompleteMessage[34] = ">WT_TRANSFER_COMPLETE:0000000000<";
+  char transferCompleteMessage[34] = ">WT_COMPLETE:0000000000<";
   strncpy(&transferCompleteMessage[22], sdFileName, 10); // Send timestamp of last file sent
   Serial.write(transferCompleteMessage);
 
@@ -368,47 +375,47 @@ should go here)
 */
 /**************************************************************************/
 uint32_t lastTime = 0;
-const int maxRequestLength = 50;
+const short maxRequestLength = 50;
 void loop(void)
 {
-
+/*
   //transferLoggedData();
   //while(1);
 
-  if(freeRam() < 100){
-    Serial.println(freeRam());
-  }
+  //if(freeRam() < 100){
+  //  Serial.println(freeRam());
+  //}
   // Just trigger the dump event using a basic button
   //int buttonState = digitalRead(buttonPin);
 
   if(Serial.peek() == '>' && state == 0){
-    Serial.println("Peek");
+    Serial.println("Pk");
 
     char request[maxRequestLength] = "";
     Serial.readBytesUntil('<', request, maxRequestLength);
-    Serial.write(">COMMAND RECIEVED: ");
+    Serial.write(">CMD RECV: ");
     Serial.write(&request[1]);
     Serial.write("<");
     Serial.flush();
     delay(250);
 
-    if(strncmp(request, ">WT_OPEN_CONNECTION", 19) == 0) {
-      Serial.write(">WT_IDENTIFY_DEVICE:");
-      for(int i=0; i<8; i++){
+    if(strncmp(request, ">WT_OPEN", 8) == 0) {
+      Serial.write(">WT_IDENTIFY:");
+      for(short i=0; i<8; i++){
         Serial.print((unsigned int) uuid[2*i], HEX);
       }
       Serial.write("<");
       Serial.flush();
       delay(100);
 
-      Serial.write(">WT_REPORT_TIMESTAMP:");
+      Serial.write(">WT_TIMESTAMP:");
       Serial.print(RTC.now().unixtime());
       Serial.write("<");
       Serial.flush();
       delay(100);
 
     }
-    else if(strncmp(request, ">WT_REQUEST_DOWNLOAD",20) == 0) {
+    else if(strncmp(request, ">WT_DOWNLOAD",12) == 0) {
       // Flush the input, would be better to use a delimiter
       // May not be necessary now
       unsigned long now = millis ();
@@ -420,7 +427,7 @@ void loop(void)
         strncpy(lastDownloadDate, &request[21], 10);
       }
 
-      Serial.print(">WT_TRANSFER_READY<");
+      Serial.write(">WT_READY<");
       Serial.flush();
       state = 1;
       return;
@@ -433,14 +440,15 @@ void loop(void)
 
       RTC.adjust(DateTime(time));
 
-      Serial.print(F(">RECV UTC: "));
-      Serial.print(UTCTime);
-      Serial.print(F("--"));
-      Serial.print(time);
-      Serial.print(F("--"));
-      Serial.print(RTC.now().unixtime());
-      Serial.print(F("<"));
-      Serial.flush();
+      //Serial.write( (char *) F(">RECV UTC: "));
+      //Serial.print(UTCTime);
+      //Serial.write( (char *) F("--"));
+      //Serial.print(time);
+      //Serial.write( (char *) F("--"));
+      //Serial.print(RTC.now().unixtime());
+      //Serial.write( (char *) F("<"));
+      //Serial.flush();
+
 
       setNewDataFile();
 
@@ -482,66 +490,74 @@ void loop(void)
 
   }
 
+/*
 
   // Fetch the time
   DateTime now = RTC.now();
 
   uint32_t elapsedTime = now.unixtime() - lastTime;
-  if(elapsedTime < 5){
+  if(elapsedTime <5){
     return;
   }
   lastTime = now.unixtime();
 
 
-  // get the new data
-
-  // log uuid and time
-
-  for(int i=0; i<8; i++){
+  // Write the deployment identifier
+  char comma[2] = ",";
+  char deploymentIdentifier[29];// = "DEPLOYMENT";
+  readDeploymentIdentifier(deploymentIdentifier);
+  logfile.print(deploymentIdentifier);
+  logfile.write("_");
+  for(short i=0; i<8; i++){
     logfile.print((unsigned int) uuid[2*i], HEX);
   }
-  char comma[2] = ",";
+  logfile.print(comma);
+
+  // Log uuid and time
+  for(short i=0; i<8; i++){
+    logfile.print((unsigned int) uuid[2*i], HEX);
+  }
   logfile.print(comma);
   logfile.print(now.unixtime()); // seconds since 2000
   logfile.print(comma);
 
+  // Get the new data
   float value0 = analogRead(0); // * .0049;
-  Serial.print("0:");
+  Serial.write("0:");
   Serial.print(value0);
   logfile.print(value0);
   logfile.print(comma);
 
   float value1 = analogRead(1); // * .0049;
-  Serial.print(" 1:");
+  Serial.write(" 1:");
   Serial.print(value1);
   logfile.print(value1);
   logfile.print(comma);
 
-  float value2 = analogRead(2); // * .0049;
+  //float value2 = analogRead(2); // * .0049;
   //Serial.println(value2);
-  logfile.print(value2);
-  logfile.print(comma);
+  //logfile.print(value2);
+  //logfile.print(comma);
 
-  float value3 = analogRead(3); // * .0049;
+  //float value3 = analogRead(3); // * .0049;
   //Serial.println(value3);
-  logfile.print(value3);
-  logfile.print(comma);
+  //logfile.print(value3);
+  //logfile.print(comma);
 
-  float value4 = analogRead(4); // * .0049;
-  Serial.print(" 4:");
-  Serial.print(value4);
-  logfile.print(value4);
-  logfile.print(comma);
+  //float value4 = analogRead(4); // * .0049;
+  //Serial.write(" 4:");
+  //Serial.print(value4);
+  //logfile.print(value4);
+  //logfile.print(comma);
 
-  float value5 = analogRead(5); // * .0049;
-  Serial.print(" 5:");
-  Serial.println(value5);
-  logfile.print(value5);
-  logfile.print(comma);
+  //float value5 = analogRead(5); // * .0049;
+  //Serial.write(" 5:");
+  //Serial.println(value5);
+  //logfile.print(value5);
+  //logfile.print(comma);
+
 
   logfile.println();
   logfile.flush();
-
-  delay(250);
-
+  */
 }
