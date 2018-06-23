@@ -5,6 +5,8 @@
 #include "SdFat.h"
 #include "RTClib.h"
 #include "TrueRandom.h"
+#include "LowPower.h"
+
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
 
@@ -21,6 +23,8 @@ File logfile;
 int state = 0;
 
 char lastDownloadDate[11] = "0000000000";
+
+char version[5] = "v1.2";
 
 
 int freeRam () {
@@ -41,13 +45,12 @@ void setNewDataFile(){
   strncpy(filename, uniquename, 10);
   strncpy(&filename[10], suffix, 5);
 
-  Serial.print(F("Logging to: "));
-  Serial.println(filename);
+
 
   char dataFolder[6] = "/Data";
   if(!sd.exists(dataFolder)){
-    sd.chdir();
-    sd.mkdir("Data");
+    sd.chdir("/");
+    sd.mkdir("/Data");
   }
 
   if (!sd.chdir(dataFolder)) {
@@ -81,6 +84,8 @@ void setNewDataFile(){
   file.close();
   logfile.println(line); // write the headers to the new logfile
 
+  Serial.print(F("Logging to: "));
+  Serial.println(filename);
 }
 
 void dateTime(uint16_t* date, uint16_t* time) {
@@ -151,8 +156,19 @@ void initializeSDCard(void) {
     DateTime now = RTC.now();
     char dateString[11];
     sprintf(dateString, "%lu", now.unixtime());
-    Serial.print("Starting time: ");
-    Serial.println(dateString);
+    Serial.print(">Datalogger Time: ");
+    Serial.print(now.year());
+    Serial.print("-");
+    Serial.print(now.month());
+    Serial.print("-");
+    Serial.print(now.day());
+    Serial.print(" ");
+    Serial.print(now.hour());
+    Serial.print(":");
+    Serial.print(now.minute());
+    Serial.print(":");
+    Serial.print(now.second());
+    Serial.print("<");
     //Serial.println(RTC.now().m);
   }
 
@@ -167,8 +183,10 @@ void initializeSDCard(void) {
   // see if the card is present and can be initialized:
   if (!sd.begin(chipSelect)) {
     Serial.println(F("Card failed, or not present"));
+    while(1);
+  } else {
+    Serial.println(F("card initialized."));
   }
-  Serial.println(F("card initialized."));
 
 
 
@@ -176,6 +194,10 @@ void initializeSDCard(void) {
 
 
 }
+
+
+bool wake = false;
+uint32_t awakeTime = 0;
 
 /**************************************************************************/
 /*
@@ -185,7 +207,10 @@ Arduino setup function (automatically called at startup)
 void setup(void)
 {
   Serial.begin(115200);
+
+  //while (!Serial);
   Serial.println(F("Hello, world.  Primary Serial."));
+
   //Serial.begin(9600);
 
   //mySerial.begin(115200);
@@ -198,6 +223,9 @@ void setup(void)
 
   /* We're ready to go! */
   Serial.println(F("done with setup"));
+
+  wake = true;
+  awakeTime = RTC.now().unixtime();
 
 }
 
@@ -226,6 +254,7 @@ should go here)
 /**************************************************************************/
 uint32_t lastTime = 0;
 const int maxRequestLength = 34;
+
 void loop(void)
 {
 
@@ -236,7 +265,10 @@ void loop(void)
   //int buttonState = digitalRead(buttonPin);
 
   if(Serial.peek() == '>' && state == 0){
-    //Serial.println("Peek");
+    Serial.println("Peek");
+
+    wake = true;
+    awakeTime = RTC.now().unixtime(); // Keep us awake once we are talking to the phone
 
     char request[maxRequestLength] = "";
     Serial.readBytesUntil('<', request, maxRequestLength);
@@ -244,9 +276,14 @@ void loop(void)
     Serial.write(&request[1]);
     Serial.write("<");
     Serial.flush();
-    delay(250);
+    delay(100);
 
     if(strncmp(request, ">WT_OPEN_CONNECTION", 19) == 0) {
+      Serial.write(">VERSION:");
+      Serial.write(version);
+      Serial.write("<");
+      Serial.flush();
+      delay(100);
       Serial.write(">WT_IDENTIFY_DEVICE:");
       for(int i=0; i<8; i++){
         Serial.print((unsigned int) uuid[2*i], HEX);
@@ -285,6 +322,16 @@ void loop(void)
       Serial.flush();
 
       RTC.adjust(DateTime(time));
+
+      Serial.print(">Received UTC time: ");
+      Serial.print(UTCTime);
+      Serial.print("---");
+      Serial.print(time);
+      Serial.print("---");
+      Serial.print(RTC.now().unixtime());
+      Serial.print("<");
+      Serial.flush();
+
       setNewDataFile();
       return;
 
@@ -372,8 +419,27 @@ void loop(void)
   // Fetch the time
   DateTime now = RTC.now();
 
-  uint32_t elapsedTime = now.unixtime() - lastTime;
-  if(elapsedTime < 5){
+  short interval = 15; // minutes between loggings
+  uint32_t trigger = 60*interval;
+  uint32_t currentTime = now.unixtime();
+  uint32_t elapsedTime = currentTime - lastTime;
+  short minute = now.minute();
+
+  if(currentTime > awakeTime + 60 * 5){
+    wake = false;
+  }
+  //Serial.println(elapsedTime);
+  if(elapsedTime < trigger
+  || ( minute % interval != 0  )  ){
+    if(!wake) {
+      if(elapsedTime < trigger - 10){ // If we are withing ten secs of the trigger, don't sleep
+        Serial.println("power down");
+        Serial.flush();
+        LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+      } else if (elapsedTime < trigger - 3){
+        LowPower.powerDown(SLEEP_2S, ADC_OFF, BOD_OFF);
+      }
+    }
     return;
   }
   lastTime = now.unixtime();
@@ -390,6 +456,8 @@ void loop(void)
   logfile.print(comma);
   logfile.print(now.unixtime()); // seconds since 2000
   logfile.print(comma);
+  Serial.print(currentTime);
+
 
   float value0 = analogRead(0); // * .0049;
   Serial.print(" 0: ");
@@ -428,6 +496,5 @@ void loop(void)
   logfile.println();
   logfile.flush();
 
-  delay(250);
 
 }
