@@ -1,6 +1,5 @@
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
-#include <SoftwareSerial.h> // Debugging
 #include <EEPROM.h>
 #include "SdFat.h"
 #include "RTClib.h"
@@ -9,8 +8,6 @@
 
 
 RTC_PCF8523 RTC; // define the Real Time Clock object
-
-SoftwareSerial mySerial(4, 3); // RX, TX for easier debuggin
 
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
@@ -198,9 +195,6 @@ void setup(void)
   Serial.println(F("Hello, world.  Primary Serial."));
 
   //Serial.begin(9600);
-
-  //mySerial.begin(115200);
-  //mySerial.println(F("Hello, world?  Secondary Serial!"));
 
   readUniqueId();
 
