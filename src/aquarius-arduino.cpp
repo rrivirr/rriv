@@ -26,6 +26,12 @@ char lastDownloadDate[11] = "0000000000";
 
 char version[5] = "v1.2";
 
+short interval = 15; // minutes between loggings
+short burstLength = 100; // how many readings in a burst
+
+uint32_t lastTime = 0;
+const int maxRequestLength = 34;
+short burstCount = 0;
 
 int freeRam () {
   extern int __heap_start, *__brkval;
@@ -109,7 +115,7 @@ void readUniqueId(){
     uuid[i] = EEPROM.read(address);
   }
 
-  Serial.println(F("Here's the uuid in EEPROM"));
+  Serial.println(F("UUID in EEPROM:"));
   for(int i=0; i<8; i++){
     Serial.print((unsigned int) uuid[2*i], HEX);
   }
@@ -146,29 +152,9 @@ void initializeSDCard(void) {
   }
 
   if (!RTC.begin()) {
-    #if ECHO_TO_SERIAL
-    Serial.println(F("RTC failed"));
-    #endif  //ECHO_TO_SERIAL
+    Serial.println(F(">RTC failed<"));
   } else {
     Serial.println(F("RTC started"));
-
-
-    DateTime now = RTC.now();
-    char dateString[11];
-    sprintf(dateString, "%lu", now.unixtime());
-    Serial.print(">Datalogger Time: ");
-    Serial.print(now.year());
-    Serial.print("-");
-    Serial.print(now.month());
-    Serial.print("-");
-    Serial.print(now.day());
-    Serial.print(" ");
-    Serial.print(now.hour());
-    Serial.print(":");
-    Serial.print(now.minute());
-    Serial.print(":");
-    Serial.print(now.second());
-    Serial.print("<");
     //Serial.println(RTC.now().m);
   }
 
@@ -226,6 +212,7 @@ void setup(void)
 
   wake = true;
   awakeTime = RTC.now().unixtime();
+  burstCount = burstLength;
 
 }
 
@@ -252,8 +239,7 @@ Arduino loop function, called once 'setup' is complete (your own code
 should go here)
 */
 /**************************************************************************/
-uint32_t lastTime = 0;
-const int maxRequestLength = 34;
+
 
 void loop(void)
 {
@@ -284,6 +270,26 @@ void loop(void)
       Serial.write("<");
       Serial.flush();
       delay(100);
+
+      DateTime now = RTC.now();
+      char dateString[11];
+      sprintf(dateString, "%lu", now.unixtime());
+      Serial.print(">Datalogger Time: ");
+      Serial.print(now.year());
+      Serial.print("-");
+      Serial.print(now.month());
+      Serial.print("-");
+      Serial.print(now.day());
+      Serial.print(" ");
+      Serial.print(now.hour());
+      Serial.print(":");
+      Serial.print(now.minute());
+      Serial.print(":");
+      Serial.print(now.second());
+      Serial.print("<");
+      delay(100);
+
+
       Serial.write(">WT_IDENTIFY_DEVICE:");
       for(int i=0; i<8; i++){
         Serial.print((unsigned int) uuid[2*i], HEX);
@@ -314,12 +320,6 @@ void loop(void)
       //UTCTime[10] = '\0';
       long time = atol(UTCTime);
       delay(100);
-      Serial.print(">Received UTC time: ");
-      Serial.print(UTCTime);
-      Serial.print("---");
-      Serial.print(time);
-      Serial.print("<");
-      Serial.flush();
 
       RTC.adjust(DateTime(time));
 
@@ -419,7 +419,6 @@ void loop(void)
   // Fetch the time
   DateTime now = RTC.now();
 
-  short interval = 15; // minutes between loggings
   uint32_t trigger = 60*interval;
   uint32_t currentTime = now.unixtime();
   uint32_t elapsedTime = currentTime - lastTime;
@@ -429,8 +428,9 @@ void loop(void)
     wake = false;
   }
   //Serial.println(elapsedTime);
-  if(elapsedTime < trigger
-  || ( minute % interval != 0  )  ){
+  if( ( elapsedTime < trigger
+        || ( minute % interval != 0  )
+      ) && ! (burstCount < burstLength) ){ // bursting clause
     if(!wake) {
       if(elapsedTime < trigger - 10){ // If we are withing ten secs of the trigger, don't sleep
         Serial.println("power down");
@@ -441,6 +441,8 @@ void loop(void)
       }
     }
     return;
+  } else if (burstCount == burstLength) { // reinitialize bursting
+    burstCount = 0;
   }
   lastTime = now.unixtime();
 
@@ -472,12 +474,15 @@ void loop(void)
   logfile.print(comma);
 
   float value2 = analogRead(2); // * .0049;
-  //Serial.println(value2);
+  Serial.print("   2: ");
+  Serial.print(value2);
   logfile.print(value2);
   logfile.print(comma);
 
   float value3 = analogRead(3); // * .0049;
   //Serial.println(value3);
+  Serial.print("   3: ");
+  Serial.print(value3);
   logfile.print(value3);
   logfile.print(comma);
 
@@ -496,5 +501,6 @@ void loop(void)
   logfile.println();
   logfile.flush();
 
+  burstCount = burstCount + 1;
 
 }
