@@ -2,11 +2,12 @@
 #include <RTClock.h>
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
-##include <EEPROM.h>
 #include "SdFat.h"
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
 
+// For F103RM
+//#define Serial Serial2
 
 // Old code from Uno
 //#include <EEPROM.h>
@@ -23,7 +24,7 @@
 #define D4 PB5
 
 int bluefruitModePin = D3;
-Adafruit_BluefruitLE_UART ble(Serial2., bluefruitModePin);
+Adafruit_BluefruitLE_UART ble(Serial2, bluefruitModePin);
 
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
@@ -53,14 +54,16 @@ short deploymentIdentifierAddressEnd =  43;
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
     short address = deploymentIdentifierAddressStart + i;
-    deploymentIdentifier[i] = EEPROM.read(address);
+    //deploymentIdentifier[i] = EEPROM.read(address);
+    deploymentIdentifier[i] = '0';
   }
+
 }
 
 void writeDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
     short address = deploymentIdentifierAddressStart + i;
-    EEPROM.write(address, deploymentIdentifier[i]);
+    //EEPROM.write(address, deploymentIdentifier[i]);
   }
 }
 
@@ -356,7 +359,7 @@ Arduino setup function (automatically called at startup)
 void setup(void)
 {
   Serial2.begin(115200);
-  while(!Serial2.){
+  while(!Serial2){
     delay(100);
   }
   Serial2.println("Setup");
@@ -394,9 +397,10 @@ void setup(void)
 
 }
 
-/*
-void transferLoggedData(){
 
+void transferLoggedData(){
+  Serial2.println(">Transfer logged data is a stub<");
+/*
   // Debug
   // printCurrentDirListing();
 
@@ -496,7 +500,7 @@ void transferLoggedData(){
 
   // Send last download date to phone for book keeeping
   state = 0;
-
+*/
 }
 
 /**************************************************************************/
@@ -575,7 +579,7 @@ void loop(void)
       Serial2.flush();
 
       Serial2.write(">WT_TIMESTAMP:");
-      Serial2.print(RTC.now().unixtime());
+      //Serial2.print(RTC.now().unixtime());
       Serial2.write("<");
       Serial2.flush();
       delay(100);
@@ -606,7 +610,8 @@ void loop(void)
       long time = atol(UTCTime);
       delay(100);
 
-      RTC.adjust(DateTime(time));
+      Serial2.println(">RTC not enabled<");
+      //RTC.adjust(DateTime(time));
 
       //Serial2.write( (char *) F(">RECV UTC: "));
       //Serial2.print(UTCTime);
@@ -616,7 +621,7 @@ void loop(void)
       //Serial2.print(RTC.now().unixtime());
       //Serial2.write( (char *) F("<"));
       //Serial2.flush();
-      
+
       Serial2.print(">Received UTC time: ");
       Serial2.print(UTCTime);
       Serial2.print("---");
@@ -666,7 +671,7 @@ void loop(void)
 
   }
 
-/*
+
 
   // Fetch the time
   // DateTime now = RTC.now();
