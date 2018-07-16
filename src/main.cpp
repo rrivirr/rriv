@@ -2,9 +2,11 @@
 #include <RTClock.h>
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
-#include "SdFat.h"
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
+
+#include "WaterBear_Control.h"
+#include "WaterBear_FileSystem.h"
 
 // For F103RM
 //#define Serial Serial2
@@ -26,15 +28,7 @@
 int bluefruitModePin = D3;
 Adafruit_BluefruitLE_UART ble(Serial2, bluefruitModePin);
 
-
-// for the data logging shield, we use digital pin 10 for the SD cs line
-const short chipSelect = 10;
-
-// File system object.
-SdFat sd;
-File logfile;
-
-short state = 0;
+WaterBear_FileSystem filesystem();
 
 char lastDownloadDate[11] = "0000000000";
 char dataDirectory[6] = "/Data";
@@ -68,7 +62,6 @@ void writeDeploymentIdentifier(char * deploymentIdentifier){
 }
 
 uint32_t lastTime = 0;
-const int maxRequestLength = 50;
 short burstCount = 0;
 
 // A small helper
@@ -96,107 +89,8 @@ void printCurrentDirListing(){
 * Initialize the SD Card
 */
 
-void setNewDataFile(){
-  //DateTime now = RTC.now();
 
-  //rtc_calendar_time calendarTime;
-  // rtc_calendar_get_time (struct rtc_module *const module, struct rtc_calendar_time *const time)
-  //http://asf.atmel.com/docs/latest/samr21/html/asfdoc_sam0_rtc_calendar_basic_use_case.html
-
-  char uniquename[11];
-  //sprintf(uniquename, "%lu", now.unixtime());
-  char suffix[5] = ".CSV";
-  char filename[15];
-  strncpy(filename, uniquename, 10);
-  strncpy(&filename[10], suffix, 5);
-
-  //Serial2.println("cd");
-  //sd.chdir("/");
-  //delay(10);
-
-  // printCurrentDirListing();
-  //Serial2.println("OK");
-  // if(!sd.exists(dataDirectory)){
-  //  Serial2.println("mkdir");
-  //  sd.mkdir(dataDirectory);
-    //delay(10);
-  //}
-  //Serial2.println("OK");
-  if (!sd.chdir(dataDirectory)) {
-    Serial2.println(F("failed: /Data."));
-  } else {
-    //Serial2.println(F("cd /Data."));
-  }
-  //delay(10);
-
-  //Serial2.println("OK");
-
-  char deploymentIdentifier[29];// = "DEPLOYMENT";
-  readDeploymentIdentifier(deploymentIdentifier);
-  unsigned char empty[1] = {0xFF};
-  if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
-    //Serial2.print(">NoDplyment<");
-    //Serial2.flush();
-
-    char defaultDeployment[25] = "SITENAME_00000000000000";
-    writeDeploymentIdentifier(defaultDeployment);
-    readDeploymentIdentifier(deploymentIdentifier);
-  }
-
-
-  if(!sd.exists(deploymentIdentifier)){
-    // printCurrentDirListing();
-    Serial2.write("mkdir:");
-    Serial2.println(deploymentIdentifier);
-    sd.mkdir(deploymentIdentifier);
-    //delay(10);
-  }
-
-  if (!sd.chdir(deploymentIdentifier)) {
-    Serial2.print("failed:");
-    Serial2.println(deploymentIdentifier);
-  } else {
-    Serial2.print("cd:");
-    Serial2.println(deploymentIdentifier);
-  }
-  //delay(10);
-
-  logfile = sd.open(filename, FILE_WRITE);
-  //delay(10);
-
-  //sd.chdir();
-  if(!logfile){
-    Serial2.print(F(">not found<"));
-    while(1);
-  }
-
-  //if (!sd.chdir("/")) {
-  //  Serial2.println("fail /");
-  //}
-
-  File file;
-  file = sd.open("/COLUMNS.TXT");
-
-  if (!file){
-    Serial2.println(F("COLUMNS.TXT did not open"));
-    while(1);
-  }
-
-  char line[100];
-  int n = file.fgets(line, sizeof(line));
-  if (line[n - 1] == '\n') {
-        // remove '\n'
-        line[n - 1] = 0;
-  }
-  Serial2.println(line);
-  file.close();
-  logfile.println(line); // write the headers to the new logfile
-
-  Serial2.print(F(">log:"));
-  Serial2.print(filename);
-  Serial2.println( "<");
-}
-
+// TODO: we will define chip specific callbacks so that classes are not referencing specific RTC
 void dateTime(uint16_t* date, uint16_t* time) {
   //DateTime now = RTC.now();
 
@@ -266,44 +160,6 @@ void firstRun(){
 
 }
 */
-
-void initializeSDCard(void) {
-  Wire.begin();
-/*
-  if (! RTC.initialized()) {
-    Serial2.println(F("RTC is NOT initialized!"));
-    // following line sets the RTC to the date & time this sketch was compiled
-    RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-
-  if (!RTC.begin()) {
-    Serial2.println(F(">RTC failed<"));
-  } else {
-    Serial2.println(F(">RTC started<"));
-    //Serial2.println(RTC.now().m);
-  }
-*/
-  SdFile::dateTimeCallback(dateTime);
-
-
-  // initialize the SD card
-  Serial2.print(F("Initializing SD card..."));
-  // make sure that the default chip select pin is set to
-  // output, even if you don't use it:
-  pinMode(D13, OUTPUT);
-  pinMode(PA5, OUTPUT);
-
-  // see if the card is present and can be initialized:
-  if (!sd.begin(chipSelect)) {
-    Serial2.println(F(">Card fail<"));
-    while(1);
-  } else {
-    Serial2.println(F("card initialized."));
-  }
-
-  setNewDataFile();
-
-}
 
 void initBLE(){
   //Serial2.println("Hello");
@@ -375,7 +231,7 @@ void setup(void)
   //while (!Serial2.);
   Serial2.println(F("Hello, world.  Primary Serial2.."));
 
-  //Serial2.begin(9600);
+
 
   //
   // init ble
@@ -384,6 +240,9 @@ void setup(void)
 
   // readUniqueId();
   firstRun();
+
+  Wire.begin();
+
 
   /* Get the CD Card going */
   // initializeSDCard();
@@ -398,110 +257,6 @@ void setup(void)
 }
 
 
-void transferLoggedData(){
-  Serial2.println(">Transfer logged data is a stub<");
-/*
-  // Debug
-  // printCurrentDirListing();
-
-  if (!sd.chdir(dataDirectory)) {
-    Serial2.println(F("fail: Data."));
-    state = 0;
-    return;
-  }
-
-  // Debug
-  // printCurrentDirListing();
-  // Serial2.println(lastDownloadDate);
-
-  sd.vwd()->rewind();
-  SdFile dirFile;
-  char sdDirName[30];
-  char sdFileName[30];
-  short rootDirIndex = 0;
-  while (dirFile.openNext(sd.vwd(), O_READ)) {
-    dir_t d;
-    if (!dirFile.dirEntry(&d)) {
-      //Serial2.println(F("dirEntry failed"));
-      state = 0;
-      return;
-    }
-    if(!dirFile.isDir()){
-      // Descend into all the deployment directories
-      continue;
-    }
-    dirFile.getName(sdDirName, 30);
-    //Serial2.write("Dir: ");
-    //Serial2.println(sdDirName);
-
-    if(! sd.chdir(sdDirName) ){
-      Serial2.write("fail:");
-      Serial2.println(sdDirName);
-      state = 0;
-      return;
-    }
-    dirFile.close();
-
-    sd.vwd()->rewind();
-    SdFile deploymentFile;
-    while (deploymentFile.openNext(sd.vwd(), O_READ)) {
-      dir_t d;
-      if (!deploymentFile.dirEntry(&d)) {
-        // Serial2.println(F("depl file fail"));
-        state = 0;
-        return;
-      }
-      deploymentFile.getName(sdFileName, 24);
-
-
-      if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
-          //Serial2.println(sdFilename);
-
-          File datafile = sd.open(sdFileName);
-          // send size of transmission ?
-          // Serial2.println(datafile.fileSize());
-          while (datafile.available()) {
-              Serial2.write(datafile.read());
-          }
-          datafile.close();
-       }
-       deploymentFile.close();
-    }
-
-    //char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
-    //Serial2.write(deploymentCompleteMessage);
-
-    sd.chdir(dataDirectory);
-
-    rootDirIndex = rootDirIndex + 1;
-
-    // sd.vwd()->rewind();
-    // printCurrentDirListing();
-    // Advance to the last directoy we were at
-    sd.vwd()->rewind();
-
-    for(short i = 0; i < rootDirIndex; i = i + 1){
-      dirFile.openNext(sd.vwd(), O_READ);
-      dirFile.close();
-    }
-  }
-
-  if (!sd.chdir("/")) {
-    Serial2.println(F("fail /"));
-    state = 0;
-    return;
-  }
-
-  char transferCompleteMessage[34] = ">WT_COMPLETE:0000000000<";
-  strncpy(&transferCompleteMessage[22], sdFileName, 10); // Send timestamp of last file sent
-  Serial2.write(transferCompleteMessage);
-
-  setNewDataFile();
-
-  // Send last download date to phone for book keeeping
-  state = 0;
-*/
-}
 
 /**************************************************************************/
 /*
@@ -531,146 +286,15 @@ void loop(void)
   // Just trigger the dump event using a basic button
   //int buttonState = digitalRead(buttonPin);
 
-  if(Serial2.peek() == '>' && state == 0){
-    Serial2.println("Peek");
-
+  if( WaterBear_Control::ready(Serial2) ){
     wake = true;
-    // awakeTime = RTC.now().unixtime(); // Keep us awake once we are talking to the phone
-
-    char request[maxRequestLength] = "";
-    Serial2.readBytesUntil('<', request, maxRequestLength);
-    Serial2.write(">COMMAND RECIEVED: ");
-    Serial2.write(&request[1]);
-    Serial2.write("<");
-    Serial2.flush();
-    delay(100);
-
-    if(strncmp(request, ">WT_OPEN", 19) == 0) {
-      Serial2.write(">VERSION:");
-      Serial2.write(version);
-      Serial2.write("<");
-      Serial2.flush();
-      delay(100);
-
-      // DateTime now = RTC.now();
-      char dateString[11];
-      // sprintf(dateString, "%lu", now.unixtime());
-      Serial2.print(">Datalogger Time: ");
-      //Serial2.print(now.year());
-      Serial2.print("-");
-      //Serial2.print(now.month());
-      Serial2.print("-");
-      //Serial2.print(now.day());
-      Serial2.print(" ");
-      //Serial2.print(now.hour());
-      Serial2.print(":");
-      //Serial2.print(now.minute());
-      Serial2.print(":");
-      //Serial2.print(now.second());
-      Serial2.print("<");
-      delay(100);
-
-
-      Serial2.write(">WT_IDENTIFY:");
-      for(int i=0; i<8; i++){
-        Serial2.print((unsigned int) uuid[2*i], HEX);
-      }
-      Serial2.write("<");
-      Serial2.flush();
-
-      Serial2.write(">WT_TIMESTAMP:");
-      //Serial2.print(RTC.now().unixtime());
-      Serial2.write("<");
-      Serial2.flush();
-      delay(100);
-
-
-    }
-    else if(strncmp(request, ">WT_DOWNLOAD",12) == 0) {
-      // Flush the input, would be better to use a delimiter
-      // May not be necessary now
-      unsigned long now = millis ();
-      while (millis () - now < 1000)
-      Serial2.read ();  // read and discard any input
-
-      if(request[20] == ':'){
-        // we have a reference date
-        strncpy(lastDownloadDate, &request[21], 10);
-      }
-
-      Serial2.print(">WT_READY<");
-      Serial2.flush();
-
-      state = 1;
-      return;
-    } else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
-      char UTCTime[11] = "0000000000";
-      strncpy(UTCTime, &request[12], 10);
-      //UTCTime[10] = '\0';
-      long time = atol(UTCTime);
-      delay(100);
-
-      Serial2.println(">RTC not enabled<");
-      //RTC.adjust(DateTime(time));
-
-      //Serial2.write( (char *) F(">RECV UTC: "));
-      //Serial2.print(UTCTime);
-      //Serial2.write( (char *) F("--"));
-      //Serial2.print(time);
-      //Serial2.write( (char *) F("--"));
-      //Serial2.print(RTC.now().unixtime());
-      //Serial2.write( (char *) F("<"));
-      //Serial2.flush();
-
-      Serial2.print(">Received UTC time: ");
-      Serial2.print(UTCTime);
-      Serial2.print("---");
-      Serial2.print(time);
-      Serial2.print("---");
-      // Serial2.print(RTC.now().unixtime());
-      Serial2.print("<");
-      Serial2.flush();
-
-      setNewDataFile();
-
-    } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
-      char deploymentIdentifier[29];
-      strncpy(deploymentIdentifier, &request[11], 28);
-      writeDeploymentIdentifier(deploymentIdentifier);
-      Serial2.write(">Wrote: ");
-      Serial2.write(deploymentIdentifier);
-      Serial2.write("<");
-      Serial2.flush();
-
-      setNewDataFile();
-
-    } else {
-      char lastDownloadDateEmpty[11] = "0000000000";
-      strcpy(lastDownloadDate, lastDownloadDateEmpty);
-    }
-
-  } else if(state == 1){
-
-    char ack[7] = "";
-    Serial2.readBytesUntil('<', ack, 7);
-    if(strcmp(ack, ">WT_OK") != 0) {
-      char message[30] = "";
-      sprintf(message, "ERROR #%s#", ack);
-      Serial2.print(message);
-
-      //Flush
-      unsigned long now = millis ();
-      while (millis () - now < 1000)
-      Serial2.read ();  // read and discard any input
-
-      state = 0;
-      return;
-    }
-
-    transferLoggedData();
-
+    WaterBear_Control::processControlCommands(Serial2);
+    return;
+  } else if(WaterBear_Control::ready(ble) ){
+    wake = true;
+    WaterBear_Control::processControlCommands(ble);
+    return;
   }
-
 
 
   // Fetch the time
@@ -710,6 +334,8 @@ void loop(void)
   char comma[2] = ",";
   char deploymentIdentifier[29];// = "DEPLOYMENT";
   readDeploymentIdentifier(deploymentIdentifier);
+
+  File logfile; // So we can skip this
   logfile.print(deploymentIdentifier);
   logfile.write("_");
   for(short i=0; i<8; i++){
