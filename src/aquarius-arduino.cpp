@@ -2,8 +2,13 @@
 #include <RTClock.h>
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
-//#include <EEPROM.h>
 #include "SdFat.h"
+//#include "Adafruit_BluefruitLE_SPI.h"
+#include "Adafruit_BluefruitLE_UART.h"
+
+
+// Old code from Uno
+//#include <EEPROM.h>
 //#include "RTClib.h"
 //#include "TrueRandom.h"
 //#include "LowPower.h"
@@ -11,6 +16,13 @@
 
 //RTC_PCF8523 RTC; // define the Real Time Clock object
 //struct rtc_module rtc_instance;
+
+// Pin Mappings for Nucleo Board
+#define D3 PB3 // Why isn't D3 working ??
+#define D4 PB5
+
+int bluefruitModePin = D3;
+Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
@@ -24,7 +36,7 @@ int state = 0;
 
 char lastDownloadDate[11] = "0000000000";
 
-char version[5] = "v1.2";
+char version[5] = "v2.0";
 
 short interval = 15; // minutes between loggings
 short burstLength = 100; // how many readings in a burst
@@ -40,6 +52,14 @@ int freeRam () {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 */
+
+// A small helper
+void error(const __FlashStringHelper*err) {
+  Serial2.println("Error:");
+  Serial2.println(err);
+  while (1);
+}
+
 
 /*
 * Initialize the SD Card
@@ -115,6 +135,31 @@ int uniqueIdAddressStart = 0;
 int uniqueIdAddressEnd = 15;
 unsigned char uuid[16];
 
+
+void firstRun(){
+
+  // if we don't have a UUID yet, we are running for the first time
+  // set a mode pin for USART1 if we need to
+
+
+  Serial2.println("First Run");
+  ble.factoryReset();
+  ble.setMode(BLUEFRUIT_MODE_COMMAND);
+  //digitalWrite(D4, HIGH);
+
+  // Send command
+  ble.println(F("AT+GAPDEVNAME=WaterBear2"));
+  ble.waitForOK();
+  ble.println(F("ATZ"));
+  ble.waitForOK();
+
+  // Place bluefruit into a data mode
+  //delay(5000);
+  ble.setMode(BLUEFRUIT_MODE_DATA);
+  //digitalWrite(D4, LOW);
+
+}
+
 /*void readUniqueId(){
 
   for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
@@ -183,13 +228,51 @@ void initializeSDCard(void) {
     Serial2.println(F("card initialized."));
   }
 
-
-
   setNewDataFile();
-
 
 }
 
+void initBLE(){
+  //Serial1.println("Hello");
+  Serial2.print(F("Initializing the Bluefruit LE module: "));
+  //Serial3.println("Hello");
+
+  bool success = false;
+  success = ble.begin(true);
+
+  Serial2.println("Tried to init");
+  Serial2.println(success);
+
+  if ( !success )
+  {
+    Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+    // error
+  }
+  Serial2.println( F("OK!") );
+
+/*
+  if ( FACTORYRESET_ENABLE )
+  {
+    // Perform a factory reset to make sure everything is in a known state
+    Serial.println(F("Performing a factory reset: "));
+    if ( ! ble.factoryReset() ){
+      error(F("Couldn't factory reset"));
+    }
+  }
+  */
+
+  /* Disable command echo from Bluefruit */
+  /*ble.echo(false);
+
+  Serial2.println("Requesting Bluefruit info:");
+  /* Print Bluefruit information */
+  //ble.info();
+
+  //
+  //
+  //
+
+}
 
 bool wake = false;
 uint32_t awakeTime = 0;
@@ -199,11 +282,22 @@ uint32_t awakeTime = 0;
 Arduino setup function (automatically called at startup)
 */
 /**************************************************************************/
+
+
 void setup(void)
 {
   Serial2.begin(115200);
+  while(!Serial2){
+    delay(100);
+  }
+  Serial2.println("Setup");
 
   pinMode(PA5, OUTPUT);
+  pinMode(D3, OUTPUT);
+  pinMode(D4, OUTPUT);
+  pinMode(PB3, OUTPUT);
+  //pinMode(PB5, OUTPUT);
+
 
 
   //while (!Serial2);
@@ -211,7 +305,13 @@ void setup(void)
 
   //Serial2.begin(9600);
 
+  //
+  // init ble
+  //
+  initBLE();
+
   // readUniqueId();
+  firstRun();
 
   /* Get the CD Card going */
   // initializeSDCard();
@@ -249,17 +349,23 @@ should go here)
 */
 /**************************************************************************/
 
+#define BUFSIZE                        160   // Size of the read buffer for incoming data
 
 void loop(void)
 {
   Serial2.println(F("Loop"));
-  Serial2.println(PA5);
-  Serial2.println(D13);
+
+  // Display command prompt
+  Serial2.print(F("AT > "));
+
+  // Check for user input and echo it back if anything was found
+  //  char command[BUFSIZE+1];
+  //  getUserInput(command, BUFSIZE);
+
   digitalWrite(PA5, 1);
   delay(1000);
   digitalWrite(PA5, 0);
   delay(1000);
-  Serial2.println(F("OK"));
 
   // Just trigger the dump event using a basic button
   //int buttonState = digitalRead(buttonPin);
@@ -516,6 +622,11 @@ void loop(void)
 
   logfile.println();
   logfile.flush();
+
+  // Get last line from logfile, or assemble the whole within
+  // for the moment just sending A0
+  ble.println("THEVALUE");
+
 
   burstCount = burstCount + 1;
 
