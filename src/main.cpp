@@ -26,7 +26,7 @@
 #define D4 PB5
 
 int bluefruitModePin = D3;
-Adafruit_BluefruitLE_UART ble(Serial2, bluefruitModePin);
+Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
 WaterBear_FileSystem filesystem();
 
@@ -214,7 +214,7 @@ Arduino setup function (automatically called at startup)
 
 void setup(void)
 {
-  Serial2.begin(115200);
+  Serial2.begin(9600);
   while(!Serial2){
     delay(100);
   }
@@ -226,12 +226,7 @@ void setup(void)
   pinMode(PB3, OUTPUT);
   //pinMode(PB5, OUTPUT);
 
-
-
-  //while (!Serial2.);
   Serial2.println(F("Hello, world.  Primary Serial2.."));
-
-
 
   //
   // init ble
@@ -270,23 +265,31 @@ should go here)
 void loop(void)
 {
   Serial2.println(F("Loop"));
-
+  /*digitalWrite(PA5, 1);
+  delay(1000);
+  digitalWrite(PA5, 0);
+  delay(1000);
+  return;
+  */
   // Display command prompt
-  Serial2.print(F("AT > "));
 
   // Check for user input and echo it back if anything was found
   //  char command[BUFSIZE+1];
   //  getUserInput(command, BUFSIZE);
 
-  digitalWrite(PA5, 1);
-  delay(1000);
-  digitalWrite(PA5, 0);
-  delay(1000);
-
   // Just trigger the dump event using a basic button
   //int buttonState = digitalRead(buttonPin);
 
+  /*char request[30] = "";
+  Serial2.readBytesUntil('<', request, 30);
+  Serial2.write(">RECIEVED: ");
+  Serial2.write(request);
+  Serial2.println("<");
+*/
+
   if( WaterBear_Control::ready(Serial2) ){
+    digitalWrite(PA5, 1);
+
     wake = true;
     WaterBear_Control::processControlCommands(Serial2);
     return;
@@ -296,6 +299,8 @@ void loop(void)
     return;
   }
 
+  delay(1000);
+  digitalWrite(PA5, 0);
 
   // Fetch the time
   // DateTime now = RTC.now();
@@ -394,10 +399,10 @@ void loop(void)
   logfile.println();
   logfile.flush();
 
-  // Get last line from logfile, or assemble the whole within
-  // for the moment just sending A0
-  ble.println("THEVALUE");
-
+  // Send along to BLE
+  char valuesBuffer[52];
+  sprintf(valuesBuffer, ">WT_VALUES:%7.4f,%7.4f,%7.4f,%7.4f,%7.4f,%7.4f<", value0, value1, value2, value3, value4, value5);
+  ble.println(valuesBuffer);
 
   burstCount = burstCount + 1;
 
