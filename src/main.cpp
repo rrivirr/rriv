@@ -210,10 +210,13 @@ void setup(void)
   }
   Serial2.println("Setup");
 
-  pinMode(PA5, OUTPUT);
-  pinMode(D3, OUTPUT);
-  pinMode(D4, OUTPUT);
+  //pinMode(PA5, OUTPUT); // This is the onboard LED ?
+                          // Turns out this is the SPI1 clock.  nice.
+
+  pinMode(D3, OUTPUT); // D2 and PB3 are the same
   pinMode(PB3, OUTPUT);
+
+  pinMode(D4, OUTPUT);
   //pinMode(PB5, OUTPUT);
 
   Serial2.println(F("Hello, world.  Primary Serial2.."));
@@ -281,7 +284,7 @@ void loop(void)
 */
 
   if( WaterBear_Control::ready(Serial2) ){
-    digitalWrite(PA5, 1);
+    //digitalWrite(PA5, 1);
 
     wake = true;
     WaterBear_Control::processControlCommands(Serial2);
