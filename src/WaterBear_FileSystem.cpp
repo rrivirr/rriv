@@ -1,7 +1,12 @@
 #include "WaterBear_FileSystem.h"
 
 // for the data logging shield, we use digital pin 10 for the SD cs line
-#define CHIP_SELECT 10
+
+#define SPI1_NSS_PIN PB6    //SPI_1 Chip Select pin is PA4 by default. You can change it to the STM32 pin you want.
+                            // But the SDCard shield wants PB6, i.e. D10
+#define CHIP_SELECT SPI1_NSS_PIN  // not '10' like for normal arduino
+                                  // note that the other SPI1 pins map just like the 328
+
 
 char dataDirectory[6] = "/Data";
 
