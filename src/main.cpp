@@ -391,7 +391,6 @@ void loop(void)
   Serial2.print("   5: ");
   Serial2.println(value5);
   logfile.print(value5);
-  logfile.print(comma);
 
   logfile.println();
   logfile.flush();

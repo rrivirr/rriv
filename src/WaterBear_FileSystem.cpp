@@ -149,7 +149,7 @@ void WaterBear_FileSystem::setNewDataFile() {
     // rtc_calendar_get_time (struct rtc_module *const module, struct rtc_calendar_time *const time)
     //http://asf.atmel.com/docs/latest/samr21/html/asfdoc_sam0_rtc_calendar_basic_use_case.html
 
-    char uniquename[11];
+    char uniquename[11] = "HELLO";
     //sprintf(uniquename, "%lu", now.unixtime());
     char suffix[5] = ".CSV";
     char filename[15];
@@ -157,14 +157,14 @@ void WaterBear_FileSystem::setNewDataFile() {
     strncpy(&filename[10], suffix, 5);
 
     Serial2.println("cd");
-    sd.chdir("/");
+    this->sd.chdir("/");
     delay(10);
 
     printCurrentDirListing();
-    Serial2.println("OK");
+    Serial2.println("OK in root");
     if(!this->sd.exists(dataDirectory)){
       Serial2.println("mkdir");
-      sd.mkdir(dataDirectory);
+      this->sd.mkdir(dataDirectory);
       delay(10);
     }
 
@@ -211,6 +211,8 @@ void WaterBear_FileSystem::setNewDataFile() {
     }
     //delay(10);
 
+    Serial2.print("Opening file ");
+    Serial2.println(filename);
     logfile = this->sd.open(filename, FILE_WRITE);
     //delay(10);
 
