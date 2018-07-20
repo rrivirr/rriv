@@ -21,17 +21,19 @@
 //RTC_PCF8523 RTC; // define the Real Time Clock object
 //struct rtc_module rtc_instance;
 
+RTClock rt (RTCSEL_LSE); // initialise
+uint32 tt;
+
 // Pin Mappings for Nucleo Board
 #define D3 PB3 // Why isn't D3 working ??
 #define D4 PB5
 
-int bluefruitModePin = D3;
+int bluefruitModePin = D4;
 Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
-WaterBear_FileSystem filesystem();
+WaterBear_FileSystem * filesystem;
 
 char lastDownloadDate[11] = "0000000000";
-char dataDirectory[6] = "/Data";
 
 char version[5] = "v2.0";
 
@@ -72,18 +74,6 @@ void error(const __FlashStringHelper*err) {
 }
 
 
-/*
-void printCurrentDirListing(){
-  sd.vwd()->rewind();
-  SdFile dirFile;
-  char sdFilename[30];
-  while (dirFile.openNext(sd.vwd(), O_READ)) {
-    dirFile.getName(sdFilename, 30);
-    Serial2.println(sdFilename);
-    dirFile.close();
-  }
-}
-*/
 
 /*
 * Initialize the SD Card
@@ -229,6 +219,12 @@ void setup(void)
   Serial2.println(F("Hello, world.  Primary Serial2.."));
 
   //
+  // init filesystem
+  //
+
+  filesystem = new WaterBear_FileSystem();
+
+  //
   // init ble
   //
   initBLE();
@@ -249,6 +245,8 @@ void setup(void)
   // awakeTime = RTC.now().unixtime();
   burstCount = burstLength;
 
+  rt.setTime(1000);
+
 }
 
 
@@ -265,12 +263,7 @@ should go here)
 void loop(void)
 {
   Serial2.println(F("Loop"));
-  /*digitalWrite(PA5, 1);
-  delay(1000);
-  digitalWrite(PA5, 0);
-  delay(1000);
-  return;
-  */
+
   // Display command prompt
 
   // Check for user input and echo it back if anything was found
@@ -299,14 +292,15 @@ void loop(void)
     return;
   }
 
-  delay(1000);
-  digitalWrite(PA5, 0);
-
   // Fetch the time
   // DateTime now = RTC.now();
 
+  tt = rt.getTime();
+  Serial2.println(tt);
+  delay(1000);
+
   uint32_t trigger = 60*interval;
-  uint32_t currentTime = 1; // now.unixtime();
+  uint32_t currentTime = tt; // now.unixtime();
   uint32_t elapsedTime = currentTime - lastTime;
   short minute = 0; //now.minute();
 
@@ -399,10 +393,20 @@ void loop(void)
   logfile.println();
   logfile.flush();
 
+/*
+  digitalWrite(PA5, 1);
+  delay(1000);
+
   // Send along to BLE
+
   char valuesBuffer[52];
   sprintf(valuesBuffer, ">WT_VALUES:%7.4f,%7.4f,%7.4f,%7.4f,%7.4f,%7.4f<", value0, value1, value2, value3, value4, value5);
+  Serial2.print(valuesBuffer);
   ble.println(valuesBuffer);
+
+  digitalWrite(PA5, 0);
+  delay(1000);
+*/
 
   burstCount = burstCount + 1;
 

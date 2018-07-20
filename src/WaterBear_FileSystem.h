@@ -8,6 +8,8 @@ private:
   // File system object.
   SdFat sd;
   File logfile;
+  
+  void printCurrentDirListing();
 
 
 public:
