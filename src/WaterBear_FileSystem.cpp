@@ -30,13 +30,15 @@ WaterBear_FileSystem::WaterBear_FileSystem(void){
 
   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
+
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
-  pinMode(D13, OUTPUT);
-  pinMode(PA5, OUTPUT);
+  pinMode(PA4, OUTPUT);
+
+  pinMode(CHIP_SELECT, OUTPUT);
 
   // see if the card is present and can be initialized:
-  if (!this->sd.begin(CHIP_SELECT)) {
+  if (!this->sd.begin(CHIP_SELECT, SPI_CLOCK_DIV4)) {
     Serial2.println(F(">Card fail<"));
     while(1);
   } else {
@@ -45,6 +47,19 @@ WaterBear_FileSystem::WaterBear_FileSystem(void){
 
   this->setNewDataFile();
 
+}
+
+void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
+  for(int i=0; i<fieldCount; i++){
+    //Serial2.println(values[i]);
+    //this->logfile.print(values[i]);
+  /*  this->logfile.print("hell0");
+    if(i+1 < fieldCount){
+      this->logfile.print(',');
+    }*/
+  }
+  this->logfile.println("TELDI");
+  this->logfile.flush();
 }
 
 void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent){
@@ -160,6 +175,25 @@ void WaterBear_FileSystem::setNewDataFile() {
     this->sd.chdir("/");
     delay(10);
 
+    File file;
+    file = this->sd.open("/COLUMNS.TXT");
+
+    if (!file){
+      Serial2.println(F("COLUMNS.TXT did not open"));
+      while(1);
+    }
+
+    char line[100];
+    int n = file.fgets(line, sizeof(line));
+    if (line[n - 1] == '\n') {
+          // remove '\n'
+          line[n - 1] = 0;
+    }
+
+    Serial2.print(F(">log:"));
+    Serial2.println(line);
+    file.close();
+
     printCurrentDirListing();
     Serial2.println("OK in root");
     if(!this->sd.exists(dataDirectory)){
@@ -213,7 +247,7 @@ void WaterBear_FileSystem::setNewDataFile() {
 
     Serial2.print("Opening file ");
     Serial2.println(filename);
-    logfile = this->sd.open(filename, FILE_WRITE);
+    this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
     //delay(10);
 
     //sd.chdir();
@@ -226,25 +260,10 @@ void WaterBear_FileSystem::setNewDataFile() {
     //  Serial2.println("fail /");
     //}
 
-    File file;
-    file = this->sd.open("/COLUMNS.TXT");
-
-    if (!file){
-      Serial2.println(F("COLUMNS.TXT did not open"));
-      while(1);
-    }
-
-    char line[100];
-    int n = file.fgets(line, sizeof(line));
-    if (line[n - 1] == '\n') {
-          // remove '\n'
-          line[n - 1] = 0;
-    }
-    Serial2.println(line);
-    file.close();
-    logfile.println(line); // write the headers to the new logfile
-
-    Serial2.print(F(">log:"));
+    int ret = this->logfile.println(line); // write the headers to the new logfile
+    this->logfile.flush();
+    //Serial2.print("wrote:");
+    //Serial2.println(ret);
 }
 
 

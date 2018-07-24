@@ -47,11 +47,14 @@ unsigned char uuid[16];
 short deploymentIdentifierAddressStart = 16;
 short deploymentIdentifierAddressEnd =  43;
 
+short fieldCount = 3;
+char ** values;
+
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
     short address = deploymentIdentifierAddressStart + i;
     //deploymentIdentifier[i] = EEPROM.read(address);
-    deploymentIdentifier[i] = '0';
+    deploymentIdentifier[i] = '\0';
   }
 
 }
@@ -210,8 +213,7 @@ void setup(void)
   }
   Serial2.println("Setup");
 
-  //pinMode(PA5, OUTPUT); // This is the onboard LED ?
-                          // Turns out this is the SPI1 clock.  nice.
+  //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  nice.
 
   pinMode(D3, OUTPUT); // D2 and PB3 are the same
   pinMode(PB3, OUTPUT);
@@ -226,29 +228,42 @@ void setup(void)
   //
 
   filesystem = new WaterBear_FileSystem();
+  filesystem->writeLog(values, fieldCount);
 
   //
   // init ble
   //
-  initBLE();
+  //initBLE();
 
   // readUniqueId();
-  firstRun();
+  //firstRun();
 
-  Wire.begin();
+  //
+  //  Prepare I2C
+  //
+  // This doesn't work in default settings when the logging shield is on due to a pin conflict on PB6 of all things
+  //Wire.begin();
 
 
-  /* Get the CD Card going */
-  // initializeSDCard();
-
-  /* We're ready to go! */
-  Serial2.println(F("done with setup"));
 
   wake = true;
   // awakeTime = RTC.now().unixtime();
+
   burstCount = burstLength;
 
+
+  //
+  // Allocate needed memory
+  //
+  values = (char **) malloc(sizeof(char *) * fieldCount);
+  for(int i = 3; i < 3+fieldCount; i++){
+      values[i] = (char *) malloc(sizeof(char) * 5);
+  }
+
   rt.setTime(1000);
+
+  /* We're ready to go! */
+  Serial2.println(F("done with setup"));
 
 }
 
@@ -266,7 +281,15 @@ should go here)
 void loop(void)
 {
   Serial2.println(F("Loop"));
+  delay(500);
 
+//  Serial2.println("writeLog");
+
+  filesystem->writeLog(values, fieldCount);
+
+//  Serial2.println("writeLog done");
+  delay(500);
+  return;
   // Display command prompt
 
   // Check for user input and echo it back if anything was found
@@ -298,9 +321,10 @@ void loop(void)
   // Fetch the time
   // DateTime now = RTC.now();
 
+  delay(1000);
+
   tt = rt.getTime();
   Serial2.println(tt);
-  delay(1000);
 
   uint32_t trigger = 60*interval;
   uint32_t currentTime = tt; // now.unixtime();
@@ -333,67 +357,57 @@ void loop(void)
 */
 
   // Write the deployment identifier
-  char comma[2] = ",";
   char deploymentIdentifier[29];// = "DEPLOYMENT";
   readDeploymentIdentifier(deploymentIdentifier);
 
-  File logfile; // So we can skip this
-  logfile.print(deploymentIdentifier);
+
+  values[0] = deploymentIdentifier; // TODO: change to deploymentIdentifier_UUID
+
+  /*logfile.print(deploymentIdentifier);
   logfile.write("_");
   for(short i=0; i<8; i++){
     logfile.print((unsigned int) uuid[2*i], HEX);
   }
   logfile.print(comma);
+  */
 
   // Log uuid and time
+  char uuid[9];
   for(short i=0; i<8; i++){
-    logfile.print((unsigned int) uuid[2*i], HEX);
+    //logfile.print((unsigned int) uuid[2*i], HEX);
+    sprintf(&uuid[i], "%02x", (unsigned int) uuid[2*i]);
   }
-  logfile.print(comma);
+  uuid[8] = '\0';
+  values[1] = uuid;
+
+  //logfile.print(comma);
   //logfile.print(now.unixtime()); // seconds since 2000
-  logfile.print(comma);
-  Serial2.print(currentTime);
+  //logfile.print(comma);
+  Serial2.println(currentTime);
+  char timeString[11];
+  sprintf(timeString, "%lu", currentTime);
+  values[2] = timeString;
+  Serial2.println(timeString);
 
-
+/*
   // Get the new data
-  float value0 = analogRead(0); // * .0049;
-  Serial2.print(" 0: ");
-  Serial2.print(value0);
-  logfile.print(value0);
-  logfile.print(comma);
+  short sensorCount = 6;
+  for(short i=0; i<sensorCount; i++){
+    int value = analogRead(i);
+    // malloc or ?
+    sprintf(values[2+i], "%4d", value);
 
-  float value1 = analogRead(1); // * .0049;
-  Serial2.print("   1: ");
-  Serial2.print(value1);
-  logfile.print(value1);
-  logfile.print(comma);
+    Serial2.print(" ");
+    Serial2.print(i);
+    Serial2.print(": ");
+    Serial2.println(value);
+  }
+*/
 
-  float value2 = analogRead(2); // * .0049;
-  Serial2.print("   2: ");
-  Serial2.print(value2);
-  logfile.print(value2);
-  logfile.print(comma);
+  Serial2.println("writeLog");
+  filesystem->writeLog(values, fieldCount);
+  Serial2.println("writeLog done");
 
-  float value3 = analogRead(3); // * .0049;
-  //Serial2.println(value3);
-  Serial2.print("   3: ");
-  Serial2.print(value3);
-  logfile.print(value3);
-  logfile.print(comma);
-
-  float value4 = analogRead(4); // * .0049;
-  Serial2.print("   4: ");
-  Serial2.print(value4);
-  logfile.print(value4);
-  logfile.print(comma);
-
-  float value5 = analogRead(5); // * .0049;
-  Serial2.print("   5: ");
-  Serial2.println(value5);
-  logfile.print(value5);
-
-  logfile.println();
-  logfile.flush();
 
 /*
   digitalWrite(PA5, 1);
