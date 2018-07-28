@@ -51,14 +51,13 @@ WaterBear_FileSystem::WaterBear_FileSystem(void){
 
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++){
-    //Serial2.println(values[i]);
-    //this->logfile.print(values[i]);
-  /*  this->logfile.print("hell0");
+    Serial2.println(values[i]);
+    this->logfile.print(values[i]);
     if(i+1 < fieldCount){
       this->logfile.print(',');
-    }*/
+    }
   }
-  this->logfile.println("TELDI");
+  this->logfile.println();
   this->logfile.flush();
 }
 

@@ -47,7 +47,7 @@ unsigned char uuid[16];
 short deploymentIdentifierAddressStart = 16;
 short deploymentIdentifierAddressEnd =  43;
 
-short fieldCount = 3;
+short fieldCount = 9;
 char ** values;
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
@@ -96,13 +96,12 @@ void dateTime(uint16_t* date, uint16_t* time) {
 
 
 
-void firstRun(){
+void bleFirstRun(){
 
   // if we don't have a UUID yet, we are running for the first time
   // set a mode pin for USART1 if we need to
 
-
-  Serial2.println("First Run");
+  Serial2.println("BLE First Run");
   ble.factoryReset();
   ble.setMode(BLUEFRUIT_MODE_COMMAND);
   //digitalWrite(D4, HIGH);
@@ -154,21 +153,25 @@ void firstRun(){
 }
 */
 
+bool bleActive = false;
+
 void initBLE(){
   //Serial2.println("Hello");
   Serial2.print(F("Initializing the Bluefruit LE module: "));
   //Serial2.println("Hello");
 
-  bool success = false;
-  success = ble.begin(true);
+  bleActive = ble.begin(true);
 
   Serial2.println("Tried to init");
-  Serial2.println(success);
+  Serial2.println(bleActive);
 
-  if ( !success )
+  if ( !bleActive )
   {
     Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
     // error
+  } else {
+    bleFirstRun();
+
   }
   Serial2.println( F("OK!") );
 
@@ -228,15 +231,13 @@ void setup(void)
   //
 
   filesystem = new WaterBear_FileSystem();
-  filesystem->writeLog(values, fieldCount);
 
   //
   // init ble
   //
-  //initBLE();
+  initBLE();
 
   // readUniqueId();
-  //firstRun();
 
   //
   //  Prepare I2C
@@ -281,15 +282,7 @@ should go here)
 void loop(void)
 {
   Serial2.println(F("Loop"));
-  delay(500);
 
-//  Serial2.println("writeLog");
-
-  filesystem->writeLog(values, fieldCount);
-
-//  Serial2.println("writeLog done");
-  delay(500);
-  return;
   // Display command prompt
 
   // Check for user input and echo it back if anything was found
@@ -389,40 +382,38 @@ void loop(void)
   values[2] = timeString;
   Serial2.println(timeString);
 
-/*
+
   // Get the new data
   short sensorCount = 6;
   for(short i=0; i<sensorCount; i++){
     int value = analogRead(i);
     // malloc or ?
-    sprintf(values[2+i], "%4d", value);
+    sprintf(values[3+i], "%4d", value);
 
     Serial2.print(" ");
     Serial2.print(i);
     Serial2.print(": ");
     Serial2.println(value);
   }
-*/
 
   Serial2.println("writeLog");
   filesystem->writeLog(values, fieldCount);
   Serial2.println("writeLog done");
 
-
-/*
-  digitalWrite(PA5, 1);
-  delay(1000);
+  //digitalWrite(PA5, 1);
+  //delay(1000);
 
   // Send along to BLE
 
-  char valuesBuffer[52];
-  sprintf(valuesBuffer, ">WT_VALUES:%7.4f,%7.4f,%7.4f,%7.4f,%7.4f,%7.4f<", value0, value1, value2, value3, value4, value5);
-  Serial2.print(valuesBuffer);
-  ble.println(valuesBuffer);
+  if(bleActive) {
+    char valuesBuffer[52];
+    sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
+    Serial2.print(valuesBuffer);
+    ble.println(valuesBuffer);
+  }
 
-  digitalWrite(PA5, 0);
-  delay(1000);
-*/
+  //digitalWrite(PA5, 0);
+  //delay(1000);
 
   burstCount = burstCount + 1;
 
