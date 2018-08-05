@@ -1,9 +1,10 @@
 #include <Arduino.h>
-#include <RTClock.h>
+//#include <RTClock.h>
 #include <Wire.h>  // Communicate with I2C/TWI devices
 #include <SPI.h>
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
+#include "RTClib.h"
 
 #include "WaterBear_Control.h"
 #include "WaterBear_FileSystem.h"
@@ -11,17 +12,12 @@
 // For F103RM
 //#define Serial Serial2
 
-// Old code from Uno
-//#include <EEPROM.h>
-//#include "RTClib.h"
-//#include "TrueRandom.h"
-//#include "LowPower.h"
 
+// The DS3231 RTC chip
+RTC_DS3231 rtc;
 
-//RTC_PCF8523 RTC; // define the Real Time Clock object
-//struct rtc_module rtc_instance;
-
-RTClock rt (RTCSEL_LSE); // initialise
+// The internal RTC
+//RTClock rt (RTCSEL_LSE); // initialise
 uint32 tt;
 
 // Pin Mappings for Nucleo Board
@@ -210,11 +206,31 @@ Arduino setup function (automatically called at startup)
 
 void setup(void)
 {
+
+  // Use remap of I2C1 so that it matches with the arduino sheild header
+  AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
+
   Serial2.begin(9600);
   while(!Serial2){
     delay(100);
   }
   Serial2.println("Setup");
+
+  //  Prepare I2C
+  Wire.begin();
+
+  // Set up the realtime clock
+  if (! rtc.begin()) {
+    Serial2.println("Couldn't find RTC");
+    while (1);
+  }
+
+  if (rtc.lostPower()) {
+    Serial2.println("RTC lost power, lets set the time!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+  }
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  nice.
 
@@ -239,11 +255,6 @@ void setup(void)
 
   // readUniqueId();
 
-  //
-  //  Prepare I2C
-  //
-  // This doesn't work in default settings when the logging shield is on due to a pin conflict on PB6 of all things
-  //Wire.begin();
 
 
 
@@ -261,7 +272,7 @@ void setup(void)
       values[i] = (char *) malloc(sizeof(char) * 5);
   }
 
-  rt.setTime(1000);
+  //rt.setTime(1000);
 
   /* We're ready to go! */
   Serial2.println(F("done with setup"));
@@ -282,6 +293,24 @@ should go here)
 void loop(void)
 {
   Serial2.println(F("Loop"));
+
+  DateTime now = rtc.now();
+
+     Serial.print(now.year(), DEC);
+     Serial.print('/');
+     Serial.print(now.month(), DEC);
+     Serial.print('/');
+     Serial.print(now.day(), DEC);
+     Serial.print(" (");
+     Serial.print(now.dayOfTheWeek());
+     Serial.print(") ");
+     Serial.print(now.hour(), DEC);
+     Serial.print(':');
+     Serial.print(now.minute(), DEC);
+     Serial.print(':');
+     Serial.print(now.second(), DEC);
+     Serial.println();
+
 
   // Display command prompt
 
@@ -316,7 +345,8 @@ void loop(void)
 
   delay(1000);
 
-  tt = rt.getTime();
+  //tt = rt.getTime();
+  tt = 0;
   Serial2.println(tt);
 
   uint32_t trigger = 60*interval;
