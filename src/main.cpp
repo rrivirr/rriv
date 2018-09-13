@@ -4,7 +4,8 @@
 #include <SPI.h>
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
-#include "RTClib.h"
+//#include "RTClib.h"
+#include "DS3231.h"
 
 #include "WaterBear_Control.h"
 #include "WaterBear_FileSystem.h"
@@ -16,7 +17,8 @@ TwoWire WIRE1 (1, I2C_REMAP); // Need the I2C_REMAP when remapping... it's a hac
 #define Wire WIRE1
 
 // The DS3231 RTC chip
-RTC_DS3231 rtc;
+DS3231 Clock;
+RTClib RTC;
 
 // The internal RTC
 //RTClock rt (RTCSEL_LSE); // initialise
@@ -199,11 +201,13 @@ void initBLE(){
 
 
 void setupRTC(){
-  Serial2.println("Start RTC");
+/*  Serial2.println("Start RTC");
+
   if (! rtc.begin()) {
     Serial2.println("Couldn't find RTC");
     while (1);
   }
+*/
 
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
@@ -310,7 +314,7 @@ void loop(void)
 {
   Serial2.println(F("Loop"));
 
-  DateTime now = rtc.now();
+  DateTime now = RTC.now();
   Serial.println(now.unixtime());
 
      Serial.print(now.year(), DEC);
@@ -318,9 +322,9 @@ void loop(void)
      Serial.print(now.month(), DEC);
      Serial.print('/');
      Serial.print(now.day(), DEC);
-     Serial.print(" (");
-     Serial.print(now.dayOfTheWeek());
-     Serial.print(") ");
+    // Serial.print(" (");
+    // Serial.print(now.dayOfTheWeek());
+    // Serial.print(") ");
      Serial.print(now.hour(), DEC);
      Serial.print(':');
      Serial.print(now.minute(), DEC);
@@ -328,8 +332,6 @@ void loop(void)
      Serial.print(now.second(), DEC);
      Serial.println();
 
-  //delay(1000);
-  //return;
 
   // Display command prompt
 
