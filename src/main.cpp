@@ -1,6 +1,6 @@
 #include <Arduino.h>
 //#include <RTClock.h>
-#include <Wire.h>  // Communicate with I2C/TWI devices
+#include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
@@ -10,8 +10,10 @@
 #include "WaterBear_FileSystem.h"
 
 // For F103RM
-//#define Serial Serial2
+#define Serial Serial2
 
+TwoWire WIRE1 (1, I2C_REMAP); // Need the I2C_REMAP when remapping... it's a hack they deprecated support for this
+#define Wire WIRE1
 
 // The DS3231 RTC chip
 RTC_DS3231 rtc;
@@ -21,7 +23,7 @@ RTC_DS3231 rtc;
 uint32 tt;
 
 // Pin Mappings for Nucleo Board
-#define D3 PB3 // Why isn't D3 working ??
+#define D3 PB3
 #define D4 PB5
 
 int bluefruitModePin = D4;
@@ -48,7 +50,7 @@ char ** values;
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    short address = deploymentIdentifierAddressStart + i;
+    //short address = deploymentIdentifierAddressStart + i;
     //deploymentIdentifier[i] = EEPROM.read(address);
     deploymentIdentifier[i] = '\0';
   }
@@ -57,7 +59,7 @@ void readDeploymentIdentifier(char * deploymentIdentifier){
 
 void writeDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    short address = deploymentIdentifierAddressStart + i;
+    //short address = deploymentIdentifierAddressStart + i;
     //EEPROM.write(address, deploymentIdentifier[i]);
   }
 }
@@ -183,16 +185,41 @@ void initBLE(){
   */
 
   /* Disable command echo from Bluefruit */
-  /*ble.echo(false);
+  //ble.echo(false);
 
   Serial2.println("Requesting Bluefruit info:");
-  /* Print Bluefruit information */
+  // Print Bluefruit information
   //ble.info();
 
   //
   //
   //
 }
+
+
+
+void setupRTC(){
+  Serial2.println("Start RTC");
+  if (! rtc.begin()) {
+    Serial2.println("Couldn't find RTC");
+    while (1);
+  }
+
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
+
+// Time will be set during setup by Android / Serial1
+// No need to set the time from the script build time.
+/*
+  if (rtc.lostPower()) {
+    Serial2.println("RTC lost power, lets set the time!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+  }
+*/
+}
+
 
 bool wake = false;
 uint32_t awakeTime = 0;
@@ -220,17 +247,8 @@ void setup(void)
   Wire.begin();
 
   // Set up the realtime clock
-  if (! rtc.begin()) {
-    Serial2.println("Couldn't find RTC");
-    while (1);
-  }
+  setupRTC();
 
-  if (rtc.lostPower()) {
-    Serial2.println("RTC lost power, lets set the time!");
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-  }
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  nice.
 
@@ -239,6 +257,7 @@ void setup(void)
 
   pinMode(D4, OUTPUT);
   //pinMode(PB5, OUTPUT);
+
 
   Serial2.println(F("Hello, world.  Primary Serial2.."));
 
@@ -254,9 +273,6 @@ void setup(void)
   initBLE();
 
   // readUniqueId();
-
-
-
 
   wake = true;
   // awakeTime = RTC.now().unixtime();
@@ -295,6 +311,7 @@ void loop(void)
   Serial2.println(F("Loop"));
 
   DateTime now = rtc.now();
+  Serial.println(now.unixtime());
 
      Serial.print(now.year(), DEC);
      Serial.print('/');
@@ -311,6 +328,8 @@ void loop(void)
      Serial.print(now.second(), DEC);
      Serial.println();
 
+  //delay(1000);
+  //return;
 
   // Display command prompt
 
@@ -350,12 +369,10 @@ void loop(void)
   Serial2.println(tt);
 
   uint32_t trigger = 60*interval;
-  uint32_t currentTime = tt; // now.unixtime();
+  uint32_t currentTime = now.unixtime();
   uint32_t elapsedTime = currentTime - lastTime;
-  short minute = 0; //now.minute();
+  short minute = now.minute();
 
-/*  For the moment we are skilling the timing stuff
-    RTC example to use timing should be OK for the moment
   if(currentTime > awakeTime + 60 * 5){
     wake = false;
   }
@@ -376,8 +393,7 @@ void loop(void)
   } else if (burstCount == burstLength) { // reinitialize bursting
     burstCount = 0;
   }
-  //lastTime = now.unixtime();
-*/
+  lastTime = now.unixtime();
 
   // Write the deployment identifier
   char deploymentIdentifier[29];// = "DEPLOYMENT";
@@ -403,9 +419,6 @@ void loop(void)
   uuid[8] = '\0';
   values[1] = uuid;
 
-  //logfile.print(comma);
-  //logfile.print(now.unixtime()); // seconds since 2000
-  //logfile.print(comma);
   Serial2.println(currentTime);
   char timeString[11];
   sprintf(timeString, "%lu", currentTime);
