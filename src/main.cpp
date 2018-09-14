@@ -245,6 +245,27 @@ Arduino setup function (automatically called at startup)
 */
 /**************************************************************************/
 
+void setNextAlarm(){
+
+  // just go for every second
+  int AlarmBits = ALRM2_ONCE_PER_MIN;
+  AlarmBits <<= 4;
+  AlarmBits |= ALRM1_MATCH_SEC;
+
+  Clock.turnOffAlarm(1); // Clear the Control Register
+  Clock.turnOffAlarm(2);
+  Clock.checkIfAlarm(1); // Clear the Status Register
+  Clock.checkIfAlarm(2);
+
+  short seconds = Clock.getSecond();
+  short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
+
+  Serial.println(nextSeconds);
+  Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
+  Clock.turnOnAlarm(1);
+
+}
+
 
 void setup(void)
 {
@@ -264,22 +285,12 @@ void setup(void)
   // Set up the realtime clock
   setupRTC();
 
-  // just go for every second
-  int AlarmBits = ALRM2_ONCE_PER_MIN;
-  AlarmBits <<= 4;
-  AlarmBits |= ALRM1_MATCH_SEC;
-  Serial.println(AlarmBits);
-
-  Clock.turnOffAlarm(1); // Clear the Control Register
-  Clock.turnOffAlarm(2);
-  Clock.checkIfAlarm(1); // Clear the Status Register
-  Clock.checkIfAlarm(2);
 
 
-  Clock.setA1Time(0b0, 0b0, 0b0, 30, AlarmBits, true, false, false);
-  Clock.setA2Time(0b0, 0b0, 0b0, AlarmBits, false, false, false);
-  Clock.turnOnAlarm(1);
-  Clock.turnOnAlarm(2);
+  setNextAlarm();
+
+  //Clock.setA2Time(0b0, 0b0, 0b0, AlarmBits, false, false, false);
+  //Clock.turnOnAlarm(2);
 
   // set both alarms to :00 and :30 seconds, every minute
       // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
@@ -370,12 +381,21 @@ void loop(void)
      Serial.println();
 
 
-    delay(10000);
+    delay(2000);
 
+
+    if(Clock.checkIfAlarm(1)){
+      Serial.println("Alarm 1");
+      setNextAlarm();
+    }
+
+    /*
     Serial.print("Alarm1 ");
     Serial.print(Clock.checkIfAlarm(1));
     Serial.print(" Alarm2 ");
     Serial.println(Clock.checkIfAlarm(2));
+*/
+
 
     return;
 
