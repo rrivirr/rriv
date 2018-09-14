@@ -48,7 +48,7 @@ char lastDownloadDate[11] = "0000000000";
 
 char version[5] = "v2.0";
 
-short interval = 2; // minutes between loggings
+short interval = 1; // minutes between loggings
 short burstLength = 100; // how many readings in a burst
 
 short uniqueIdAddressStart = 0;
@@ -250,18 +250,22 @@ void setNextAlarm(){
   // just go for every second
   int AlarmBits = ALRM2_ONCE_PER_MIN;
   AlarmBits <<= 4;
-  AlarmBits |= ALRM1_MATCH_SEC;
+  AlarmBits |= ALRM1_MATCH_MIN_SEC;
 
   Clock.turnOffAlarm(1); // Clear the Control Register
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
 
-  short seconds = Clock.getSecond();
-  short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
+  //short seconds = Clock.getSecond();
+  //short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
 
-  Serial.println(nextSeconds);
-  Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
+  short minutes = Clock.getMinute();
+  short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+
+
+  Serial.println(nextMinutes);
+  Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
   Clock.turnOnAlarm(1);
 
 }
