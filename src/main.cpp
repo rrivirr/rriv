@@ -257,21 +257,26 @@ Arduino setup function (automatically called at startup)
 void setNextAlarm(){
 
   // just go for every second
-  int AlarmBits = ALRM2_ONCE_PER_MIN;
-  AlarmBits <<= 4;
-  AlarmBits |= ALRM1_MATCH_MIN_SEC;
+
 
   Clock.turnOffAlarm(1); // Clear the Control Register
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
 
+  int AlarmBits = ALRM2_ONCE_PER_MIN;
+  AlarmBits <<= 4;
+  AlarmBits |= ALRM1_MATCH_SEC;
   short seconds = Clock.getSecond();
-  short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
+  short nextSeconds = (seconds + 10 - (seconds % 10)) % 60;
   Serial.print("Next Alarm");
   Serial.println(nextSeconds);
   Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
 
+
+  //int AlarmBits = ALRM2_ONCE_PER_MIN;
+  //AlarmBits <<= 4;
+  //AlarmBits |= ALRM1_MATCH_MIN_SEC;
   //short minutes = Clock.getMinute();
   //short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
   //Serial.println(nextMinutes);
@@ -295,7 +300,7 @@ void setup(void)
   pinMode(D4, OUTPUT);
   //pinMode(PB5, OUTPUT);
 
-  pinMode(PA9, INPUT_PULLUP); // This is the interrupt line 9
+  pinMode(PC7, INPUT_PULLUP); // This is the interrupt line 7
 
 
   // Use remap of I2C1 so that it matches with the arduino sheild header
@@ -358,6 +363,33 @@ void setup(void)
       values[i] = (char *) malloc(sizeof(char) * 5);
   }
 
+
+  AFIO_BASE->EXTICR2 = 0x2000; // PC7
+  EXTI_BASE->IMR = 0x00000080; // tsurn on line #9
+  EXTI_BASE->FTSR = 0x00000080; // detect falling edge of line #9
+
+  //EXTI_BASE->RTSR = 0x00000200; // detect falling edge of line #9
+  //EXTI_BASE->IMR =  0x000FFFFF; // tsurn on all
+  //EXTI_BASE->FTSR = 0x000FFFFF; // detect falling edge
+
+  // EXTI9_5  for NVIC
+  //NVIC_EXTI_9_5
+  Serial.println(AFIO_BASE->EXTICR3);
+  Serial.println(EXTI_BASE->IMR);
+  Serial.println(EXTI_BASE->FTSR);
+  Serial.println(EXTI_BASE->RTSR);
+
+  //EXTI_BASE->SWIER = 0x00000009; // Just for testing
+
+  //Serial.println("hello");
+  NVIC_BASE->ISER[0] = NVIC_EXTI_9_5; // this sets the enabled interrupts
+  Serial.println(NVIC_BASE->ISER[0]);
+
+  //Serial.println(NVIC_BASE->ISER[0]);
+  NVIC_BASE->ICPR[0] = NVIC_EXTI_9_5;
+  //Serial.println(NVIC_BASE->ISPR[0]);
+  //Serial.println("ok");
+
   setNextAlarm();
 
   /* We're ready to go! */
@@ -397,39 +429,28 @@ void loop(void)
      Serial.print(':');
      Serial.print(now.second(), DEC);
      Serial.println();
+     delay(2000);
 
+     //EXTI_BASE->SWIER = 0x100;
+     Serial.println(AFIO_BASE->EXTICR3);
+     Serial.println(EXTI_BASE->IMR);
+     Serial.println(EXTI_BASE->FTSR);
+     Serial.println(EXTI_BASE->RTSR);
 
-    delay(2000);
-
+     Serial.print("EXTI_BASE->PR ");
+     Serial.println(EXTI_BASE->PR);
 
     if(Clock.checkIfAlarm(1)){
       Serial.println("Alarm 1");
+      // Clear the exti interrupt
+      EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
       setNextAlarm();
     }
 
-    /*
-    Serial.print("Alarm1 ");
-    Serial.print(Clock.checkIfAlarm(1));
-    Serial.print(" Alarm2 ");
-    Serial.println(Clock.checkIfAlarm(2));
-*/
+
+
+
 /*
-  AFIO_BASE->EXTICR3 = 0b1111111100001111; // Wake on PA9, there are #define for this in gpio.h
-  EXTI_BASE->IMR = 0x0010; // tsurn on line #9
-  EXTI_BASE->FTSR = 0x0010; // detect falling edge of line #9
-  Serial.print("EXTI_BASE->PR ");
-  Serial.println(EXTI_BASE->PR);
-
-  // EXTI9_5  for NVIC
-  //NVIC_EXTI_9_5
-  //Serial.println("hello");
-  NVIC_BASE->ISER[0] = NVIC_EXTI_9_5; // this sets the enabled interrupts
-  //Serial.println(NVIC_BASE->ISER[0]);
-  NVIC_BASE->ICPR[0] = NVIC_EXTI_9_5;
-  //Serial.println(NVIC_BASE->ISPR[0]);
-  //Serial.println("ok");
-
-
   // Clear PDDS and LPDS bits
   PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
 
