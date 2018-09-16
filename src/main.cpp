@@ -346,6 +346,7 @@ void setup(void)
   // init ble
   //
   initBLE();
+  Serial2.flush();
 
   // readUniqueId();
 
@@ -362,6 +363,7 @@ void setup(void)
   for(int i = 3; i < 3+fieldCount; i++){
       values[i] = (char *) malloc(sizeof(char) * 5);
   }
+  Serial2.flush();
 
 
   AFIO_BASE->EXTICR2 = 0x2000; // PC7
@@ -382,11 +384,20 @@ void setup(void)
   //EXTI_BASE->SWIER = 0x00000009; // Just for testing
 
   //Serial.println("hello");
-  NVIC_BASE->ISER[0] = NVIC_EXTI_9_5; // this sets the enabled interrupts
+  // Disable ALL interrupts
+  //NVIC_BASE->ICER[0] = 0xFFFFFFFF;
+  //NVIC_BASE->ICER[1] = 0xFFFFFFFF;
+  //NVIC_BASE->ICER[2] = 0xFFFFFFFF;
+
+  NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;   //NVIC_EXTI_9_5; // this sets the enabled interrupts
+  Serial2.flush();
+  Serial.println("OK");
   Serial.println(NVIC_BASE->ISER[0]);
+  Serial2.flush();
+
 
   //Serial.println(NVIC_BASE->ISER[0]);
-  NVIC_BASE->ICPR[0] = NVIC_EXTI_9_5;
+  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
   //Serial.println(NVIC_BASE->ISPR[0]);
   //Serial.println("ok");
 
@@ -410,7 +421,7 @@ should go here)
 
 void loop(void)
 {
-  Serial2.println(F("Loop"));
+  //Serial2.println(F("Loop"));
 
   DateTime now = RTC.now();
   Serial.println(now.unixtime());
@@ -432,13 +443,18 @@ void loop(void)
      delay(2000);
 
      //EXTI_BASE->SWIER = 0x100;
+     /*
      Serial.println(AFIO_BASE->EXTICR3);
      Serial.println(EXTI_BASE->IMR);
      Serial.println(EXTI_BASE->FTSR);
      Serial.println(EXTI_BASE->RTSR);
+     */
 
      Serial.print("EXTI_BASE->PR ");
      Serial.println(EXTI_BASE->PR);
+     Serial.print("NVIC_BASE->ISPR ");
+     Serial.println(NVIC_BASE->ISPR[0]);
+
 
     if(Clock.checkIfAlarm(1)){
       Serial.println("Alarm 1");
@@ -474,9 +490,17 @@ void loop(void)
   // This should be 'sleep mode'.  Stop mode is different
   //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
   //SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
-
-  asm("wfi");
 */
+
+  // ok cool!!
+  // now we stop when the nvic interrupt comes through
+  // which means we have to handle it and clear it, because we are interrupted.
+  //asm("wfi");
+
+  // wow look at this, actually handles it all for you dummy.
+  // arrggghghghghg  this handles all that BS you just spent a day on
+  // exti_attach_interrupt(exti_num num, exti_cfg port, voidFuncPtr handler, exti_trigger_mode mode)
+  // exti_attach_callback(exti_num num, exti_cfg port, voidArgumentFuncPtr handler, void *arg, exti_trigger_mode mode)
   return;
 
   // Display command prompt

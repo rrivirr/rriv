@@ -246,6 +246,7 @@ void WaterBear_FileSystem::setNewDataFile() {
 
     Serial2.print("Opening file ");
     Serial2.println(filename);
+    Serial2.flush();
     this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
     //delay(10);
 
