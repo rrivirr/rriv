@@ -10,6 +10,9 @@
 #include "WaterBear_Control.h"
 #include "WaterBear_FileSystem.h"
 
+#include <libmaple/pwr.h>
+#include <libmaple/scb.h>
+
 // For F103RM
 #define Serial Serial2
 
@@ -112,7 +115,9 @@ void bleFirstRun(){
   // if we don't have a UUID yet, we are running for the first time
   // set a mode pin for USART1 if we need to
 
-  Serial2.println("BLE First Run");
+  if(false){
+    Serial2.println("BLE First Run");
+  }
   ble.factoryReset();
   ble.setMode(BLUEFRUIT_MODE_COMMAND);
   //digitalWrite(D4, HIGH);
@@ -167,25 +172,29 @@ void bleFirstRun(){
 bool bleActive = false;
 
 void initBLE(){
-  //Serial2.println("Hello");
-  Serial2.print(F("Initializing the Bluefruit LE module: "));
-  //Serial2.println("Hello");
-
+  if(false){
+    Serial2.print(F("Initializing the Bluefruit LE module: "));
+  }
   bleActive = ble.begin(true);
 
-  Serial2.println("Tried to init");
-  Serial2.println(bleActive);
+  if(false){
+    Serial2.println("Tried to init");
+    Serial2.println(bleActive);
+  }
 
   if ( !bleActive )
   {
-    Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+    if(false){
+      Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+    }
     // error
   } else {
     bleFirstRun();
 
   }
-  Serial2.println( F("OK!") );
-
+  if(false){
+    Serial2.println( F("OK!") );
+  }
 /*
   if ( FACTORYRESET_ENABLE )
   {
@@ -257,22 +266,37 @@ void setNextAlarm(){
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
 
-  //short seconds = Clock.getSecond();
-  //short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
+  short seconds = Clock.getSecond();
+  short nextSeconds = (seconds + 15 - (seconds % 15)) % 60;
+  Serial.print("Next Alarm");
+  Serial.println(nextSeconds);
+  Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
 
-  short minutes = Clock.getMinute();
-  short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+  //short minutes = Clock.getMinute();
+  //short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+  //Serial.println(nextMinutes);
+  //Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
 
 
-  Serial.println(nextMinutes);
-  Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
   Clock.turnOnAlarm(1);
+
+
+
 
 }
 
 
 void setup(void)
 {
+
+
+  pinMode(D3, OUTPUT); // D2 and PB3 are the same
+  pinMode(PB3, OUTPUT);
+  pinMode(D4, OUTPUT);
+  //pinMode(PB5, OUTPUT);
+
+  pinMode(PA9, INPUT_PULLUP); // This is the interrupt line 9
+
 
   // Use remap of I2C1 so that it matches with the arduino sheild header
   AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
@@ -289,10 +313,6 @@ void setup(void)
   // Set up the realtime clock
   setupRTC();
 
-
-
-  setNextAlarm();
-
   //Clock.setA2Time(0b0, 0b0, 0b0, AlarmBits, false, false, false);
   //Clock.turnOnAlarm(2);
 
@@ -307,12 +327,6 @@ void setup(void)
 
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  nice.
-
-  pinMode(D3, OUTPUT); // D2 and PB3 are the same
-  pinMode(PB3, OUTPUT);
-
-  pinMode(D4, OUTPUT);
-  //pinMode(PB5, OUTPUT);
 
 
   Serial2.println(F("Hello, world.  Primary Serial2.."));
@@ -344,7 +358,7 @@ void setup(void)
       values[i] = (char *) malloc(sizeof(char) * 5);
   }
 
-  //rt.setTime(1000);
+  setNextAlarm();
 
   /* We're ready to go! */
   Serial2.println(F("done with setup"));
@@ -399,9 +413,50 @@ void loop(void)
     Serial.print(" Alarm2 ");
     Serial.println(Clock.checkIfAlarm(2));
 */
+/*
+  AFIO_BASE->EXTICR3 = 0b1111111100001111; // Wake on PA9, there are #define for this in gpio.h
+  EXTI_BASE->IMR = 0x0010; // tsurn on line #9
+  EXTI_BASE->FTSR = 0x0010; // detect falling edge of line #9
+  Serial.print("EXTI_BASE->PR ");
+  Serial.println(EXTI_BASE->PR);
+
+  // EXTI9_5  for NVIC
+  //NVIC_EXTI_9_5
+  //Serial.println("hello");
+  NVIC_BASE->ISER[0] = NVIC_EXTI_9_5; // this sets the enabled interrupts
+  //Serial.println(NVIC_BASE->ISER[0]);
+  NVIC_BASE->ICPR[0] = NVIC_EXTI_9_5;
+  //Serial.println(NVIC_BASE->ISPR[0]);
+  //Serial.println("ok");
 
 
-    return;
+  // Clear PDDS and LPDS bits
+  PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+
+  // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
+  PWR_BASE->CR |= PWR_CR_CWUF;
+  PWR_BASE->CR |= PWR_CR_PDDS;
+
+  // Enable wakeup pin bit.
+  PWR_BASE->CR |=  PWR_CSR_EWUP;
+
+  //  Unset Power down deepsleep bit.
+  PWR_BASE->CR &= ~PWR_CR_PDDS;
+
+  // set Low-power deepsleep.
+  PWR_BASE->CR |= PWR_CR_LPDS;
+
+  // Unset sleepdeep in the system control register - if not set then we only sleep and can wake from RTC or pin interrupts.
+  //SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP; // This causes problems, ref: https://www.stm32duino.com/viewtopic.php?t=658
+  // Low-power deepsleep bit.
+
+  // This should be 'sleep mode'.  Stop mode is different
+  //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
+  //SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+
+  asm("wfi");
+*/
+  return;
 
   // Display command prompt
 
