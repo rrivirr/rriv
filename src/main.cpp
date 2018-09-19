@@ -549,15 +549,13 @@ void loop(void)
       PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
 
       PWR_BASE->CR |= PWR_CR_CWUF;
-      PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop mode when cpu goes into deep sleep
-      //PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode
+      PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
+      // PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
 
       PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
       SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
 
-
       // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
-      //PWR_BASE->CR &= ~PWR_CR_PDDS;  //  Unset Power down deepsleep bit.
 
       SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
