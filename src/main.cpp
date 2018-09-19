@@ -187,6 +187,8 @@ void initBLE(){
     if(false){
       Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
     }
+    return;
+
     // error
   } else {
     bleFirstRun();
@@ -211,37 +213,11 @@ void initBLE(){
 
   Serial2.println("Requesting Bluefruit info:");
   // Print Bluefruit information
-  //ble.info();
+  ble.info();
 
   //
   //
   //
-}
-
-
-
-void setupRTC(){
-/*  Serial2.println("Start RTC");
-
-  if (! rtc.begin()) {
-    Serial2.println("Couldn't find RTC");
-    while (1);
-  }
-*/
-
-  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-
-// Time will be set during setup by Android / Serial1
-// No need to set the time from the script build time.
-/*
-  if (rtc.lostPower()) {
-    Serial2.println("RTC lost power, lets set the time!");
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-  }
-*/
 }
 
 
@@ -284,22 +260,29 @@ void setNextAlarm(){
 
 
   Clock.turnOnAlarm(1);
+}
 
+void timerAlarm(){
+  EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
+  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
 
+  Serial2.println("TIMER ALAERM");
+  //Serial2.flush(); // This crashes because it probably generates an interrupt...
 
+  setNextAlarm();
 
+  // Could just do stuff right Here
+  // We dont' really need to re-enter the loop
 }
 
 
 void setup(void)
 {
 
-
   pinMode(D3, OUTPUT); // D2 and PB3 are the same
   pinMode(PB3, OUTPUT);
   pinMode(D4, OUTPUT);
   //pinMode(PB5, OUTPUT);
-
   pinMode(PC7, INPUT_PULLUP); // This is the interrupt line 7
 
 
@@ -312,11 +295,34 @@ void setup(void)
   }
   Serial2.println("Setup");
 
+  // Clear interrupts
+  //exti_detach_interrupt(EXTI7);
+  Serial.print("1: NVIC_BASE->ISPR ");
+  Serial.println(NVIC_BASE->ISPR[0]);
+  Serial.println(NVIC_BASE->ISPR[1]);
+  Serial.println(NVIC_BASE->ISPR[2]);
+
+  NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
+  EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
+  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5; // Clear any pending interrupts
+
+  Serial.print("2: NVIC_BASE->ISPR ");
+  Serial.println(NVIC_BASE->ISPR[0]);
+  Serial.println(NVIC_BASE->ISPR[1]);
+  Serial.println(NVIC_BASE->ISPR[2]);
+
+  delay(200);
+
   //  Prepare I2C
   Wire.begin();
+  delay(200);
 
-  // Set up the realtime clock
-  setupRTC();
+  Serial.println("OKOK");
+  Clock.turnOffAlarm(1);
+  Clock.turnOffAlarm(2);
+  Clock.checkIfAlarm(1); // Clear the Status Register
+  Clock.checkIfAlarm(2);
+  Serial.println("OKOK");
 
   //Clock.setA2Time(0b0, 0b0, 0b0, AlarmBits, false, false, false);
   //Clock.turnOnAlarm(2);
@@ -366,9 +372,12 @@ void setup(void)
   Serial2.flush();
 
 
-  AFIO_BASE->EXTICR2 = 0x2000; // PC7
-  EXTI_BASE->IMR = 0x00000080; // tsurn on line #9
-  EXTI_BASE->FTSR = 0x00000080; // detect falling edge of line #9
+  exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
+
+  /*
+  AFIO_BASE->EXTICR2 = 0x2000; // PC
+  EXTI_BASE->IMR = 0x00000080; // turn on line #7
+  EXTI_BASE->FTSR = 0x00000080; // detect falling edge of line #7
 
   //EXTI_BASE->RTSR = 0x00000200; // detect falling edge of line #9
   //EXTI_BASE->IMR =  0x000FFFFF; // tsurn on all
@@ -383,15 +392,10 @@ void setup(void)
 
   //EXTI_BASE->SWIER = 0x00000009; // Just for testing
 
-  //Serial.println("hello");
-  // Disable ALL interrupts
-  //NVIC_BASE->ICER[0] = 0xFFFFFFFF;
-  //NVIC_BASE->ICER[1] = 0xFFFFFFFF;
-  //NVIC_BASE->ICER[2] = 0xFFFFFFFF;
-
   NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;   //NVIC_EXTI_9_5; // this sets the enabled interrupts
   Serial2.flush();
-  Serial.println("OK");
+  Serial2.println( (1 << NVIC_EXTI_9_5) );
+  Serial.print("OK: ");
   Serial.println(NVIC_BASE->ISER[0]);
   Serial2.flush();
 
@@ -400,30 +404,16 @@ void setup(void)
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
   //Serial.println(NVIC_BASE->ISPR[0]);
   //Serial.println("ok");
+/* */
 
-  setNextAlarm();
+setNextAlarm();
 
   /* We're ready to go! */
   Serial2.println(F("done with setup"));
 
 }
 
-
-
-/**************************************************************************/
-/*
-Arduino loop function, called once 'setup' is complete (your own code
-should go here)
-*/
-/**************************************************************************/
-
-#define BUFSIZE                        160   // Size of the read buffer for incoming data
-
-void loop(void)
-{
-  //Serial2.println(F("Loop"));
-
-  DateTime now = RTC.now();
+void printDateTime(DateTime now){
   Serial.println(now.unixtime());
 
      Serial.print(now.year(), DEC);
@@ -440,7 +430,35 @@ void loop(void)
      Serial.print(':');
      Serial.print(now.second(), DEC);
      Serial.println();
-     delay(2000);
+
+}
+
+
+/**************************************************************************/
+/*
+Arduino loop function, called once 'setup' is complete (your own code
+should go here)
+*/
+/**************************************************************************/
+
+#define BUFSIZE                        160   // Size of the read buffer for incoming data
+
+unsigned long lastMillis = 0;
+
+void loop(void)
+{
+  //Serial2.println(F("Loop"));
+
+  DateTime now = RTC.now();
+
+  unsigned long currentMillis = millis();
+  if(currentMillis - lastMillis >= 1000){
+    lastMillis = currentMillis;
+  } else {
+    return;
+  }
+
+  printDateTime(now);
 
      //EXTI_BASE->SWIER = 0x100;
      /*
@@ -450,20 +468,25 @@ void loop(void)
      Serial.println(EXTI_BASE->RTSR);
      */
 
-     Serial.print("EXTI_BASE->PR ");
+/*     Serial.print("EXTI_BASE->PR ");
      Serial.println(EXTI_BASE->PR);
      Serial.print("NVIC_BASE->ISPR ");
      Serial.println(NVIC_BASE->ISPR[0]);
+     Serial.println(NVIC_BASE->ISPR[1]);
+     Serial.println(NVIC_BASE->ISPR[2]);
+     Serial.flush();
+*/
 
-
-    if(Clock.checkIfAlarm(1)){
+   /*if(Clock.checkIfAlarm(1)){
       Serial.println("Alarm 1");
       // Clear the exti interrupt
       EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
+      NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
       setNextAlarm();
     }
+    */
 
-
+    //asm("wfi");
 
 
 /*
@@ -501,6 +524,8 @@ void loop(void)
   // arrggghghghghg  this handles all that BS you just spent a day on
   // exti_attach_interrupt(exti_num num, exti_cfg port, voidFuncPtr handler, exti_trigger_mode mode)
   // exti_attach_callback(exti_num num, exti_cfg port, voidArgumentFuncPtr handler, void *arg, exti_trigger_mode mode)
+
+
   return;
 
   // Display command prompt
