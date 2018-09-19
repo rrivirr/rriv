@@ -3,7 +3,7 @@
 // For F103RM - these should go into their own .h
 #define Serial Serial2
 
-void scanIC2(TwoWire wire){
+void scanIC2(TwoWire * wire){
   Serial.println("Scanning...");
   byte error, address;
   int nDevices;
@@ -13,8 +13,8 @@ void scanIC2(TwoWire wire){
       // the Write.endTransmisstion to see if
       // a device did acknowledge to the address.
 
-      wire.beginTransmission(address);
-      error = wire.endTransmission();
+      wire->beginTransmission(address);
+      error = wire->endTransmission();
 
       if (error == 0) {
         Serial.print("I2C device found at address 0x");
