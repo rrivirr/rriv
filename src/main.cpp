@@ -335,7 +335,7 @@ void setup(void)
 
   //  Prepare I2C
   Wire.begin();
-  scanIC2();
+  scanIC2(Wire);
   Serial.println("OKOK");
 
   // Clear the alarms so they don't go off during setup
@@ -434,7 +434,6 @@ void printDateTime(DateTime now){
      Serial.println();
 
 }
-
 
 
 
