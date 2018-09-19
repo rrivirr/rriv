@@ -7,6 +7,7 @@
 //#include "RTClib.h"
 #include "DS3231.h"
 
+#include "Utilities.h"
 #include "WaterBear_Control.h"
 #include "WaterBear_FileSystem.h"
 
@@ -63,6 +64,10 @@ short deploymentIdentifierAddressEnd =  43;
 
 short fieldCount = 9;
 char ** values;
+
+#define BUFSIZE                        160   // Size of the read buffer for incoming data
+unsigned long lastMillis = 0;
+
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
@@ -232,14 +237,14 @@ Arduino setup function (automatically called at startup)
 
 void setNextAlarm(){
 
-  // just go for every second
-
-
   Clock.turnOffAlarm(1); // Clear the Control Register
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
 
+  //
+  // Alarm every 10 seconds for debugging
+  //
   int AlarmBits = ALRM2_ONCE_PER_MIN;
   AlarmBits <<= 4;
   AlarmBits |= ALRM1_MATCH_SEC;
@@ -249,7 +254,9 @@ void setNextAlarm(){
   Serial.println(nextSeconds);
   Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
 
-
+  //
+  // Alarm every interval minutes for the real world
+  //
   //int AlarmBits = ALRM2_ONCE_PER_MIN;
   //AlarmBits <<= 4;
   //AlarmBits |= ALRM1_MATCH_MIN_SEC;
@@ -258,6 +265,15 @@ void setNextAlarm(){
   //Serial.println(nextMinutes);
   //Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
 
+  // set both alarms to :00 and :30 seconds, every minute
+      // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
+      //                    |                                    |         |        |
+      //                    |                                    |         |        +--> when set for 12h time, true for pm, false for am
+      //                    |                                    |         +--> true if setting time based on 12 hour, false if based on 24 hour
+      //                    |                                    +--> true if you're setting DoW, false for absolute date
+      //                    +--> INTEGER representing day of the week, 1 to 7 (Monday to Sunday)
+      //
+
 
   Clock.turnOnAlarm(1);
 }
@@ -265,6 +281,7 @@ void setNextAlarm(){
 // Interrupt service routing for EXTI line
 // Just clears out the interrupt, control will return to loop()
 void timerAlarm(){
+
   NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
   EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
@@ -284,16 +301,19 @@ void setup(void)
   pinMode(D4, OUTPUT);
   //pinMode(PB5, OUTPUT);
   pinMode(PC7, INPUT_PULLUP); // This is the interrupt line 7
+  //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
 
   // Use remap of I2C1 so that it matches with the arduino sheild header
   AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
+ // Start up Serial2
   Serial2.begin(9600);
   while(!Serial2){
     delay(100);
   }
-  Serial2.println("Setup");
+  Serial2.println(F("Hello, world.  Primary Serial2.."));
+  Serial2.println(F("Setup"));
 
   // Clear interrupts
   //exti_detach_interrupt(EXTI7);
@@ -315,64 +335,15 @@ void setup(void)
 
   //  Prepare I2C
   Wire.begin();
-
-  Serial.println("Scanning...");
-  byte error, address;
-  int nDevices;
-    nDevices = 0;
-    for(address = 1; address < 127; address++) {
-      // The i2c_scanner uses the return value of
-      // the Write.endTransmisstion to see if
-      // a device did acknowledge to the address.
-
-      Wire.beginTransmission(address);
-      error = Wire.endTransmission();
-
-      if (error == 0) {
-        Serial.print("I2C device found at address 0x");
-        if (address < 16)
-          Serial.print("0");
-        Serial.println(address, HEX);
-
-        nDevices++;
-      }
-      else if (error == 4) {
-        Serial.print("Unknown error at address 0x");
-        if (address < 16)
-          Serial.print("0");
-        Serial.println(address, HEX);
-      }
-    }
-    if (nDevices == 0)
-      Serial.println("No I2C devices found");
-    else
-      Serial.println("done");
-
-
+  scanIC2();
   Serial.println("OKOK");
+
+  // Clear the alarms so they don't go off during setup
   Clock.turnOffAlarm(1);
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
   Serial.println("OKOK");
-
-  //Clock.setA2Time(0b0, 0b0, 0b0, AlarmBits, false, false, false);
-  //Clock.turnOnAlarm(2);
-
-  // set both alarms to :00 and :30 seconds, every minute
-      // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
-      //                    |                                    |         |        |
-      //                    |                                    |         |        +--> when set for 12h time, true for pm, false for am
-      //                    |                                    |         +--> true if setting time based on 12 hour, false if based on 24 hour
-      //                    |                                    +--> true if you're setting DoW, false for absolute date
-      //                    +--> INTEGER representing day of the week, 1 to 7 (Monday to Sunday)
-      //
-
-
-  //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  nice.
-
-
-  Serial2.println(F("Hello, world.  Primary Serial2.."));
 
   //
   // init filesystem
@@ -384,7 +355,6 @@ void setup(void)
   // init ble
   //
   initBLE();
-  Serial2.flush();
 
   // readUniqueId();
 
@@ -436,7 +406,7 @@ void setup(void)
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
   //Serial.println(NVIC_BASE->ISPR[0]);
   //Serial.println("ok");
-  /* */
+  */
 
   setNextAlarm();
 
@@ -466,16 +436,7 @@ void printDateTime(DateTime now){
 }
 
 
-/**************************************************************************/
-/*
-Arduino loop function, called once 'setup' is complete (your own code
-should go here)
-*/
-/**************************************************************************/
 
-#define BUFSIZE                        160   // Size of the read buffer for incoming data
-
-unsigned long lastMillis = 0;
 
 void loop(void)
 {
@@ -679,32 +640,8 @@ void loop(void)
       if(elapsedTime < trigger - 10){ // If we are withing ten secs of the trigger, don't sleep
         Serial2.println("power down");
         Serial2.flush();
-        /*
-        // Set the Alarm on the DS3231
-        // Set AlarmBits, ALRM2 first, followed by ALRM1
-        int AlarmBits = ALRM2_MATCH_MIN; // we will use alarm 2, match on minutes only
-        AlarmBits <<= 4;
-        AlarmBits |= 0b0000; // we won't use alarm 1
-        byte _A2Day;
-        byte _A2Hour;
-        byte A2Minute;
-        byte _AlarmBitsRead;
-        bool  _A2Dy, _A2h12, _A2PM;
 
-        Clock.getA2Time( _A2Day, _A2Hour, A2Minute, _AlarmBitsRead, _A2Dy, _A2h12, _A2PM);
-        // TODO we have to check if the A2Minute is the in line with our current time
-        // this applies to the first time through
-
-        A2Minute = (A2Minute + interval) % 60;
-
-        Clock.setA2Time(0b0000, 0b0000, A2Minute, 0b0000, false, false, false);
-
-        // Actually for now, just off every second
-        */
-
-
-        // go into low power mode
-
+        // TODO
 
 
       }
