@@ -545,13 +545,31 @@ void loop(void)
     NVIC_BASE->ICPR[1] = NVIC_BASE->ISPR[1];
     NVIC_BASE->ICPR[2] = NVIC_BASE->ISPR[2];
 
-    SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+    if(true) { // STOP mode WIP
+      PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
 
-    __asm volatile( "dsb" );
-    systick_disable();
-    __asm volatile( "wfi" );
-    systick_enable();
+      PWR_BASE->CR |= PWR_CR_CWUF;
+      PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop mode when cpu goes into deep sleep
+      //PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode
 
+      PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
+      SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
+
+
+      // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
+      //PWR_BASE->CR &= ~PWR_CR_PDDS;  //  Unset Power down deepsleep bit.
+
+      SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+
+      __asm volatile( "wfi" );
+
+    } else { // SLEEP mode
+
+      __asm volatile( "dsb" );
+      systick_disable();
+      __asm volatile( "wfi" );
+      systick_enable();
+    }
     //__asm volatile( "isb" );
 
     NVIC_BASE->ISER[0] = iser1;
