@@ -262,18 +262,18 @@ void setNextAlarm(){
   Clock.turnOnAlarm(1);
 }
 
+// Interrupt service routing for EXTI line
+// Just clears out the interrupt, control will return to loop()
 void timerAlarm(){
+  NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
   EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
 
   Serial2.println("TIMER ALAERM");
-  //Serial2.flush(); // This crashes because it probably generates an interrupt...
+  NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
 
-  setNextAlarm();
-
-  // Could just do stuff right Here
-  // We dont' really need to re-enter the loop
 }
+
 
 
 void setup(void)
@@ -315,7 +315,39 @@ void setup(void)
 
   //  Prepare I2C
   Wire.begin();
-  delay(200);
+
+  Serial.println("Scanning...");
+  byte error, address;
+  int nDevices;
+    nDevices = 0;
+    for(address = 1; address < 127; address++) {
+      // The i2c_scanner uses the return value of
+      // the Write.endTransmisstion to see if
+      // a device did acknowledge to the address.
+
+      Wire.beginTransmission(address);
+      error = Wire.endTransmission();
+
+      if (error == 0) {
+        Serial.print("I2C device found at address 0x");
+        if (address < 16)
+          Serial.print("0");
+        Serial.println(address, HEX);
+
+        nDevices++;
+      }
+      else if (error == 4) {
+        Serial.print("Unknown error at address 0x");
+        if (address < 16)
+          Serial.print("0");
+        Serial.println(address, HEX);
+      }
+    }
+    if (nDevices == 0)
+      Serial.println("No I2C devices found");
+    else
+      Serial.println("done");
+
 
   Serial.println("OKOK");
   Clock.turnOffAlarm(1);
@@ -374,7 +406,7 @@ void setup(void)
 
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
 
-  /*
+/*
   AFIO_BASE->EXTICR2 = 0x2000; // PC
   EXTI_BASE->IMR = 0x00000080; // turn on line #7
   EXTI_BASE->FTSR = 0x00000080; // detect falling edge of line #7
@@ -404,9 +436,9 @@ void setup(void)
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
   //Serial.println(NVIC_BASE->ISPR[0]);
   //Serial.println("ok");
-/* */
+  /* */
 
-setNextAlarm();
+  setNextAlarm();
 
   /* We're ready to go! */
   Serial2.println(F("done with setup"));
@@ -477,17 +509,66 @@ void loop(void)
      Serial.flush();
 */
 
-   /*if(Clock.checkIfAlarm(1)){
+   if(Clock.checkIfAlarm(1)){
       Serial.println("Alarm 1");
-      // Clear the exti interrupt
-      EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
-      NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
       setNextAlarm();
     }
-    */
 
-    //asm("wfi");
 
+    Serial.print("1: NVIC_BASE->ISPR ");
+    Serial.println(NVIC_BASE->ISPR[0]);
+    Serial.println(NVIC_BASE->ISPR[1]);
+    Serial.println(NVIC_BASE->ISPR[2]);
+    Serial.println(EXTI_BASE->PR);
+    NVIC_BASE->ICPR[0] = NVIC_BASE->ISPR[0];
+    Serial.print("1: NVIC_BASE->ISPR ");
+    Serial.println(NVIC_BASE->ISPR[0]);
+    Serial.println(NVIC_BASE->ISPR[1]);
+    Serial.println(NVIC_BASE->ISPR[2]);
+
+    Serial.print("Enabled: ");
+    Serial.println(NVIC_BASE->ISER[0]);
+    Serial.println(NVIC_BASE->ISER[1]);
+    Serial.println(NVIC_BASE->ISER[2]);
+    Serial.flush();
+
+    int iser1 = NVIC_BASE->ISER[0];
+    int iser2 = NVIC_BASE->ISER[1];
+    int iser3 = NVIC_BASE->ISER[2];
+
+    NVIC_BASE->ICER[0] = NVIC_BASE->ISER[0];
+    NVIC_BASE->ICER[1] = NVIC_BASE->ISER[1];
+    NVIC_BASE->ICER[2] = NVIC_BASE->ISER[2];
+    NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
+
+    NVIC_BASE->ICPR[0] = NVIC_BASE->ISPR[0];
+    NVIC_BASE->ICPR[1] = NVIC_BASE->ISPR[1];
+    NVIC_BASE->ICPR[2] = NVIC_BASE->ISPR[2];
+
+    SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+
+    __asm volatile( "dsb" );
+    systick_disable();
+    __asm volatile( "wfi" );
+    systick_enable();
+
+    //__asm volatile( "isb" );
+
+    NVIC_BASE->ISER[0] = iser1;
+    NVIC_BASE->ISER[1] = iser2;
+    NVIC_BASE->ISER[2] = iser3;
+
+
+    Serial.println("YES");
+    Serial.flush();
+
+
+    /*PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+    PWR_BASE->CR |= PWR_CR_CWUF;
+    PWR_BASE->CR |= PWR_CR_PDDS;
+    PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.
+    PWR_BASE->CR &= ~PWR_CR_PDDS;  //  Unset Power down deepsleep bit.
+*/
 
 /*
   // Clear PDDS and LPDS bits
