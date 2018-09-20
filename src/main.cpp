@@ -70,6 +70,7 @@ char ** values;
 unsigned long lastMillis = 0;
 
 bool awakenedByUser;
+uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
@@ -170,19 +171,20 @@ void bleFirstRun(){
 bool bleActive = false;
 
 void initBLE(){
-  if(false){
+  bool debugBLE = true;
+  if(debugBLE){
     Serial2.print(F("Initializing the Bluefruit LE module: "));
   }
   bleActive = ble.begin(true);
 
-  if(false){
+  if(debugBLE){
     Serial2.println("Tried to init");
     Serial2.println(bleActive);
   }
 
   if ( !bleActive )
   {
-    if(false){
+    if(debugBLE){
       Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
     }
     return;
@@ -192,8 +194,8 @@ void initBLE(){
     bleFirstRun();
 
   }
-  if(false){
-    Serial2.println( F("OK!") );
+  if(debugBLE){
+    Serial2.println( F("BLE OK!") );
   }
 /*
   if ( FACTORYRESET_ENABLE )
@@ -227,8 +229,6 @@ void dateTime(uint16_t* date, uint16_t* time) {
 }
 
 
-bool wake = false;
-uint32_t awakeTime = 0;
 
 /**************************************************************************/
 /*
@@ -415,12 +415,9 @@ void setup(void)
   //
   initBLE();
 
-  // readUniqueId();
+  //readUniqueId();
 
-  wake = true;
-
-  burstCount = burstLength;
-
+  burstCount = burstLength;  // Set to not bursting
 
   //
   // Allocate needed memory
@@ -431,46 +428,9 @@ void setup(void)
   }
   Serial2.flush();
 
-
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
   awakenedByUser = false;
-  //AFIO_BASE->MAPR = AFIO_MAPR_SWJ_CFG_NO_JTAG_NO_SW; // Relase PB3 to use as an EXTI line
-  // Releasing PB3 and disabling JTAG is a bad idea
-  //AFIO_MAPR_SWJ_CFG_1;
   exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
-
-/*
-  AFIO_BASE->EXTICR2 = 0x2000; // PC
-  EXTI_BASE->IMR = 0x00000080; // turn on line #7
-  EXTI_BASE->FTSR = 0x00000080; // detect falling edge of line #7
-
-  //EXTI_BASE->RTSR = 0x00000200; // detect falling edge of line #9
-  //EXTI_BASE->IMR =  0x000FFFFF; // tsurn on all
-  //EXTI_BASE->FTSR = 0x000FFFFF; // detect falling edge
-
-  // EXTI9_5  for NVIC
-  //NVIC_EXTI_9_5
-  Serial.println(AFIO_BASE->EXTICR3);
-  Serial.println(EXTI_BASE->IMR);
-  Serial.println(EXTI_BASE->FTSR);
-  Serial.println(EXTI_BASE->RTSR);
-
-  //EXTI_BASE->SWIER = 0x00000009; // Just for testing
-
-  NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;   //NVIC_EXTI_9_5; // this sets the enabled interrupts
-  Serial2.flush();
-  Serial2.println( (1 << NVIC_EXTI_9_5) );
-  Serial.print("OK: ");
-  Serial.println(NVIC_BASE->ISER[0]);
-  Serial2.flush();
-
-
-  //Serial.println(NVIC_BASE->ISER[0]);
-  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
-  //Serial.println(NVIC_BASE->ISPR[0]);
-  //Serial.println("ok");
-  */
-
 
   /* We're ready to go! */
   Serial2.println(F("done with setup"));
