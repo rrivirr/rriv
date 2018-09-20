@@ -68,6 +68,8 @@ char ** values;
 #define BUFSIZE                        160   // Size of the read buffer for incoming data
 unsigned long lastMillis = 0;
 
+bool awakenedByUser;
+#define USER_WAKE_TIMEOUT 10 //60 * 5; // Timeout after wakeup from user interaction, seconds
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
@@ -249,7 +251,8 @@ void setNextAlarm(){
   AlarmBits <<= 4;
   AlarmBits |= ALRM1_MATCH_SEC;
   short seconds = Clock.getSecond();
-  short nextSeconds = (seconds + 10 - (seconds % 10)) % 60;
+  short debugSleepSeconds = 30;
+  short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
   Serial.print("Next Alarm");
   Serial.println(nextSeconds);
   Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
@@ -278,30 +281,68 @@ void setNextAlarm(){
   Clock.turnOnAlarm(1);
 }
 
+
+void clearTimerInterrupt(){
+    EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
+    NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
+}
+
+void disableTimerInterrupt(){
+    NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
+}
+
+void enableTimerInterrupt(){
+    NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
+}
+
+void enableUserInterrupt(){
+    NVIC_BASE->ISER[1] = 1 << (NVIC_EXTI_15_10-32);
+}
+
+void clearUserInterrupt(){
+    EXTI_BASE->PR = 0x00000400; // this clear the interrupt on exti line
+    NVIC_BASE->ICPR[1] = 1 << (NVIC_EXTI_15_10-32);
+}
+
+void disableUserInterrupt(){
+    NVIC_BASE->ICER[1] = 1 << (NVIC_EXTI_15_10-32); // it's on EXTI 10
+}
+
+
 // Interrupt service routing for EXTI line
 // Just clears out the interrupt, control will return to loop()
 
 void timerAlarm(){
 
-  NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
-  EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
-  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
-
-  Serial2.println("TIMER ALAERM");
-  NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
+  disableTimerInterrupt();
+  clearTimerInterrupt();
+  Serial2.println("TIMER ALARM");
+  enableTimerInterrupt();
 
 }
 
+void userTriggeredInterrupt(){
+
+    disableUserInterrupt();
+    clearUserInterrupt();
+    Serial2.println("USER TRIGGERED INTERRUPT");
+    enableUserInterrupt();
+    awakenedByUser = true;
+
+}
 
 
 void setup(void)
 {
 
-  pinMode(D3, OUTPUT); // D2 and PB3 are the same
-  pinMode(PB3, OUTPUT);
-  pinMode(D4, OUTPUT);
+  //pinMode(D3, OUTPUT); // D3 and PB3 are the same
+  //pinMode(D4, OUTPUT); // D4 and PB5 are the same
+
+  pinMode(PB3, OUTPUT); // USART for BLE
+  pinMode(PB5, OUTPUT); // USART for BLE
   //pinMode(PB5, OUTPUT);
-  pinMode(PC7, INPUT_PULLUP); // This is the interrupt line 7
+  pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
+  pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 3
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
 
@@ -317,22 +358,23 @@ void setup(void)
   Serial2.println(F("Setup"));
 
   // Clear interrupts
-  //exti_detach_interrupt(EXTI7);
   Serial.print("1: NVIC_BASE->ISPR ");
   Serial.println(NVIC_BASE->ISPR[0]);
   Serial.println(NVIC_BASE->ISPR[1]);
   Serial.println(NVIC_BASE->ISPR[2]);
 
   NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
-  EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
-  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5; // Clear any pending interrupts
+  //NVIC_BASE->ICER[0] =  1 << NVIC_EXTI3; // Don't respond to interrupt during setup
+
+
+  clearTimerInterrupt();
+  clearUserInterrupt();
+
 
   Serial.print("2: NVIC_BASE->ISPR ");
   Serial.println(NVIC_BASE->ISPR[0]);
   Serial.println(NVIC_BASE->ISPR[1]);
   Serial.println(NVIC_BASE->ISPR[2]);
-
-  delay(200);
 
   //  Prepare I2C
   Wire.begin();
@@ -375,6 +417,11 @@ void setup(void)
 
 
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
+  awakenedByUser = false;
+  //AFIO_BASE->MAPR = AFIO_MAPR_SWJ_CFG_NO_JTAG_NO_SW; // Relase PB3 to use as an EXTI line
+  // Releasing PB3 and disabling JTAG is a bad idea
+  //AFIO_MAPR_SWJ_CFG_1;
+  exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
 
 /*
   AFIO_BASE->EXTICR2 = 0x2000; // PC
@@ -440,8 +487,8 @@ void prepareForTriggeredMeasurement(){
 }
 
 void measureSensorValues(){
+
     // Fetch the time
-    DateTime now = RTC.now();
     unsigned long currentTime = RTC.now().unixtime();
 
     // Get the deployment identifier
@@ -497,8 +544,6 @@ void loop(void)
 
     // Are we bursting ?
     bool bursting = false;
-    Serial2.println(burstCount);
-    Serial2.println(burstLength);
     if(burstCount < burstLength){
         Serial2.println("Bursting");
         Serial2.flush();
@@ -507,8 +552,11 @@ void loop(void)
 
     // Are we awake for user interaction?
     bool awakeForUserInteraction = false;
-    if(RTC.now().unixtime() < awakeTime + 60 * 5){ // 5 minute timeout
+    if(RTC.now().unixtime() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
       awakeForUserInteraction = true;
+    } else {
+      Serial.println("Not awake for user interaction");
+      Serial.flush();
     }
 
     // See if we should send a measurement to an interactive user
@@ -548,19 +596,26 @@ void loop(void)
         setNextAlarm(); // If we are in this block, alawys set the next alarm
         Serial2.flush();
 
+        printInterruptStatus();
 
+        // save enabled interrupts
         int iser1 = NVIC_BASE->ISER[0];
         int iser2 = NVIC_BASE->ISER[1];
         int iser3 = NVIC_BASE->ISER[2];
 
+        // only enable the timer and user interrupts
         NVIC_BASE->ICER[0] = NVIC_BASE->ISER[0];
         NVIC_BASE->ICER[1] = NVIC_BASE->ISER[1];
         NVIC_BASE->ICER[2] = NVIC_BASE->ISER[2];
-        NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
 
+        // clear any pending interrupts
         NVIC_BASE->ICPR[0] = NVIC_BASE->ISPR[0];
         NVIC_BASE->ICPR[1] = NVIC_BASE->ISPR[1];
         NVIC_BASE->ICPR[2] = NVIC_BASE->ISPR[2];
+
+        enableTimerInterrupt();
+        enableUserInterrupt();
+        awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
         if(false) { // STOP mode WIP
           PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
@@ -580,8 +635,6 @@ void loop(void)
           __asm volatile( "wfi" );
           // __asm volatile( "isb" );
 
-          prepareForTriggeredMeasurement();
-
         } else { // SLEEP mode
 
           __asm volatile( "dsb" );
@@ -592,17 +645,25 @@ void loop(void)
 
         }
 
+        // reenable interrupts
         NVIC_BASE->ISER[0] = iser1;
         NVIC_BASE->ISER[1] = iser2;
         NVIC_BASE->ISER[2] = iser3;
+        disableTimerInterrupt();
+        disableUserInterrupt();
 
         // We have woken from the interrupt
         Serial.println("Awakened by interrupt");
         Serial.flush();
 
         // Actually, we need to check on which interrupt was triggered
-        if(false /*awakenedByUser*/){
-            // TODO this probably goes into ISR
+        if(awakenedByUser){
+
+            Serial.println("Awakened by user");
+            printDateTime(RTC.now());
+            Serial.flush();
+
+            awakenedByUser = false;
             awakeTime = RTC.now().unixtime();
 
         } else {

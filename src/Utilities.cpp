@@ -37,3 +37,12 @@ void scanIC2(TwoWire * wire){
       Serial.println("done");
 
 }
+
+
+void printInterruptStatus(){
+    Serial.println("NVIC->ISER:");
+    Serial.println(NVIC_BASE->ISER[0], BIN);
+    Serial.println(NVIC_BASE->ISER[1], BIN);
+    Serial.println(NVIC_BASE->ISER[2], BIN);
+    Serial.flush();
+}
