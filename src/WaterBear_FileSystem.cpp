@@ -10,23 +10,9 @@
 
 char dataDirectory[6] = "/Data";
 
-WaterBear_FileSystem::WaterBear_FileSystem(void){
+WaterBear_FileSystem::WaterBear_FileSystem(RTClib* rtc, char * deploymentIdentifier){
 
-/*
-    if (! RTC.initialized()) {
-      Serial2.println(F("RTC is NOT initialized!"));
-      // following line sets the RTC to the date & time this sketch was compiled
-      RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-
-    if (!RTC.begin()) {
-      Serial2.println(F(">RTC failed<"));
-    } else {
-      Serial2.println(F(">RTC started<"));
-      //Serial2.println(RTC.now().m);
-    }
-*/
-  //  SdFile::dateTimeCallback(dateTime);
+  this->rtc = rtc;
 
   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
@@ -44,6 +30,8 @@ WaterBear_FileSystem::WaterBear_FileSystem(void){
   } else {
     Serial2.println(F("card initialized."));
   }
+
+  this->setDeploymentIdentifier(deploymentIdentifier);
 
   this->setNewDataFile();
 
@@ -156,15 +144,16 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
 */
 }
 
+void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier){
+    strcpy(deploymentIdentifier, newDeploymentIdentifier);
+}
+
+
 void WaterBear_FileSystem::setNewDataFile() {
-    //DateTime now = RTC.now();
+    DateTime now = this->rtc->now();
 
-    //rtc_calendar_time calendarTime;
-    // rtc_calendar_get_time (struct rtc_module *const module, struct rtc_calendar_time *const time)
-    //http://asf.atmel.com/docs/latest/samr21/html/asfdoc_sam0_rtc_calendar_basic_use_case.html
-
-    char uniquename[11] = "HELLO";
-    //sprintf(uniquename, "%lu", now.unixtime());
+    char uniquename[11] = "NEWFILE";
+    sprintf(uniquename, "%lu", now.unixtime());
     char suffix[5] = ".CSV";
     char filename[15];
     strncpy(filename, uniquename, 10);
@@ -201,33 +190,14 @@ void WaterBear_FileSystem::setNewDataFile() {
       delay(10);
     }
 
-   if (!this->sd.chdir(dataDirectory)) {
+    if (!this->sd.chdir(dataDirectory)) {
     //Serial2.println("OK");
       Serial2.println(F("failed: /Data."));
     } else {
       //Serial2.println(F("cd /Data."));
     }
-    //delay(10);
 
-    //Serial2.println("OK");
-
-
-    char deploymentIdentifier[29] = "DEPLOYMENT";
-    // TODO not sure what to do there
-    /*readDeploymentIdentifier(deploymentIdentifier);
-    unsigned char empty[1] = {0xFF};
-    if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
-      //Serial2.print(">NoDplyment<");
-      //Serial2.flush();
-
-      char defaultDeployment[25] = "SITENAME_00000000000000";
-      writeDeploymentIdentifier(defaultDeployment);
-      readDeploymentIdentifier(deploymentIdentifier);
-    }
-    */
-
-
-    if(!this->sd.exists(deploymentIdentifier)){
+    if(!this->sd.exists(this->deploymentIdentifier)){
       // printCurrentDirListing();
       Serial2.write("mkdir:");
       Serial2.println(deploymentIdentifier);
@@ -235,7 +205,7 @@ void WaterBear_FileSystem::setNewDataFile() {
       //delay(10);
     }
 
-    if (!this->sd.chdir(deploymentIdentifier)) {
+    if (!this->sd.chdir(this->deploymentIdentifier)) {
       Serial2.print("failed:");
       Serial2.println(deploymentIdentifier);
     } else {
@@ -260,7 +230,7 @@ void WaterBear_FileSystem::setNewDataFile() {
     //  Serial2.println("fail /");
     //}
 
-    int ret = this->logfile.println(line); // write the headers to the new logfile
+    this->logfile.println(line); // write the headers to the new logfile
     this->logfile.flush();
     //Serial2.print("wrote:");
     //Serial2.println(ret);

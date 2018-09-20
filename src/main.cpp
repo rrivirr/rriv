@@ -4,8 +4,8 @@
 #include <SPI.h>
 //#include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
-//#include "RTClib.h"
 #include "DS3231.h"
+#include "SdFat.h"
 
 #include "Utilities.h"
 #include "WaterBear_Control.h"
@@ -23,6 +23,7 @@ TwoWire WIRE1 (1, I2C_REMAP); // Need the I2C_REMAP when remapping... it's a hac
 // The DS3231 RTC chip
 DS3231 Clock;
 RTClib RTC;
+
 #define ALRM1_MATCH_EVERY_SEC  0b1111  // once a second
 #define ALRM1_MATCH_SEC        0b1110  // when seconds match
 #define ALRM1_MATCH_MIN_SEC    0b1100  // when minutes and seconds match
@@ -104,16 +105,6 @@ void error(const __FlashStringHelper*err) {
 */
 
 
-// TODO: we will define chip specific callbacks so that classes are not referencing specific RTC
-void dateTime(uint16_t* date, uint16_t* time) {
-  //DateTime now = RTC.now();
-
-  // return date using FAT_DATE macro to format fields
-  //*date = FAT_DATE(now.year(), now.month(), now.day());
-
-  // return time using FAT_TIME macro to format fields
-  //*time = FAT_TIME(now.hour(), now.minute(), now.second());
-}
 
 
 
@@ -222,9 +213,17 @@ void initBLE(){
   // Print Bluefruit information
   ble.info();
 
-  //
-  //
-  //
+}
+
+void dateTime(uint16_t* date, uint16_t* time) {
+
+  DateTime now = RTC.now();
+
+  // return date using FAT_DATE macro to format fields
+  *date = FAT_DATE(now.year(), now.month(), now.day());
+
+  // return time using FAT_TIME macro to format fields
+  *time = FAT_TIME(now.hour(), now.minute(), now.second());
 }
 
 
@@ -345,6 +344,8 @@ void setup(void)
   pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 3
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
+  // Set up global date time callback for SdFile
+  SdFile::dateTimeCallback(dateTime);
 
   // Use remap of I2C1 so that it matches with the arduino sheild header
   AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
@@ -391,8 +392,23 @@ void setup(void)
   //
   // init filesystem
   //
+  char defaultDeployment[25] = "SITENAME_00000000000000";
+  char * deploymentIdentifier = defaultDeployment;
 
-  filesystem = new WaterBear_FileSystem();
+      // TODO get any stored deployment identifier from EEPROM
+      /*readDeploymentIdentifier(deploymentIdentifier);
+      unsigned char empty[1] = {0xFF};
+      if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
+        //Serial2.print(">NoDplyment<");
+        //Serial2.flush();
+
+        char defaultDeployment[25] = "SITENAME_00000000000000";
+        writeDeploymentIdentifier(defaultDeployment);
+        readDeploymentIdentifier(deploymentIdentifier);
+        */
+      //}
+
+  filesystem = new WaterBear_FileSystem(&RTC, deploymentIdentifier);
 
   //
   // init ble
