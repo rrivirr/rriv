@@ -41,7 +41,6 @@ RTClib RTC;
 uint32 tt;
 
 // Pin Mappings for Nucleo Board
-#define D3 PB3
 #define D4 PB5
 
 int bluefruitModePin = D4;
@@ -334,12 +333,8 @@ void userTriggeredInterrupt(){
 void setup(void)
 {
 
-  //pinMode(D3, OUTPUT); // D3 and PB3 are the same
-  //pinMode(D4, OUTPUT); // D4 and PB5 are the same
+  pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
-  pinMode(PB3, OUTPUT); // USART for BLE
-  pinMode(PB5, OUTPUT); // USART for BLE
-  //pinMode(PB5, OUTPUT);
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
   pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 3
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
