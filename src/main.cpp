@@ -69,7 +69,7 @@ char ** values;
 unsigned long lastMillis = 0;
 
 bool awakenedByUser;
-#define USER_WAKE_TIMEOUT 10 //60 * 5; // Timeout after wakeup from user interaction, seconds
+#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
