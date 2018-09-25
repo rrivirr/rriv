@@ -6,6 +6,7 @@
 #include "Adafruit_BluefruitLE_UART.h"
 #include "DS3231.h"
 #include "SdFat.h"
+#include "STM32-UID.h"
 
 #include "Utilities.h"
 #include "WaterBear_Control.h"
@@ -17,7 +18,7 @@
 // For F103RM
 #define Serial Serial2
 
-TwoWire WIRE1 (1, I2C_REMAP); // Need the I2C_REMAP when remapping... it's a hack they deprecated support for this
+TwoWire WIRE1 (1); // Need the I2C_REMAP when remapping... it's a hack they deprecated support for this
 #define Wire WIRE1
 
 // The DS3231 RTC chip
@@ -35,6 +36,17 @@ RTClib RTC;
 #define ALRM2_MATCH_HR_MIN     0b100   // when hours and minutes match
 //byte ALRM2_SET = ALRM2_ONCE_PER_MIN;
 
+#define EEPROM_I2C_ADDRESS 0x50
+
+#define EEPROM_UUID_ADDRESS_START 0
+#define EEPROM_UUID_ADDRESS_END 15
+#define UUID_LENGTH 12 // STM32 has a 12 byte UUID, leave extra space for the future
+
+#define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START 16
+#define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_END   43
+#define DEPLOYMENT_IDENTIFIER_LENGTH 25
+
+unsigned char uuid[UUID_LENGTH];
 
 // The internal RTC
 //RTClock rt (RTCSEL_LSE); // initialise
@@ -55,12 +67,8 @@ char version[5] = "v2.0";
 short interval = 1; // minutes between loggings
 short burstLength = 10; // how many readings in a burst
 
-short uniqueIdAddressStart = 0;
-short uniqueIdAddressEnd = 15;
-unsigned char uuid[16];
 
-short deploymentIdentifierAddressStart = 16;
-short deploymentIdentifierAddressEnd =  43;
+
 
 short fieldCount = 9;
 char ** values;
@@ -73,18 +81,17 @@ uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
-  for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    //short address = deploymentIdentifierAddressStart + i;
-    //deploymentIdentifier[i] = EEPROM.read(address);
-    deploymentIdentifier[i] = '\0';
+  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
+    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+    deploymentIdentifier[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
-
+  deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH] = '\0';
 }
 
 void writeDeploymentIdentifier(char * deploymentIdentifier){
-  for(short i=0; i <= deploymentIdentifierAddressEnd - deploymentIdentifierAddressStart; i++){
-    //short address = deploymentIdentifierAddressStart + i;
-    //EEPROM.write(address, deploymentIdentifier[i]);
+  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
+    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
   }
 }
 
@@ -99,21 +106,12 @@ void error(const __FlashStringHelper*err) {
 }
 
 
-
-/*
-* Initialize the SD Card
-*/
-
-
-
-
-
 void bleFirstRun(){
 
   // if we don't have a UUID yet, we are running for the first time
   // set a mode pin for USART1 if we need to
 
-  if(false){
+  if(true){
     Serial2.println("BLE First Run");
   }
   ble.factoryReset();
@@ -133,39 +131,59 @@ void bleFirstRun(){
 
 }
 
-/*void readUniqueId(){
+void readUniqueId(){
 
-  for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
-    int address = uniqueIdAddressStart + i;
-    uuid[i] = EEPROM.read(address);
+  for(int i=0; i < UUID_LENGTH; i++){
+    unsigned int address = EEPROM_UUID_ADDRESS_START + i;
+    uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
 
-  Serial2.println(F("UUID in EEPROM:"));
-  for(int i=0; i<8; i++){
-    Serial2.print((unsigned int) uuid[2*i], HEX);
+  Serial2.println(F("OK.. UUID in EEPROM:"));
+  // Log uuid and time
+  // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
+  char uuidString[2 * UUID_LENGTH + 1];
+  uuidString[2 * UUID_LENGTH] = '\0';
+  for(short i=0; i < UUID_LENGTH; i++){
+      sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
   }
-  Serial2.println("");
+  Serial2.println(uuidString);
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-  //Serial2.println("Here's the uninitializedEEPROM string that should be");
-  //for(int i=0; i<8; i++){
-    //Serial2.print((unsigned int) uninitializedEEPROM[2*i], HEX);
-  //}
-  //Serial2.println("");
 
+  if(memcmp(uuid, uninitializedEEPROM, UUID_LENGTH) == 0){
+    Serial2.println(F("Generate or Retrieve UUID"));
+    getSTM32UUID(uuid);
 
-  if(memcmp(uuid, uninitializedEEPROM, 16) == 0){
-    Serial2.println(F("Generate UUID"));
-    // generate the unique ID
-    TrueRandomClass::uuid(uuid);
-    for(int i=0; i <= uniqueIdAddressEnd - uniqueIdAddressStart; i++){
-      int address = uniqueIdAddressStart + i;
-      EEPROM.write(address, uuid[i]);
+    Serial2.println(F("UUID to Write:"));
+    char uuidString[2 * UUID_LENGTH + 1];
+    uuidString[2 * UUID_LENGTH] = '\0';
+    for(short i=0; i < UUID_LENGTH; i++){
+        sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-  }
+    Serial2.println(uuidString);
+    Serial2.flush();
+
+    for(int i=0; i < UUID_LENGTH; i++){
+      unsigned int address = EEPROM_UUID_ADDRESS_START + i;
+      writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, uuid[i]);
+    }
+
+    for(int i=0; i < UUID_LENGTH; i++){
+      unsigned int address = EEPROM_UUID_ADDRESS_START + i;
+      uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+    }
+
+    Serial2.println(F("UUID in EEPROM:"));
+    for(short i=0; i < UUID_LENGTH; i++){
+        sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
+    }
+    Serial2.println(uuidString);
+    Serial2.flush();
+
+   }
 
 }
-*/
+
 
 bool bleActive = false;
 
@@ -343,7 +361,7 @@ void setup(void)
   SdFile::dateTimeCallback(dateTime);
 
   // Use remap of I2C1 so that it matches with the arduino sheild header
-  AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
+  // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
  // Start up Serial2
   Serial2.begin(9600);
@@ -390,27 +408,25 @@ void setup(void)
   char defaultDeployment[25] = "SITENAME_00000000000000";
   char * deploymentIdentifier = defaultDeployment;
 
-      // TODO get any stored deployment identifier from EEPROM
-      /*readDeploymentIdentifier(deploymentIdentifier);
-      unsigned char empty[1] = {0xFF};
-      if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
-        //Serial2.print(">NoDplyment<");
-        //Serial2.flush();
+  // get any stored deployment identifier from EEPROM
+  readDeploymentIdentifier(deploymentIdentifier);
+  unsigned char empty[1] = {0xFF};
+  if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
+    //Serial2.print(">NoDplyment<");
+    //Serial2.flush();
 
-        char defaultDeployment[25] = "SITENAME_00000000000000";
-        writeDeploymentIdentifier(defaultDeployment);
-        readDeploymentIdentifier(deploymentIdentifier);
-        */
-      //}
+    writeDeploymentIdentifier(defaultDeployment);
+    readDeploymentIdentifier(deploymentIdentifier);
+  }
 
-  filesystem = new WaterBear_FileSystem(&RTC, deploymentIdentifier);
+  //filesystem = new WaterBear_FileSystem(&RTC, deploymentIdentifier);
 
   //
   // init ble
   //
   initBLE();
 
-  //readUniqueId();
+  readUniqueId();
 
   burstCount = burstLength;  // Set to not bursting
 
@@ -462,29 +478,28 @@ void measureSensorValues(){
     // Fetch the time
     unsigned long currentTime = RTC.now().unixtime();
 
+    // TODO: do we need to do this every time ??
+    char uuidString[2 * UUID_LENGTH + 1];
+    uuidString[2 * UUID_LENGTH] = '\0';
+    for(short i=0; i < UUID_LENGTH; i++){
+        sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
+    }
+
+
     // Get the deployment identifier
     // TODO: do we need to do this every time ??
     char deploymentIdentifier[29];// = "DEPLOYMENT";
     readDeploymentIdentifier(deploymentIdentifier);
-    values[0] = deploymentIdentifier; // TODO: change to deploymentIdentifier_UUID
+    char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH + 2];
+    memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+    deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
 
-    // TODO: the unique deployment identifier has to use the UUID too
-/*
-    logfile.print(deploymentIdentifier);
-    logfile.write("_");
-    for(short i=0; i<8; i++){
-        logfile.print((unsigned int) uuid[2*i], HEX);
-    }
-    logfile.print(comma);
-*/
+    memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH+1], uuidString, 2*UUID_LENGTH);
+    deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
+    values[0] = deploymentUUID; // TODO: change to deploymentIdentifier_UUID
 
     // Log uuid and time
-    char uuid[9];
-    for(short i=0; i<8; i++){
-        sprintf(&uuid[i], "%02x", (unsigned int) uuid[2*i]);
-    }
-    uuid[8] = '\0';
-    values[1] = uuid;
+    values[1] = uuidString;
 
     //Serial2.println(currentTime);
     char timeString[11];
@@ -509,6 +524,7 @@ void measureSensorValues(){
 }
 
 unsigned int interactiveModeMeasurementDelay = 1000;
+
 
 void loop(void)
 {
@@ -593,7 +609,7 @@ void loop(void)
 
           PWR_BASE->CR |= PWR_CR_CWUF;
           PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
-          // PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
+          //PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
 
           PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
           SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;

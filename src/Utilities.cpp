@@ -46,3 +46,30 @@ void printInterruptStatus(){
     Serial.println(NVIC_BASE->ISER[2], BIN);
     Serial.flush();
 }
+
+
+
+void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
+{
+  wire->beginTransmission(deviceaddress);
+  wire->write(eeaddress);
+  wire->write(data);
+  wire->endTransmission();
+
+  delay(5);
+}
+
+byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress )
+{
+  byte rdata = 0xFF;
+
+  wire->beginTransmission(deviceaddress);
+  wire->write(eeaddress);
+  wire->endTransmission();
+
+  wire->requestFrom(deviceaddress,1);
+
+  if (wire->available()) rdata = wire->read();
+
+  return rdata;
+}
