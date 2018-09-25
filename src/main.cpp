@@ -402,6 +402,8 @@ void setup(void)
   Clock.checkIfAlarm(2);
   Serial.println("OKOK");
 
+  DateTime now = RTC.now();
+  Serial.println(now.unixtime());
   //
   // init filesystem
   //
@@ -419,7 +421,18 @@ void setup(void)
     readDeploymentIdentifier(deploymentIdentifier);
   }
 
-  //filesystem = new WaterBear_FileSystem(&RTC, deploymentIdentifier);
+  DateTime now3 = RTC.now();
+  Serial.println(now3.unixtime());
+  Serial.flush();
+
+  filesystem = new WaterBear_FileSystem(deploymentIdentifier);
+  Serial.println("OK");
+
+  DateTime now2 = RTC.now();
+  Serial.println(now2.unixtime());
+  Serial.flush();
+
+  filesystem->setNewDataFile(RTC.now().unixtime());
 
   //
   // init ble

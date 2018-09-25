@@ -3,16 +3,14 @@
 // for the data logging shield, we use digital pin 10 for the SD cs line
 
 #define SPI1_NSS_PIN PB6    //SPI_1 Chip Select pin is PA4 by default. You can change it to the STM32 pin you want.
-                            // But the SDCard shield wants PB6, i.e. D10
+                            // But the SDCard shield wants PB6, i.e. D10, which is a conflict with I2C bus on F103RB
 #define CHIP_SELECT SPI1_NSS_PIN  // not '10' like for normal arduino
                                   // note that the other SPI1 pins map just like the 328
 
 
 char dataDirectory[6] = "/Data";
 
-WaterBear_FileSystem::WaterBear_FileSystem(RTClib* rtc, char * deploymentIdentifier){
-
-  this->rtc = rtc;
+WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier){
 
   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
@@ -32,8 +30,10 @@ WaterBear_FileSystem::WaterBear_FileSystem(RTClib* rtc, char * deploymentIdentif
   }
 
   this->setDeploymentIdentifier(deploymentIdentifier);
+  Serial2.println("Set deployment identifier");
 
-  this->setNewDataFile();
+  //this->setNewDataFile();
+  //Serial2.println("Set new data file");
 
 }
 
@@ -149,17 +149,28 @@ void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier
 }
 
 
-void WaterBear_FileSystem::setNewDataFile() {
-    DateTime now = this->rtc->now();
+void WaterBear_FileSystem::setNewDataFile(long unixtime) {
+    /*Serial2.println("oki");
+    Serial2.flush();
 
+    DateTime now = this->rtc->now();
+    Serial2.println("ok");
+    Serial2.flush();
+
+    Serial2.println(now.unixtime());
+    Serial2.flush();
+*/
+    Serial2.println("ok");
+    Serial2.flush();
     char uniquename[11] = "NEWFILE";
-    sprintf(uniquename, "%lu", now.unixtime());
+    sprintf(uniquename, "%lu", unixtime);
     char suffix[5] = ".CSV";
     char filename[15];
     strncpy(filename, uniquename, 10);
     strncpy(&filename[10], suffix, 5);
 
     Serial2.println("cd");
+    Serial2.flush();
     this->sd.chdir("/");
     delay(10);
 

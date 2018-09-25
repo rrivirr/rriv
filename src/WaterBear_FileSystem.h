@@ -9,17 +9,16 @@ private:
   // File system object.
   SdFat sd;
   File logfile;
-  RTClib * rtc;
   char deploymentIdentifier[29];
 
   void printCurrentDirListing();
 
 
 public:
-  WaterBear_FileSystem(RTClib* rtc, char * deploymentIdentifier);
+  WaterBear_FileSystem(char * deploymentIdentifier);
   void writeLog(char** values, short fieldCount);
   void setDeploymentIdentifier(char * deploymentIdentifier);
-  void setNewDataFile();
+  void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
 
 };
