@@ -456,9 +456,10 @@ void printDateTime(DateTime now){
      Serial.print(now.month(), DEC);
      Serial.print('/');
      Serial.print(now.day(), DEC);
-    // Serial.print(" (");
-    // Serial.print(now.dayOfTheWeek());
-    // Serial.print(") ");
+     // Serial.print(" (");
+     // Serial.print(now.dayOfTheWeek());
+     // Serial.print(") ");
+     Serial.print("  ");
      Serial.print(now.hour(), DEC);
      Serial.print(':');
      Serial.print(now.minute(), DEC);
@@ -537,13 +538,18 @@ void loop(void)
         bursting = true;
     }
 
+    // Debug debugLoop
+    bool debugLoop = true;
+
     // Are we awake for user interaction?
     bool awakeForUserInteraction = false;
     if(RTC.now().unixtime() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
       awakeForUserInteraction = true;
     } else {
-      Serial.println("Not awake for user interaction");
-      Serial.flush();
+        if(!debugLoop){
+            Serial.println("Not awake for user interaction");
+            Serial.flush();
+        }
     }
 
     // See if we should send a measurement to an interactive user
@@ -551,13 +557,16 @@ void loop(void)
     bool takeMeasurement = false;
     if(bursting){
         takeMeasurement = true;
-    } else if(awakeForUserInteraction){
+    } else if(awakeForUserInteraction || debugLoop){
         unsigned long currentMillis = millis();
         if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
             DateTime now = RTC.now();
             printDateTime(now);
             lastMillis = currentMillis;
             takeMeasurement = true;
+        }
+        if(debugLoop){
+            return;
         }
     }
 
