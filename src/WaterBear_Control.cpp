@@ -8,6 +8,20 @@ int WaterBear_Control::state = 0;
 
 bool WaterBear_Control::ready(HardwareSerial &port) {
     Stream *myStream = &port;
+    return WaterBear_Control::ready(myStream);
+}
+
+bool WaterBear_Control::ready(Adafruit_BluefruitLE_UART &ble){
+    Stream *myStream = &ble;
+    return WaterBear_Control::ready(myStream);
+}
+
+bool WaterBear_Control::ready(Adafruit_BluefruitLE_SPI &ble){
+    Stream *myStream = &ble;
+    return WaterBear_Control::ready(myStream);
+}
+
+bool WaterBear_Control::ready(Stream * myStream) {
     if( (myStream->peek() == '>' && WaterBear_Control::state == 0)
         || WaterBear_Control::state == 1){
       return true;
@@ -16,15 +30,6 @@ bool WaterBear_Control::ready(HardwareSerial &port) {
     }
 }
 
-bool WaterBear_Control::ready(Adafruit_BluefruitLE_UART &ble){
-  Stream *myStream = &ble;
-  if( (myStream->peek() == '>' && WaterBear_Control::state == 0)
-      || WaterBear_Control::state == 1){
-    return true;
-  } else {
-    return false;
-  }
-}
 
 
 void WaterBear_Control::processControlCommands(HardwareSerial &port) {
@@ -33,6 +38,11 @@ void WaterBear_Control::processControlCommands(HardwareSerial &port) {
 }
 
 void WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble) {
+  Stream *myStream = &ble;
+  WaterBear_Control::processControlCommands(myStream);
+}
+
+void WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble) {
   Stream *myStream = &ble;
   WaterBear_Control::processControlCommands(myStream);
 }

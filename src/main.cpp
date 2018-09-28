@@ -2,8 +2,9 @@
 //#include <RTClock.h>
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
-//#include "Adafruit_BluefruitLE_SPI.h"
-#include "Adafruit_BluefruitLE_UART.h"
+
+#include "Adafruit_BluefruitLE_SPI.h"
+//#include "Adafruit_BluefruitLE_UART.h"
 #include "DS3231.h"
 #include "SdFat.h"
 #include "STM32-UID.h"
@@ -15,7 +16,7 @@
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 
-// For F103RM
+// For F103RB
 #define Serial Serial2
 
 TwoWire WIRE1 (1); // Need the I2C_REMAP when remapping... it's a hack they deprecated support for this
@@ -53,10 +54,23 @@ unsigned char uuid[UUID_LENGTH];
 uint32 tt;
 
 // Pin Mappings for Nucleo Board
-#define D4 PB5
 
-int bluefruitModePin = D4;
-Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
+// BLE USART
+//#define D4 PB5
+//int bluefruitModePin = D4;
+//Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
+
+// Bluefruit on SPI
+#define BLUEFRUIT_SPI_SCK   PB13
+#define BLUEFRUIT_SPI_MISO  PB14
+#define BLUEFRUIT_SPI_MOSI  PB15
+#define BLUEFRUIT_SPI_CS    PB1
+#define BLUEFRUIT_SPI_IRQ   PC5
+#define BLUEFRUIT_SPI_RST   PC4
+
+//SPIClass SPI_2(2); //Create an SPI2 object.  This has been moved to a tweak on Adafruit_BluefruitLE_SPI
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+
 
 WaterBear_FileSystem * filesystem;
 
@@ -114,19 +128,26 @@ void bleFirstRun(){
   if(true){
     Serial2.println("BLE First Run");
   }
-  ble.factoryReset();
-  ble.setMode(BLUEFRUIT_MODE_COMMAND);
+  //ble.factoryReset();
+
+  //ble.setMode(BLUEFRUIT_MODE_COMMAND);
   //digitalWrite(D4, HIGH);
 
   // Send command
-  ble.println(F("AT+GAPDEVNAME=WaterBear2"));
-  ble.waitForOK();
+  ble.println(F("AT+GAPDEVNAME=WaterBear3"));
+  if(ble.waitForOK()){
+      Serial2.println("Got OK");
+  } else {
+      Serial2.println("BLE Error");
+      while(1);
+  }
   ble.println(F("ATZ"));
   ble.waitForOK();
+  Serial2.println("Got OK");
 
   // Place bluefruit into a data mode
   //delay(5000);
-  ble.setMode(BLUEFRUIT_MODE_DATA);
+  //ble.setMode(BLUEFRUIT_MODE_DATA);
   //digitalWrite(D4, LOW);
 
 }
@@ -192,7 +213,7 @@ void initBLE(){
   if(debugBLE){
     Serial2.print(F("Initializing the Bluefruit LE module: "));
   }
-  bleActive = ble.begin(true);
+  bleActive = ble.begin(true, true);
 
   if(debugBLE){
     Serial2.println("Tried to init");
@@ -354,7 +375,7 @@ void setup(void)
   pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
-  pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 3
+  pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 10, user interrupt
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
   // Set up global date time callback for SdFile
@@ -425,14 +446,16 @@ void setup(void)
   Serial.println(now3.unixtime());
   Serial.flush();
 
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier);
-  Serial.println("OK");
+  // SS is on PC6 for now
+  filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
+  Serial.println("Filesystem started OK");
 
   DateTime now2 = RTC.now();
   Serial.println(now2.unixtime());
   Serial.flush();
 
   filesystem->setNewDataFile(RTC.now().unixtime());
+
 
   //
   // init ble
@@ -552,7 +575,7 @@ void loop(void)
     }
 
     // Debug debugLoop
-    bool debugLoop = true;
+    bool debugLoop = false;
 
     // Are we awake for user interaction?
     bool awakeForUserInteraction = false;
@@ -685,7 +708,6 @@ void loop(void)
 
 
     if( WaterBear_Control::ready(Serial2) ){
-        //digitalWrite(PA5, 1);
         awakeTime = RTC.now().unixtime(); // Push awake time forward
         WaterBear_Control::processControlCommands(Serial2);
         return;
@@ -702,13 +724,11 @@ void loop(void)
         Serial2.println("Taking new measurement");
         Serial2.flush();
 
-        //digitalWrite(PA5, 1); // LED
-
         measureSensorValues();
 
         Serial2.println("writeLog");
         filesystem->writeLog(values, fieldCount);
-        //Serial2.println("writeLog done");
+        Serial2.println("writeLog done");
 
         char valuesBuffer[52];
         sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
@@ -719,12 +739,9 @@ void loop(void)
             ble.println(valuesBuffer);
         }
 
-
         if(bursting) {
             burstCount = burstCount + 1;
         }
-
-        //digitalWrite(PA5, 0);
 
     }
 

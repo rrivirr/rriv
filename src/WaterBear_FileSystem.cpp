@@ -1,28 +1,18 @@
 #include "WaterBear_FileSystem.h"
 
-// for the data logging shield, we use digital pin 10 for the SD cs line
-
-#define SPI1_NSS_PIN PB6    //SPI_1 Chip Select pin is PA4 by default. You can change it to the STM32 pin you want.
-                            // But the SDCard shield wants PB6, i.e. D10, which is a conflict with I2C bus on F103RB
-#define CHIP_SELECT SPI1_NSS_PIN  // not '10' like for normal arduino
-                                  // note that the other SPI1 pins map just like the 328
-
-
 char dataDirectory[6] = "/Data";
 
-WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier){
+WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin){
 
   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
 
-  // make sure that the default chip select pin is set to
-  // output, even if you don't use it:
-  pinMode(PA4, OUTPUT);
 
-  pinMode(CHIP_SELECT, OUTPUT);
+  // Make sure chip select pin is set to output
+  pinMode(chipSelectPin, OUTPUT);
 
   // see if the card is present and can be initialized:
-  if (!this->sd.begin(CHIP_SELECT, SPI_CLOCK_DIV4)) {
+  if (!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4)) {
     Serial2.println(F(">Card fail<"));
     while(1);
   } else {
@@ -31,9 +21,6 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier){
 
   this->setDeploymentIdentifier(deploymentIdentifier);
   Serial2.println("Set deployment identifier");
-
-  //this->setNewDataFile();
-  //Serial2.println("Set new data file");
 
 }
 
