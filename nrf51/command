@@ -1,0 +1,2 @@
+flash write_image erase ./.pioenvs/NUCLEO-F103RB/firmware.elf 0x08000000
+

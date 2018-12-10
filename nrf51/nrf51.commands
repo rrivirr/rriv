@@ -1,0 +1,24 @@
+> init
+> reset init
+> halt
+> nrf51 mass_erase
+> flash write_image "nrf51/blespifriend_s110_xxac_0_7_0_160628_blespifriend.hex" 0
+auto erase enabled
+using fast async flash loader. This is currently supported
+only with ST-Link and CMSIS-DAP. If you have issues, add
+"set WORKAREASIZE 0" before sourcing nrf51.cfg to disable it
+target halted due to breakpoint, current mode: Thread
+xPSR: 0x61000000 pc: 0x2000001e msp: 0x000007c0
+wrote 69632 bytes from file nrf51/blespifriend_s110_xxac_0_7_0_160628_blespifriend.hex in 3.147867s (21.602 KiB/s)
+
+// ??
+//             commands.append('flash write_image {0} 0 ihex'.format(f))
+//
+
+// blespifriend_s110_xxac_0_7_0_160628_blespifriend_signature.hex
+
+> flash write_image "nrf51/blespifriend_s110_xxac_0_8_0_170925_blespifriend.hex"
+> flash write_image "nrf51/blespifriend_s110_xxac_0_8_0_170925_blespifriend_signature.hex"
+> reset run
+> exit
+
