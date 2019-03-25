@@ -101,6 +101,7 @@ bool awakenedByUser;
 uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
+unsigned int interactiveModeMeasurementDelay = 100;
 
 float x; // global variables
 float x1; // global variables
@@ -587,7 +588,7 @@ void setup(void)
   }
 
   p.Begin(); // start plotter
-  p.AddTimeGraph( "Some title of a graph", 30, "label for x", x); // add any graphs you want
+  p.AddTimeGraph( "Some title of a graph", 50, "label for x", x); // add any graphs you want
 
 }
 
@@ -674,15 +675,15 @@ void measureSensorValues(){
 
     x1= analogRead(sensorPins[1]);
     x2= analogRead(sensorPins[2]);
-    x = 10*sin( 2.0*PI*( millis() / 1000.0 ) ); // update your variables like usual
+    x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
     p.Plot();
 }
 
-unsigned int interactiveModeMeasurementDelay = 1000;
 
 
 void loop(void)
 {
+
 
     // Are we bursting ?
     bool bursting = false;
@@ -714,6 +715,7 @@ void loop(void)
     if(!awakeForUserInteraction) {
         awakeForUserInteraction = debugLoop;
     }
+
 
     // See if we should send a measurement to an interactive user
     // or take a bursting measurement
@@ -864,16 +866,20 @@ void loop(void)
     Serial2.println(request);
     */
 
-    //Serial2.println("Checking BLE");
-    if(WaterBear_Control::ready(ble) ){
-        if(DEBUG_MESSAGES){
-            Serial2.println("BLE Input Ready");
-        }
-        awakeTime = RTC.now().unixtime(); // Push awake time forward
-        WaterBear_Control::processControlCommands(ble);
-        return;
 
+    if( ! takeMeasurement){
+
+        //Serial2.println("Checking BLE");
+        if(WaterBear_Control::ready(ble) ){
+            if(DEBUG_MESSAGES){
+                Serial2.println("BLE Input Ready");
+            }
+            awakeTime = RTC.now().unixtime(); // Push awake time forward
+            WaterBear_Control::processControlCommands(ble);
+            return;
+        }
     }
+
 
     if(takeMeasurement){
 
