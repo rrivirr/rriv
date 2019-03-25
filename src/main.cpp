@@ -2,6 +2,7 @@
 //#include <RTClock.h>
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
+#include "plotter.h"
 
 #include "Adafruit_BluefruitLE_SPI.h"
 //#include "Adafruit_BluefruitLE_UART.h"
@@ -17,7 +18,7 @@
 #include <libmaple/scb.h>
 
 #define DEBUG_MEASUREMENTS true
-#define DEBUG_LOOP false
+#define DEBUG_LOOP true
 
 // For F103RB
 #define Serial Serial2
@@ -88,8 +89,6 @@ short interval = 1; // minutes between loggings
 short burstLength = 10; // how many readings in a burst
 
 
-
-
 short fieldCount = 9;
 char ** values;
 
@@ -99,6 +98,13 @@ unsigned long lastMillis = 0;
 bool awakenedByUser;
 uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
+
+
+double x; // global variables
+double x1; // global variables
+double x2; // global variables
+Plotter p; // create plotter
+
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
@@ -405,13 +411,14 @@ void userTriggeredInterrupt(){
 }
 
 
+
 void setup(void)
 {
 
     // Start up Serial2
     // Need to do an if(Serial2) after an amount of time, just disable it
     // Note that this is double the actual BAUD due to HSI clocking of processor
-     Serial2.begin(19200);
+     Serial2.begin(9600);
      while(!Serial2){
        delay(100);
      }
@@ -490,6 +497,8 @@ void setup(void)
 
     writeDeploymentIdentifier(defaultDeployment);
     readDeploymentIdentifier(deploymentIdentifier);
+    p.Begin(); // start plotter
+    p.AddTimeGraph( "Some title of a graph", 1500, "label for x", x1); // add any graphs you want                           //set aside some bytes for receiving data from Atlas Scientific product
   }
 
   DateTime now3 = RTC.now();
@@ -613,7 +622,10 @@ void measureSensorValues(){
         //Serial2.print(": ");
         //Serial2.println(value);
     }
+    x1= analogRead(sensorPins[1]);
 
+    x2= analogRead(sensorPins[2]);
+    p.Plot();
 }
 
 unsigned int interactiveModeMeasurementDelay = 1000;

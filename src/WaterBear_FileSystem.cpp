@@ -163,24 +163,24 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
     this->sd.chdir("/");
     delay(10);
 
-    File file;
-    file = this->sd.open("/COLUMNS.TXT");
+    //File file;
+    //file = this->sd.open("/COLUMNS.TXT");
 
-    if (!file){
-      Serial2.println(F("COLUMNS.TXT did not open"));
-      while(1);
-    }
+    //if (!file){
+    //  Serial2.println(F("COLUMNS.TXT did not open"));
+    //  while(1);
+    //}
 
-    char line[100];
-    int n = file.fgets(line, sizeof(line));
-    if (line[n - 1] == '\n') {
+    //char line[100];
+    //int n = file.fgets(line, sizeof(line));
+    //if (line[n - 1] == '\n') {
           // remove '\n'
-          line[n - 1] = 0;
-    }
+    //      line[n - 1] = 0;
+    //}
 
-    Serial2.print(F(">log:"));
-    Serial2.println(line);
-    file.close();
+    //Serial2.print(F(">log:"));
+    //Serial2.println(line);
+    //file.close();
 
     printCurrentDirListing();
     Serial2.println("OK in root");
@@ -230,8 +230,8 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
     //  Serial2.println("fail /");
     //}
 
-    this->logfile.println(line); // write the headers to the new logfile
-    this->logfile.flush();
+  //  this->logfile.println(line); // write the headers to the new logfile
+  //  this->logfile.flush();
     //Serial2.print("wrote:");
     //Serial2.println(ret);
 }
