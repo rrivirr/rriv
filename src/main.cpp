@@ -697,9 +697,6 @@ void measureSensorValues(){
         //Serial2.println(value);
     }
 
-    x1= analogRead(sensorPins[1]);
-    x2= analogRead(sensorPins[2]);
-    x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
 
       if (input_stringcomplete) {                         //if a string from the PC has been received in its entirety
         Serial1.print(inputstring);                      //send that string to the Atlas Scientific product
@@ -717,22 +714,17 @@ void measureSensorValues(){
       }
 
 
-  //    if (sensor_stringcomplete) {                        //if a string from the Atlas Scientific product has been received in its entirety
-    //    Serial.println(sensorstring);                     //send that string to the PC's serial monitor
-    //    ORP = sensorstring.toFloat();                     //convert the string to a floating point number so it can be evaluated by the Arduino
-
-      //  if (ORP >= 500) {                                  //if the ORP is greater than or equal to 500
-    //      Serial.println("high");                         //print "high" this is demonstrating that the Arduino is evaluating the ORP as a number and not as a string
-    //    }
-
-      //  if (ORP <= 499.9) {                                //if the ORP is less than or equal to 400.9
-      //    Serial.println("low");                          //print "low" this is demonstrating that the Arduino is evaluating the ORP as a number and not as a string
-      //  }
-
+      if (sensor_stringcomplete) {                        //if a string from the Atlas Scientific product has been received in its entirety
+        // Serial.println(sensorstring);                     //send that string to the PC's serial monitor
+        ORP = sensorstring.toFloat();                     //convert the string to a floating point number so it can be evaluated by the Arduino
         sensorstring = "";                                //clear the string:
         sensor_stringcomplete = false;                    //reset the flag used to tell if we have received a completed string from the Atlas Scientific product
       }
-    p.Plot();
+
+      //x1= analogRead(sensorPins[1]);
+      //x2= analogRead(sensorPins[2]);
+      //x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
+      p.Plot();
 }
 
 
