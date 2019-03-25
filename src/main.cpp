@@ -845,15 +845,7 @@ void loop(void)
 
 
 
-    if( WaterBear_Control::ready(Serial2) ){
-        if(DEBUG_MESSAGES){
-            Serial2.println("SERIAL2 Input Ready");
-        }
-        awakeTime = RTC.now().unixtime(); // Push awake time forward
-        WaterBear_Control::processControlCommands(Serial2);
-        return;
 
-    }
 
     // if DEBUG_BLE
     /*
@@ -868,6 +860,16 @@ void loop(void)
 
 
     if( ! takeMeasurement){
+
+        if( WaterBear_Control::ready(Serial2) ){
+            if(DEBUG_MESSAGES){
+                Serial2.println("SERIAL2 Input Ready");
+            }
+            awakeTime = RTC.now().unixtime(); // Push awake time forward
+            WaterBear_Control::processControlCommands(Serial2);
+            return;
+
+        }
 
         //Serial2.println("Checking BLE");
         if(WaterBear_Control::ready(ble) ){
