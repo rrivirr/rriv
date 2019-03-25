@@ -101,7 +101,7 @@ bool awakenedByUser;
 uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
-unsigned int interactiveModeMeasurementDelay = 100;
+unsigned int interactiveModeMeasurementDelay = 10;
 
 float x; // global variables
 float x1; // global variables
