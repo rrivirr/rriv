@@ -16,6 +16,9 @@
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 
+#define DEBUG_MEASUREMENTS true
+#define DEBUG_LOOP false
+
 // For F103RB
 #define Serial Serial2
 
@@ -64,8 +67,11 @@ uint32 tt;
 #define BLUEFRUIT_SPI_SCK   PB13
 #define BLUEFRUIT_SPI_MISO  PB14
 #define BLUEFRUIT_SPI_MOSI  PB15
-#define BLUEFRUIT_SPI_CS    PB1
-#define BLUEFRUIT_SPI_IRQ   PC5
+
+// Pullup
+#define BLUEFRUIT_SPI_CS    PB8
+
+#define BLUEFRUIT_SPI_IRQ   PB9
 #define BLUEFRUIT_SPI_RST   PC4
 
 //SPIClass SPI_2(2); //Create an SPI2 object.  This has been moved to a tweak on Adafruit_BluefruitLE_SPI
@@ -133,22 +139,31 @@ void bleFirstRun(){
   //ble.setMode(BLUEFRUIT_MODE_COMMAND);
   //digitalWrite(D4, HIGH);
 
+  ble.println(F("AT"));
+  if(ble.waitForOK()){
+     Serial2.println("OK");
+     Serial2.flush();
+  } else {
+     Serial2.println("Not OK");
+     Serial2.flush();
+  }
+
   // Send command
   ble.println(F("AT+GAPDEVNAME=WaterBear3"));
   if(ble.waitForOK()){
       Serial2.println("Got OK");
+      Serial2.flush();
   } else {
       Serial2.println("BLE Error");
+      Serial2.flush();
       while(1);
   }
   ble.println(F("ATZ"));
   ble.waitForOK();
   Serial2.println("Got OK");
+  Serial2.flush();
 
-  // Place bluefruit into a data mode
-  //delay(5000);
-  //ble.setMode(BLUEFRUIT_MODE_DATA);
-  //digitalWrite(D4, LOW);
+//  ble.setMode(BLUEFRUIT_MODE_DATA);
 
 }
 
@@ -229,9 +244,32 @@ void initBLE(){
 
     // error
   } else {
+
+      Serial2.println(F("Performing a factory reset: "));
+      if ( ! ble.factoryReset() ){
+        error(F("Couldn't factory reset"));
+      }
+
+      ble.println(F("AT"));
+      if(ble.waitForOK()){
+        Serial2.println("AT OK");
+        Serial2.flush();
+      } else {
+           Serial2.println("AT NOT OK");
+           Serial2.flush();
+      }
+
+    /*Serial2.println(F("Performing a factory reset: "));
+      if ( ! ble.factoryReset() ){
+      error(F("Couldn't factory reset"));
+    }
+*/
+
     bleFirstRun();
 
+
   }
+
   if(debugBLE){
     Serial2.println( F("BLE OK!") );
   }
@@ -249,9 +287,7 @@ void initBLE(){
   /* Disable command echo from Bluefruit */
   //ble.echo(false);
 
-  Serial2.println("Requesting Bluefruit info:");
-  // Print Bluefruit information
-  ble.info();
+  ble.println("+++\r\n");
 
 }
 
@@ -372,10 +408,29 @@ void userTriggeredInterrupt(){
 void setup(void)
 {
 
-  pinMode(PB5, OUTPUT); // Command Mode pin for BLE
+    // Start up Serial2
+    // Need to do an if(Serial2) after an amount of time, just disable it
+    // Note that this is double the actual BAUD due to HSI clocking of processor
+     Serial2.begin(19200);
+     while(!Serial2){
+       delay(100);
+     }
+     Serial2.println(F("Hello, world.  Primary Serial2.."));
+     Serial2.println(F("Setup"));
+     Serial2.flush();
+
+  //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
   pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 10, user interrupt
+
+  pinMode(PB1, INPUT_ANALOG);
+  pinMode(PC0, INPUT_ANALOG);
+  pinMode(PC1, INPUT_ANALOG);
+  pinMode(PC2, INPUT_ANALOG);
+  pinMode(PC3, INPUT_ANALOG);
+
+
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
   // Set up global date time callback for SdFile
@@ -384,11 +439,7 @@ void setup(void)
   // Use remap of I2C1 so that it matches with the arduino sheild header
   // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
- // Start up Serial2
-  Serial2.begin(9600);
-  while(!Serial2){
-    delay(100);
-  }
+
   Serial2.println(F("Hello, world.  Primary Serial2.."));
   Serial2.println(F("Setup"));
 
@@ -404,7 +455,6 @@ void setup(void)
 
   clearTimerInterrupt();
   clearUserInterrupt();
-
 
   Serial.print("2: NVIC_BASE->ISPR ");
   Serial.println(NVIC_BASE->ISPR[0]);
@@ -446,6 +496,7 @@ void setup(void)
   Serial.println(now3.unixtime());
   Serial.flush();
 
+
   // SS is on PC6 for now
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
   Serial.println("Filesystem started OK");
@@ -460,7 +511,8 @@ void setup(void)
   //
   // init ble
   //
-  initBLE();
+
+  //initBLE();
 
   readUniqueId();
 
@@ -472,6 +524,7 @@ void setup(void)
   values = (char **) malloc(sizeof(char *) * fieldCount);
   for(int i = 3; i < 3+fieldCount; i++){
       values[i] = (char *) malloc(sizeof(char) * 5);
+      sprintf(values[i], "%4d", 0);
   }
   Serial2.flush();
 
@@ -546,9 +599,12 @@ void measureSensorValues(){
 
 
     // Measure the new data
-    short sensorCount = 6;
+    short sensorCount = 5;
+    short sensorPins[5] = {PB1, PC1, PC2, PC3, PC4};
     for(short i=0; i<sensorCount; i++){
-        int value = analogRead(i);
+        //int value = analogRead(i);  // NO WAY!  A2 in ADC12_IN9, on PB1
+        int value = analogRead(sensorPins[i]);  // NO WAY!  A2 in ADC12_IN9, on PB1
+
         // malloc or ?
         sprintf(values[3+i], "%4d", value);
 
@@ -575,7 +631,11 @@ void loop(void)
     }
 
     // Debug debugLoop
+    // this should be a jumper
     bool debugLoop = false;
+    if(debugLoop == false){
+        debugLoop = DEBUG_LOOP;
+    }
 
     // Are we awake for user interaction?
     bool awakeForUserInteraction = false;
@@ -587,13 +647,16 @@ void loop(void)
             Serial.flush();
         }
     }
+    if(!awakeForUserInteraction) {
+        awakeForUserInteraction = debugLoop;
+    }
 
     // See if we should send a measurement to an interactive user
     // or take a bursting measurement
     bool takeMeasurement = false;
     if(bursting){
         takeMeasurement = true;
-    } else if(awakeForUserInteraction || debugLoop){
+    } else if(awakeForUserInteraction){
         unsigned long currentMillis = millis();
         if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
             DateTime now = RTC.now();
@@ -601,9 +664,7 @@ void loop(void)
             lastMillis = currentMillis;
             takeMeasurement = true;
         }
-        if(debugLoop){
-            return;
-        }
+
     }
 
 
@@ -708,11 +769,27 @@ void loop(void)
 
 
     if( WaterBear_Control::ready(Serial2) ){
+        Serial2.println("SERIAL2 Input Ready");
         awakeTime = RTC.now().unixtime(); // Push awake time forward
         WaterBear_Control::processControlCommands(Serial2);
         return;
 
-    } else if(WaterBear_Control::ready(ble) ){
+    }
+
+    // if DEBUG_BLE
+    /*
+    Serial2.print("BLE");
+    Serial2.println(ble.peek());
+
+    int MAX_REQUEST_LENGTH = 100;
+    char request[MAX_REQUEST_LENGTH] = "";
+    ble.readBytesUntil('<', request, MAX_REQUEST_LENGTH);
+    Serial2.println(request);
+    */
+
+    //Serial2.println("Checking BLE");
+    if(WaterBear_Control::ready(ble) ){
+        Serial2.println("BLE Input Ready");
         awakeTime = RTC.now().unixtime(); // Push awake time forward
         WaterBear_Control::processControlCommands(ble);
         return;
@@ -721,19 +798,26 @@ void loop(void)
 
     if(takeMeasurement){
 
-        Serial2.println("Taking new measurement");
-        Serial2.flush();
+        if(DEBUG_MEASUREMENTS) {
+            Serial2.println("Taking new measurement");
+            Serial2.flush();
+        }
 
         measureSensorValues();
 
-        Serial2.println("writeLog");
+        if(DEBUG_MEASUREMENTS) {
+            Serial2.println("writeLog");
+        }
         filesystem->writeLog(values, fieldCount);
-        Serial2.println("writeLog done");
+        if(DEBUG_MEASUREMENTS) {
+            Serial2.println("writeLog done");
+        }
 
         char valuesBuffer[52];
         sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
-        Serial2.println(valuesBuffer);
-
+        if(DEBUG_MEASUREMENTS) {
+            Serial2.println(valuesBuffer);
+        }
         // Send along to BLE
         if(bleActive) {
             ble.println(valuesBuffer);

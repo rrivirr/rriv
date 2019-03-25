@@ -4,6 +4,8 @@ char dataDirectory[6] = "/Data";
 
 WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin){
 
+  strcpy(this->deploymentIdentifier, deploymentIdentifier);
+
   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
 
