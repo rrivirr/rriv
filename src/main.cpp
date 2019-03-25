@@ -512,7 +512,7 @@ void setup(void)
   // init ble
   //
 
-  //initBLE();
+  initBLE();
 
   readUniqueId();
 
@@ -602,8 +602,8 @@ void measureSensorValues(){
     short sensorCount = 5;
     short sensorPins[5] = {PB1, PC1, PC2, PC3, PC4};
     for(short i=0; i<sensorCount; i++){
-        //int value = analogRead(i);  // NO WAY!  A2 in ADC12_IN9, on PB1
-        int value = analogRead(sensorPins[i]);  // NO WAY!  A2 in ADC12_IN9, on PB1
+
+        int value = analogRead(sensorPins[i]);
 
         // malloc or ?
         sprintf(values[3+i], "%4d", value);
