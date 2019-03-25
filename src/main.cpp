@@ -451,7 +451,7 @@ void setup(void)
     // Start up Serial2
     // Need to do an if(Serial2) after an amount of time, just disable it
     // Note that this is double the actual BAUD due to HSI clocking of processor
-     Serial2.begin(19200);
+     Serial2.begin(115200 * 2);
      while(!Serial2){
        delay(100);
      }
@@ -683,10 +683,6 @@ unsigned int interactiveModeMeasurementDelay = 1000;
 
 void loop(void)
 {
-
-
-    x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
-    p.Plot();
 
     // Are we bursting ?
     bool bursting = false;
