@@ -3,6 +3,7 @@
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 #include "plotter/Plotter.h"
+//#include <SoftwareSerial.h>                           //we have to include the SoftwareSerial library, or else we can't use it.
 
 #include "Adafruit_BluefruitLE_SPI.h"
 //#include "Adafruit_BluefruitLE_UART.h"
@@ -52,6 +53,21 @@ RTClib RTC;
 #define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START 16
 #define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_END   43
 #define DEPLOYMENT_IDENTIFIER_LENGTH 25
+
+//#define rx PA11                                          //define what pin rx is going to be.
+//#define tx PA12                                          //define what pin tx is going to be.
+//SoftwareSerial myserial(rx, tx);
+
+String inputstring = "";                              //a string to hold incoming data from the PC
+String sensorstring = "";                             //a string to hold the data from the Atlas Scientific product
+boolean input_stringcomplete = false;                 //have we received all the data from the PC
+boolean sensor_stringcomplete = false;                //have we received all the data from the Atlas Scientific product
+float ORP;                                            //used to hold a floating point number that is the ORP.
+
+float x; // global variables
+float x1; // global variables
+float x2; // global variables
+Plotter p; // create plotter
 
 unsigned char uuid[UUID_LENGTH];
 
@@ -103,10 +119,6 @@ uint32_t awakeTime = 0;
 
 unsigned int interactiveModeMeasurementDelay = 10;
 
-float x; // global variables
-float x1; // global variables
-float x2; // global variables
-Plotter p; // create plotter
 
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
@@ -135,6 +147,16 @@ void error(const __FlashStringHelper*err) {
     }
   while (1);
 }
+
+
+void serialEvent() {                                  //if the hardware serial port_0 receives a char
+  char inchar = (char)Serial.read();                  //get the char we just received
+  inputstring += inchar;                              //add it to the inputString
+  if (inchar == '\r') {
+    input_stringcomplete = true;                      //if the incoming character is a <CR>, set the flag
+  }
+}
+
 
 
 void bleFirstRun(){
@@ -452,7 +474,7 @@ void setup(void)
     // Start up Serial2
     // Need to do an if(Serial2) after an amount of time, just disable it
     // Note that this is double the actual BAUD due to HSI clocking of processor
-     Serial2.begin(115200 * 2);
+     Serial2.begin(115200);
      while(!Serial2){
        delay(100);
      }
@@ -586,9 +608,11 @@ void setup(void)
   if(DEBUG_MESSAGES){
       Serial2.println(F("done with setup"));
   }
-
+  Serial1.begin(9600);                               //set baud rate for software serial port_3 to 9600
+  inputstring.reserve(10);                            //set aside some bytes for receiving data from the PC
+  sensorstring.reserve(30);
   p.Begin(); // start plotter
-  p.AddTimeGraph( "Some title of a graph", 50, "label for x", x); // add any graphs you want
+  p.AddTimeGraph( "Some title of a graph", 50, "label for x", ORP); // add any graphs you want
 
 }
 
@@ -676,6 +700,38 @@ void measureSensorValues(){
     x1= analogRead(sensorPins[1]);
     x2= analogRead(sensorPins[2]);
     x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
+
+      if (input_stringcomplete) {                         //if a string from the PC has been received in its entirety
+        Serial1.print(inputstring);                      //send that string to the Atlas Scientific product
+        inputstring = "";                                 //clear the string
+        input_stringcomplete = false;                     //reset the flag used to tell if we have received a completed string from the PC
+      }
+
+      if (Serial1.available() > 0) {                     //if we see that the Atlas Scientific product has sent a character.
+        char inchar = (char)Serial1.read();              //get the char we just received
+        sensorstring += inchar;
+        if (inchar == '\r') {
+          sensor_stringcomplete = true;                   //if the incoming character is a <CR>, set the flag
+        }
+        p.Plot();
+      }
+
+
+  //    if (sensor_stringcomplete) {                        //if a string from the Atlas Scientific product has been received in its entirety
+    //    Serial.println(sensorstring);                     //send that string to the PC's serial monitor
+    //    ORP = sensorstring.toFloat();                     //convert the string to a floating point number so it can be evaluated by the Arduino
+
+      //  if (ORP >= 500) {                                  //if the ORP is greater than or equal to 500
+    //      Serial.println("high");                         //print "high" this is demonstrating that the Arduino is evaluating the ORP as a number and not as a string
+    //    }
+
+      //  if (ORP <= 499.9) {                                //if the ORP is less than or equal to 400.9
+      //    Serial.println("low");                          //print "low" this is demonstrating that the Arduino is evaluating the ORP as a number and not as a string
+      //  }
+
+        sensorstring = "";                                //clear the string:
+        sensor_stringcomplete = false;                    //reset the flag used to tell if we have received a completed string from the Atlas Scientific product
+      }
     p.Plot();
 }
 
