@@ -587,7 +587,7 @@ void setup(void)
   }
 
   p.Begin(); // start plotter
-  p.AddTimeGraph( "Some title of a graph", 1500, "label for x", x); // add any graphs you want
+  p.AddTimeGraph( "Some title of a graph", 30, "label for x", x); // add any graphs you want
 
 }
 
@@ -674,7 +674,7 @@ void measureSensorValues(){
 
     x1= analogRead(sensorPins[1]);
     x2= analogRead(sensorPins[2]);
-    x = 10*sin( 2.0*PI*( millis() / 5000.0 ) ); // update your variables like usual
+    x = 10*sin( 2.0*PI*( millis() / 1000.0 ) ); // update your variables like usual
     p.Plot();
 }
 
