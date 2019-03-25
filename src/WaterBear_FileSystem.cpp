@@ -7,7 +7,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
   strcpy(this->deploymentIdentifier, deploymentIdentifier);
 
   // initialize the SD card
-  Serial2.print(F("Initializing SD card..."));
+  // Serial2.print(F("Initializing SD card..."));
 
 
   // Make sure chip select pin is set to output
@@ -15,14 +15,14 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
 
   // see if the card is present and can be initialized:
   if (!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4)) {
-    Serial2.println(F(">Card fail<"));
+    //Serial2.println(F(">Card fail<"));
     while(1);
   } else {
-    Serial2.println(F("card initialized."));
+    //Serial2.println(F("card initialized."));
   }
 
   this->setDeploymentIdentifier(deploymentIdentifier);
-  Serial2.println("Set deployment identifier");
+  //Serial2.println("Set deployment identifier");
 
 }
 
@@ -149,8 +149,8 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
     Serial2.println(now.unixtime());
     Serial2.flush();
 */
-    Serial2.println("ok");
-    Serial2.flush();
+//    Serial2.println("ok");
+//    Serial2.flush();
     char uniquename[11] = "NEWFILE";
     sprintf(uniquename, "%lu", unixtime);
     char suffix[5] = ".CSV";
@@ -158,8 +158,8 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
     strncpy(filename, uniquename, 10);
     strncpy(&filename[10], suffix, 5);
 
-    Serial2.println("cd");
-    Serial2.flush();
+//    Serial2.println("cd");
+//    Serial2.flush();
     this->sd.chdir("/");
     delay(10);
 
@@ -183,46 +183,46 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
     //file.close();
 
     printCurrentDirListing();
-    Serial2.println("OK in root");
+//    Serial2.println("OK in root");
     if(!this->sd.exists(dataDirectory)){
-      Serial2.println("mkdir");
+//      Serial2.println("mkdir");
       this->sd.mkdir(dataDirectory);
       delay(10);
     }
 
     if (!this->sd.chdir(dataDirectory)) {
     //Serial2.println("OK");
-      Serial2.println(F("failed: /Data."));
+//      Serial2.println(F("failed: /Data."));
     } else {
       //Serial2.println(F("cd /Data."));
     }
 
     if(!this->sd.exists(this->deploymentIdentifier)){
       // printCurrentDirListing();
-      Serial2.write("mkdir:");
-      Serial2.println(deploymentIdentifier);
+//      Serial2.write("mkdir:");
+//      Serial2.println(deploymentIdentifier);
       this->sd.mkdir(deploymentIdentifier);
       //delay(10);
     }
 
     if (!this->sd.chdir(this->deploymentIdentifier)) {
-      Serial2.print("failed:");
-      Serial2.println(deploymentIdentifier);
+//      Serial2.print("failed:");
+//      Serial2.println(deploymentIdentifier);
     } else {
-      Serial2.print("cd:");
-      Serial2.println(deploymentIdentifier);
+//      Serial2.print("cd:");
+//      Serial2.println(deploymentIdentifier);
     }
     //delay(10);
 
-    Serial2.print("Opening file ");
-    Serial2.println(filename);
-    Serial2.flush();
+//    Serial2.print("Opening file ");
+//    Serial2.println(filename);
+//    Serial2.flush();
     this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
     //delay(10);
 
     //sd.chdir();
     if(!logfile){
-      Serial2.print(F(">not found<"));
+//      Serial2.print(F(">not found<"));
       while(1);
     }
 
@@ -243,7 +243,7 @@ void WaterBear_FileSystem::printCurrentDirListing(){
   char sdFilename[30];
   while (dirFile.openNext(sd.vwd(), O_READ)) {
     dirFile.getName(sdFilename, 30);
-    Serial2.println(sdFilename);
+//    Serial2.println(sdFilename);
     dirFile.close();
   }
 }
