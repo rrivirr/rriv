@@ -20,7 +20,7 @@
 
 #define DEBUG_MESSAGES false
 #define DEBUG_BLE false
-#define DEBUG_MEASUREMENTS false
+#define DEBUG_MEASUREMENTS true
 #define DEBUG_LOOP true
 
 // For F103RB
@@ -117,7 +117,7 @@ bool awakenedByUser;
 uint32_t awakeTime = 0;
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 
-unsigned int interactiveModeMeasurementDelay = 10;
+unsigned int interactiveModeMeasurementDelay = 500;
 
 
 
@@ -474,7 +474,7 @@ void setup(void)
     // Start up Serial2
     // Need to do an if(Serial2) after an amount of time, just disable it
     // Note that this is double the actual BAUD due to HSI clocking of processor
-     Serial2.begin(115200);
+     Serial2.begin(115200 * 2);
      while(!Serial2){
        delay(100);
      }
