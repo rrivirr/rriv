@@ -17,6 +17,7 @@ private:
 public:
   WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin);
   void writeLog(char** values, short fieldCount);
+  void writeDebugMessage(const char* message);
   void setDeploymentIdentifier(char * deploymentIdentifier);
   void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);

@@ -44,6 +44,7 @@ void printInterruptStatus(){
     Serial.println(NVIC_BASE->ISER[0], BIN);
     Serial.println(NVIC_BASE->ISER[1], BIN);
     Serial.println(NVIC_BASE->ISER[2], BIN);
+    Serial.println(EXTI_BASE->PR, BIN);
     Serial.flush();
 }
 

@@ -38,6 +38,15 @@ void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   this->logfile.flush();
 }
 
+void WaterBear_FileSystem::writeDebugMessage(const char* message){
+  this->logfile.print("debug,");
+  this->logfile.print(message);
+  this->logfile.println();
+  this->logfile.flush();
+}
+
+
+
 void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent){
   /*
     // Debug

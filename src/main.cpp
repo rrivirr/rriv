@@ -15,9 +15,12 @@
 
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
+#include <libmaple/rcc.h>
 
 #define DEBUG_MEASUREMENTS true
 #define DEBUG_LOOP false
+#define DEBUG_TO_FILE 1
+#define DEBUG_TO_SERIAL 1
 
 // For F103RB
 #define Serial Serial2
@@ -78,27 +81,26 @@ uint32 tt;
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
 
-WaterBear_FileSystem * filesystem;
-
-char lastDownloadDate[11] = "0000000000";
-
+// Settings
 char version[5] = "v2.0";
-
-short interval = 1; // minutes between loggings
-short burstLength = 10; // how many readings in a burst
-
-
-
-
+short interval = 1; //15; // minutes between loggings
+short burstLength = 20; // how many readings in a burst
 short fieldCount = 9;
-char ** values;
-
 #define BUFSIZE                        160   // Size of the read buffer for incoming data
-unsigned long lastMillis = 0;
+#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
+//#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
 
+
+// State
+WaterBear_FileSystem * filesystem;
+char lastDownloadDate[11] = "0000000000";
+char ** values;
+unsigned long lastMillis = 0;
 bool awakenedByUser;
 uint32_t awakeTime = 0;
-#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
+uint32_t lastTime = 0;
+short burstCount = 0;
+
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
@@ -115,13 +117,33 @@ void writeDeploymentIdentifier(char * deploymentIdentifier){
   }
 }
 
-uint32_t lastTime = 0;
-short burstCount = 0;
+
+void writeDebugMessage(const char * message){
+#ifdef DEBUG_TO_SERIAL
+  Serial2.println(message);
+  Serial2.flush();
+#endif
+
+#ifdef DEBUG_TO_FILE
+  filesystem->writeDebugMessage(message);
+#endif
+}
+
+void writeDebugMessage(const __FlashStringHelper * message){
+#ifdef DEBUG_TO_SERIAL
+  Serial2.println(message);
+  Serial2.flush();
+#endif
+
+#ifdef DEBUG_TO_FILE
+  filesystem->writeDebugMessage(reinterpret_cast<const char *>(message));
+#endif
+}
 
 // A small helper
 void error(const __FlashStringHelper*err) {
-  Serial2.println("Error:");
-  Serial2.println(err);
+  writeDebugMessage(F("Error:"));
+  writeDebugMessage(err);
   while (1);
 }
 
@@ -132,36 +154,30 @@ void bleFirstRun(){
   // set a mode pin for USART1 if we need to
 
   if(true){
-    Serial2.println("BLE First Run");
+    writeDebugMessage("BLE First Run");
   }
-  //ble.factoryReset();
 
   //ble.setMode(BLUEFRUIT_MODE_COMMAND);
   //digitalWrite(D4, HIGH);
 
   ble.println(F("AT"));
   if(ble.waitForOK()){
-     Serial2.println("OK");
-     Serial2.flush();
+    writeDebugMessage("BLE OK");
   } else {
-     Serial2.println("Not OK");
-     Serial2.flush();
+    writeDebugMessage("BLE Not OK");
   }
 
   // Send command
   ble.println(F("AT+GAPDEVNAME=WaterBear3"));
   if(ble.waitForOK()){
-      Serial2.println("Got OK");
-      Serial2.flush();
+    writeDebugMessage("Got OK");
   } else {
-      Serial2.println("BLE Error");
-      Serial2.flush();
-      while(1);
+    writeDebugMessage("BLE Error");
+    while(1);
   }
   ble.println(F("ATZ"));
   ble.waitForOK();
-  Serial2.println("Got OK");
-  Serial2.flush();
+  writeDebugMessage("Got OK");
 
 //  ble.setMode(BLUEFRUIT_MODE_DATA);
 
@@ -174,7 +190,7 @@ void readUniqueId(){
     uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
 
-  Serial2.println(F("OK.. UUID in EEPROM:"));
+  writeDebugMessage(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash
   // Log uuid and time
   // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
   char uuidString[2 * UUID_LENGTH + 1];
@@ -182,12 +198,12 @@ void readUniqueId(){
   for(short i=0; i < UUID_LENGTH; i++){
       sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
   }
-  Serial2.println(uuidString);
+  writeDebugMessage(uuidString);
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
   if(memcmp(uuid, uninitializedEEPROM, UUID_LENGTH) == 0){
-    Serial2.println(F("Generate or Retrieve UUID"));
+    writeDebugMessage(F("Generate or Retrieve UUID"));
     getSTM32UUID(uuid);
 
     Serial2.println(F("UUID to Write:"));
@@ -196,8 +212,7 @@ void readUniqueId(){
     for(short i=0; i < UUID_LENGTH; i++){
         sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-    Serial2.println(uuidString);
-    Serial2.flush();
+    writeDebugMessage(uuidString);
 
     for(int i=0; i < UUID_LENGTH; i++){
       unsigned int address = EEPROM_UUID_ADDRESS_START + i;
@@ -209,12 +224,11 @@ void readUniqueId(){
       uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
     }
 
-    Serial2.println(F("UUID in EEPROM:"));
+    writeDebugMessage(F("UUID in EEPROM:"));
     for(short i=0; i < UUID_LENGTH; i++){
         sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-    Serial2.println(uuidString);
-    Serial2.flush();
+    writeDebugMessage(uuidString);
 
    }
 
@@ -226,52 +240,46 @@ bool bleActive = false;
 void initBLE(){
   bool debugBLE = true;
   if(debugBLE){
-    Serial2.print(F("Initializing the Bluefruit LE module: "));
+    writeDebugMessage(F("Initializing the Bluefruit LE module: "));
   }
   bleActive = ble.begin(true, true);
 
   if(debugBLE){
-    Serial2.println("Tried to init");
-    Serial2.println(bleActive);
+    if(bleActive){
+      writeDebugMessage("Tried to init - BLE active");
+    } else {
+      writeDebugMessage("Tried to init - BLE NOT active");
+    }
   }
 
   if ( !bleActive )
   {
     if(debugBLE){
-      Serial2.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+      writeDebugMessage(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
     }
     return;
 
     // error
   } else {
 
-      Serial2.println(F("Performing a factory reset: "));
-      if ( ! ble.factoryReset() ){
-        error(F("Couldn't factory reset"));
-      }
-
-      ble.println(F("AT"));
-      if(ble.waitForOK()){
-        Serial2.println("AT OK");
-        Serial2.flush();
-      } else {
-           Serial2.println("AT NOT OK");
-           Serial2.flush();
-      }
-
-    /*Serial2.println(F("Performing a factory reset: "));
-      if ( ! ble.factoryReset() ){
+    writeDebugMessage(F("Performing a factory reset: "));
+    if ( ! ble.factoryReset() ){
       error(F("Couldn't factory reset"));
     }
-*/
+
+    ble.println(F("AT"));
+    if(ble.waitForOK()){
+      writeDebugMessage("AT OK");
+    } else {
+         writeDebugMessage("AT NOT OK");
+    }
 
     bleFirstRun();
-
 
   }
 
   if(debugBLE){
-    Serial2.println( F("BLE OK!") );
+    writeDebugMessage(F("BLE OK!") );
   }
 /*
   if ( FACTORYRESET_ENABLE )
@@ -320,26 +328,33 @@ void setNextAlarm(){
   //
   // Alarm every 10 seconds for debugging
   //
-  int AlarmBits = ALRM2_ONCE_PER_MIN;
-  AlarmBits <<= 4;
-  AlarmBits |= ALRM1_MATCH_SEC;
-  short seconds = Clock.getSecond();
-  short debugSleepSeconds = 30;
-  short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
-  Serial.print("Next Alarm");
-  Serial.println(nextSeconds);
-  Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
+  if(DEBUG_LOOP == true) {
+    int AlarmBits = ALRM2_ONCE_PER_MIN;
+    AlarmBits <<= 4;
+    AlarmBits |= ALRM1_MATCH_SEC;
+    short seconds = Clock.getSecond();
+    short debugSleepSeconds = 30;
+    short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
+    char message[200];
+    sprintf(message, "Next Alarm, with seconds: %i", nextSeconds);
+    writeDebugMessage(message);
+    Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
+  }
 
   //
   // Alarm every interval minutes for the real world
   //
-  //int AlarmBits = ALRM2_ONCE_PER_MIN;
-  //AlarmBits <<= 4;
-  //AlarmBits |= ALRM1_MATCH_MIN_SEC;
-  //short minutes = Clock.getMinute();
-  //short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
-  //Serial.println(nextMinutes);
-  //Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
+  else {
+    int AlarmBits = ALRM2_ONCE_PER_MIN;
+    AlarmBits <<= 4;
+    AlarmBits |= ALRM1_MATCH_MIN_SEC;
+    short minutes = Clock.getMinute();
+    short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+    char message[200];
+    sprintf(message, "Next Alarm, with minutes: %i", nextMinutes);
+    writeDebugMessage(message);
+    Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
+  }
 
   // set both alarms to :00 and :30 seconds, every minute
       // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
@@ -356,29 +371,29 @@ void setNextAlarm(){
 
 
 void clearTimerInterrupt(){
-    EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
-    NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
+  EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
+  NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
 }
 
 void disableTimerInterrupt(){
-    NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
+  NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
 }
 
 void enableTimerInterrupt(){
-    NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
+  NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
 }
 
 void enableUserInterrupt(){
-    NVIC_BASE->ISER[1] = 1 << (NVIC_EXTI_15_10-32);
+  NVIC_BASE->ISER[1] = 1 << (NVIC_EXTI_15_10-32);
 }
 
 void clearUserInterrupt(){
-    EXTI_BASE->PR = 0x00000400; // this clear the interrupt on exti line
-    NVIC_BASE->ICPR[1] = 1 << (NVIC_EXTI_15_10-32);
+  EXTI_BASE->PR = 0x00000400; // this clear the interrupt on exti line
+  NVIC_BASE->ICPR[1] = 1 << (NVIC_EXTI_15_10-32);
 }
 
 void disableUserInterrupt(){
-    NVIC_BASE->ICER[1] = 1 << (NVIC_EXTI_15_10-32); // it's on EXTI 10
+  NVIC_BASE->ICER[1] = 1 << (NVIC_EXTI_15_10-32); // it's on EXTI 10
 }
 
 
@@ -389,35 +404,37 @@ void timerAlarm(){
 
   disableTimerInterrupt();
   clearTimerInterrupt();
-  Serial2.println("TIMER ALARM");
-  enableTimerInterrupt();
+  //Serial2.println("TIMER ALARM");
+  //enableTimerInterrupt();
 
 }
 
 void userTriggeredInterrupt(){
 
-    disableUserInterrupt();
-    clearUserInterrupt();
-    Serial2.println("USER TRIGGERED INTERRUPT");
-    enableUserInterrupt();
-    awakenedByUser = true;
+  disableUserInterrupt();
+  clearUserInterrupt();
+  //Serial2.println("USER TRIGGERED INTERRUPT");
+  //Serial2.flush();
+  //enableUserInterrupt();
+  awakenedByUser = true;
 
 }
 
+int baud = 115200 * 2;
 
 void setup(void)
 {
 
-    // Start up Serial2
-    // Need to do an if(Serial2) after an amount of time, just disable it
-    // Note that this is double the actual BAUD due to HSI clocking of processor
-     Serial2.begin(19200);
-     while(!Serial2){
-       delay(100);
-     }
-     Serial2.println(F("Hello, world.  Primary Serial2.."));
-     Serial2.println(F("Setup"));
-     Serial2.flush();
+  writeDebugMessage(F("Begin setup"));
+
+  // Start up Serial2
+  // Need to do an if(Serial2) after an amount of time, just disable it
+  // Note that this is double the actual BAUD due to HSI clocking of processor
+   Serial2.begin(baud);
+   while(!Serial2){
+     delay(100);
+   }
+   writeDebugMessage(F("Seriel2 started"));
 
   //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
@@ -440,9 +457,6 @@ void setup(void)
   // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
 
-  Serial2.println(F("Hello, world.  Primary Serial2.."));
-  Serial2.println(F("Setup"));
-
   // Clear interrupts
   Serial.print("1: NVIC_BASE->ISPR ");
   Serial.println(NVIC_BASE->ISPR[0]);
@@ -451,7 +465,6 @@ void setup(void)
 
   NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
   //NVIC_BASE->ICER[0] =  1 << NVIC_EXTI3; // Don't respond to interrupt during setup
-
 
   clearTimerInterrupt();
   clearUserInterrupt();
@@ -464,14 +477,14 @@ void setup(void)
   //  Prepare I2C
   Wire.begin();
   scanIC2(&Wire);
-  Serial.println("OKOK");
+  writeDebugMessage(F("Wire OK"));
 
   // Clear the alarms so they don't go off during setup
   Clock.turnOffAlarm(1);
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
-  Serial.println("OKOK");
+  writeDebugMessage(F("Alarms OK"));
 
   DateTime now = RTC.now();
   Serial.println(now.unixtime());
@@ -493,13 +506,13 @@ void setup(void)
   }
 
   DateTime now3 = RTC.now();
-  Serial.println(now3.unixtime());
-  Serial.flush();
-
+  char message[200];
+  sprintf(message, "unixtime: %li", now3.unixtime());
+  writeDebugMessage(message);
 
   // SS is on PC6 for now
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
-  Serial.println("Filesystem started OK");
+  writeDebugMessage(F("Filesystem started OK"));
 
   DateTime now2 = RTC.now();
   Serial.println(now2.unixtime());
@@ -512,7 +525,7 @@ void setup(void)
   // init ble
   //
 
-  initBLE();
+  //initBLE();
 
   readUniqueId();
 
@@ -523,96 +536,91 @@ void setup(void)
   //
   values = (char **) malloc(sizeof(char *) * fieldCount);
   for(int i = 3; i < 3+fieldCount; i++){
-      values[i] = (char *) malloc(sizeof(char) * 5);
-      sprintf(values[i], "%4d", 0);
+    values[i] = (char *) malloc(sizeof(char) * 5);
+    sprintf(values[i], "%4d", 0);
   }
-  Serial2.flush();
 
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
   awakenedByUser = false;
   exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
 
   /* We're ready to go! */
-  Serial2.println(F("done with setup"));
+  writeDebugMessage(F("done with setup"));
 
 }
 
 void printDateTime(DateTime now){
   Serial.println(now.unixtime());
 
-     Serial.print(now.year(), DEC);
-     Serial.print('/');
-     Serial.print(now.month(), DEC);
-     Serial.print('/');
-     Serial.print(now.day(), DEC);
-     // Serial.print(" (");
-     // Serial.print(now.dayOfTheWeek());
-     // Serial.print(") ");
-     Serial.print("  ");
-     Serial.print(now.hour(), DEC);
-     Serial.print(':');
-     Serial.print(now.minute(), DEC);
-     Serial.print(':');
-     Serial.print(now.second(), DEC);
-     Serial.println();
-
+  Serial.print(now.year(), DEC);
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  // Serial.print(" (");
+  // Serial.print(now.dayOfTheWeek());
+  // Serial.print(") ");
+  Serial.print("  ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.print(now.second(), DEC);
+  Serial.println();
+  Serial.flush();
 }
 
 
 void prepareForTriggeredMeasurement(){
-    burstCount = 0;
+  burstCount = 0;
 }
 
 void measureSensorValues(){
 
-    // Fetch the time
-    unsigned long currentTime = RTC.now().unixtime();
+  // Fetch the time
+  unsigned long currentTime = RTC.now().unixtime();
 
-    // TODO: do we need to do this every time ??
-    char uuidString[2 * UUID_LENGTH + 1];
-    uuidString[2 * UUID_LENGTH] = '\0';
-    for(short i=0; i < UUID_LENGTH; i++){
-        sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
-    }
-
-
-    // Get the deployment identifier
-    // TODO: do we need to do this every time ??
-    char deploymentIdentifier[29];// = "DEPLOYMENT";
-    readDeploymentIdentifier(deploymentIdentifier);
-    char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH + 2];
-    memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
-    deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-
-    memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH+1], uuidString, 2*UUID_LENGTH);
-    deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
-    values[0] = deploymentUUID; // TODO: change to deploymentIdentifier_UUID
-
-    // Log uuid and time
-    values[1] = uuidString;
-
-    //Serial2.println(currentTime);
-    char timeString[11];
-    sprintf(timeString, "%lu", currentTime);
-    values[2] = timeString;
-    Serial2.println(timeString);
+  // TODO: do we need to do this every time ??
+  char uuidString[2 * UUID_LENGTH + 1];
+  uuidString[2 * UUID_LENGTH] = '\0';
+  for(short i=0; i < UUID_LENGTH; i++){
+    sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
+  }
 
 
-    // Measure the new data
-    short sensorCount = 5;
-    short sensorPins[5] = {PB1, PC1, PC2, PC3, PC4};
-    for(short i=0; i<sensorCount; i++){
+  // Get the deployment identifier
+  // TODO: do we need to do this every time ??
+  char deploymentIdentifier[29];// = "DEPLOYMENT";
+  readDeploymentIdentifier(deploymentIdentifier);
+  char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH + 2];
+  memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
 
-        int value = analogRead(sensorPins[i]);
+  memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH+1], uuidString, 2*UUID_LENGTH);
+  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
+  values[0] = deploymentUUID; // TODO: change to deploymentIdentifier_UUID
 
-        // malloc or ?
-        sprintf(values[3+i], "%4d", value);
+  // Log uuid and time
+  values[1] = uuidString;
 
-        //Serial2.print(" ");
-        //Serial2.print(i);
-        //Serial2.print(": ");
-        //Serial2.println(value);
-    }
+  //Serial2.println(currentTime);
+  char timeString[11];
+  sprintf(timeString, "%lu", currentTime);
+  values[2] = timeString;
+  Serial2.println(timeString);
+
+
+  // Measure the new data
+  short sensorCount = 6;
+  short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
+  for(short i=0; i<sensorCount; i++){
+
+    int value = analogRead(sensorPins[i]);
+
+    // malloc or ?
+    sprintf(values[3+i], "%4d", value);
+
+  }
 
 }
 
@@ -622,211 +630,230 @@ unsigned int interactiveModeMeasurementDelay = 1000;
 void loop(void)
 {
 
-    // Are we bursting ?
-    bool bursting = false;
-    if(burstCount < burstLength){
-        Serial2.println("Bursting");
-        Serial2.flush();
-        bursting = true;
+  // Are we bursting ?
+  bool bursting = false;
+  if(burstCount < burstLength){
+    writeDebugMessage(F("Bursting"));
+    bursting = true;
+  }
+
+  // Debug debugLoop
+  // this should be a jumper
+  bool debugLoop = false;
+  if(debugLoop == false){
+    debugLoop = DEBUG_LOOP;
+  }
+
+  // Are we awake for user interaction?
+  bool awakeForUserInteraction = false;
+  if(RTC.now().unixtime() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
+    awakeForUserInteraction = true;
+  } else {
+    if(!debugLoop){
+      writeDebugMessage(F("Not awake for user interaction"));
+    }
+  }
+  if(!awakeForUserInteraction) {
+    awakeForUserInteraction = debugLoop;
+  }
+
+  // See if we should send a measurement to an interactive user
+  // or take a bursting measurement
+  bool takeMeasurement = false;
+  if(bursting){
+    takeMeasurement = true;
+  } else if(awakeForUserInteraction){
+    unsigned long currentMillis = millis();
+    if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
+      DateTime now = RTC.now();
+      printDateTime(now);
+      lastMillis = currentMillis;
+      takeMeasurement = true;
+    }
+  }
+
+
+  // Should we sleep until a measurement is triggered?
+  bool awaitMeasurementTrigger = false;
+  if(!bursting && !awakeForUserInteraction){
+    writeDebugMessage(F("Not bursting or awake"));
+    awaitMeasurementTrigger = true;
+  }
+
+
+  // Go to sleep
+  if(awaitMeasurementTrigger){
+
+    writeDebugMessage(F("Await measurement trigger"));
+
+    if(Clock.checkIfAlarm(1)){
+      writeDebugMessage(F("Alarm 1"));
     }
 
-    // Debug debugLoop
-    // this should be a jumper
-    bool debugLoop = false;
-    if(debugLoop == false){
-        debugLoop = DEBUG_LOOP;
+    setNextAlarm(); // If we are in this block, alawys set the next alarm
+
+    printInterruptStatus();
+
+    // save enabled interrupts
+    int iser1 = NVIC_BASE->ISER[0];
+    int iser2 = NVIC_BASE->ISER[1];
+    int iser3 = NVIC_BASE->ISER[2];
+
+    // only enable the timer and user interrupts
+    NVIC_BASE->ICER[0] = NVIC_BASE->ISER[0];
+    NVIC_BASE->ICER[1] = NVIC_BASE->ISER[1];
+    NVIC_BASE->ICER[2] = NVIC_BASE->ISER[2];
+
+    // clear any pending interrupts
+    NVIC_BASE->ICPR[0] = NVIC_BASE->ISPR[0];
+    NVIC_BASE->ICPR[1] = NVIC_BASE->ISPR[1];
+    NVIC_BASE->ICPR[2] = NVIC_BASE->ISPR[2];
+
+    clearUserInterrupt();
+
+    enableTimerInterrupt();
+    enableUserInterrupt();
+    awakenedByUser = false; // Don't go into sleep mode with any interrupt state
+
+    writeDebugMessage(F("Going to sleep"));
+
+    Serial2.end();
+
+    // TODO: use STOP mode
+    if(true) { // STOP mode
+      // Clear PDDS and LPDS bits
+      PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+
+      // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
+      PWR_BASE->CR |= PWR_CR_CWUF;
+      PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
+
+      // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
+
+      //  Unset Power down deepsleep bit.
+      PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
+      // set Low-power deepsleep.
+      PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
+
+      SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
+      //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
+
+      SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+
+      rcc_switch_sysclk(RCC_CLKSRC_HSI);
+      rcc_turn_off_clk(RCC_CLK_PLL);
+
+      __asm volatile( "dsb" );
+      systick_disable();
+      __asm volatile( "wfi" );
+      systick_enable();
+      __asm volatile( "isb" );
+
+      rcc_turn_on_clk(RCC_CLK_PLL);
+      while(!rcc_is_clk_ready(RCC_CLK_PLL))
+      ;
+
+      // Finally, switch to the now-ready PLL as the main clock source.
+      rcc_switch_sysclk(RCC_CLKSRC_PLL);
+
+    } else { // SLEEP mode
+
+      __asm volatile( "dsb" );
+      systick_disable();
+      __asm volatile( "wfi" );
+      systick_enable();
+      //__asm volatile( "isb" );
+
     }
 
-    // Are we awake for user interaction?
-    bool awakeForUserInteraction = false;
-    if(RTC.now().unixtime() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
-      awakeForUserInteraction = true;
+    Serial2.begin(baud);
+    writeDebugMessage(F("Woke up"));
+
+    // reenable interrupts
+    NVIC_BASE->ISER[0] = iser1;
+    NVIC_BASE->ISER[1] = iser2;
+    NVIC_BASE->ISER[2] = iser3;
+    disableTimerInterrupt();
+    disableUserInterrupt();
+
+    // We have woken from the interrupt
+    writeDebugMessage(F("Awakened by interrupt"));
+    printInterruptStatus();
+
+    // Actually, we need to check on which interrupt was triggered
+    if(awakenedByUser){
+
+      writeDebugMessage(F("Awakened by user"));
+      printDateTime(RTC.now());
+
+      awakenedByUser = false;
+      awakeTime = RTC.now().unixtime();
+
     } else {
-        if(!debugLoop){
-            Serial.println("Not awake for user interaction");
-            Serial.flush();
-        }
-    }
-    if(!awakeForUserInteraction) {
-        awakeForUserInteraction = debugLoop;
+      prepareForTriggeredMeasurement();
     }
 
-    // See if we should send a measurement to an interactive user
-    // or take a bursting measurement
-    bool takeMeasurement = false;
-    if(bursting){
-        takeMeasurement = true;
-    } else if(awakeForUserInteraction){
-        unsigned long currentMillis = millis();
-        if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
-            DateTime now = RTC.now();
-            printDateTime(now);
-            lastMillis = currentMillis;
-            takeMeasurement = true;
-        }
+    return; // Go to top of loop
+  }
 
+
+
+  if( WaterBear_Control::ready(Serial2) ){
+    writeDebugMessage(F("SERIAL2 Input Ready"));
+    awakeTime = RTC.now().unixtime(); // Push awake time forward
+    WaterBear_Control::processControlCommands(Serial2);
+    return;
+  }
+
+  // if DEBUG_BLE
+  /*
+  Serial2.print("BLE");
+  Serial2.println(ble.peek());
+
+  int MAX_REQUEST_LENGTH = 100;
+  char request[MAX_REQUEST_LENGTH] = "";
+  ble.readBytesUntil('<', request, MAX_REQUEST_LENGTH);
+  Serial2.println(request);
+  */
+
+  //Serial2.println("Checking BLE");
+  if(WaterBear_Control::ready(ble) ){
+    writeDebugMessage(F("BLE Input Ready"));
+    awakeTime = RTC.now().unixtime(); // Push awake time forward
+    WaterBear_Control::processControlCommands(ble);
+    return;
+  }
+
+  if(takeMeasurement){
+
+    if(DEBUG_MEASUREMENTS) {
+      writeDebugMessage(F("Taking new measurement"));
     }
 
+    measureSensorValues();
 
-    // Should we sleep until a measurement is triggered?
-    bool awaitMeasurementTrigger = false;
-    if(!bursting && !awakeForUserInteraction){
-        Serial2.println("Not bursting or awake");
-        awaitMeasurementTrigger = true;
+    if(DEBUG_MEASUREMENTS) {
+      writeDebugMessage(F("writeLog"));
+    }
+    filesystem->writeLog(values, fieldCount);
+    if(DEBUG_MEASUREMENTS) {
+      writeDebugMessage(F("writeLog done"));
     }
 
-
-    // Go to sleep
-    if(awaitMeasurementTrigger){
-
-        Serial2.println("Await measurement trigger");
-
-        if(Clock.checkIfAlarm(1)){
-          Serial.println("Alarm 1");
-        }
-
-
-        setNextAlarm(); // If we are in this block, alawys set the next alarm
-        Serial2.flush();
-
-        printInterruptStatus();
-
-        // save enabled interrupts
-        int iser1 = NVIC_BASE->ISER[0];
-        int iser2 = NVIC_BASE->ISER[1];
-        int iser3 = NVIC_BASE->ISER[2];
-
-        // only enable the timer and user interrupts
-        NVIC_BASE->ICER[0] = NVIC_BASE->ISER[0];
-        NVIC_BASE->ICER[1] = NVIC_BASE->ISER[1];
-        NVIC_BASE->ICER[2] = NVIC_BASE->ISER[2];
-
-        // clear any pending interrupts
-        NVIC_BASE->ICPR[0] = NVIC_BASE->ISPR[0];
-        NVIC_BASE->ICPR[1] = NVIC_BASE->ISPR[1];
-        NVIC_BASE->ICPR[2] = NVIC_BASE->ISPR[2];
-
-        enableTimerInterrupt();
-        enableUserInterrupt();
-        awakenedByUser = false; // Don't go into sleep mode with any interrupt state
-
-        if(false) { // STOP mode WIP
-          PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
-
-          PWR_BASE->CR |= PWR_CR_CWUF;
-          PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
-          //PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
-
-          PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
-          SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
-
-          // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
-
-          SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
-
-          // __asm volatile( "dsb" );
-          __asm volatile( "wfi" );
-          // __asm volatile( "isb" );
-
-        } else { // SLEEP mode
-
-          __asm volatile( "dsb" );
-          systick_disable();
-          __asm volatile( "wfi" );
-          systick_enable();
-          //__asm volatile( "isb" );
-
-        }
-
-        // reenable interrupts
-        NVIC_BASE->ISER[0] = iser1;
-        NVIC_BASE->ISER[1] = iser2;
-        NVIC_BASE->ISER[2] = iser3;
-        disableTimerInterrupt();
-        disableUserInterrupt();
-
-        // We have woken from the interrupt
-        Serial.println("Awakened by interrupt");
-        Serial.flush();
-
-        // Actually, we need to check on which interrupt was triggered
-        if(awakenedByUser){
-
-            Serial.println("Awakened by user");
-            printDateTime(RTC.now());
-            Serial.flush();
-
-            awakenedByUser = false;
-            awakeTime = RTC.now().unixtime();
-
-        } else {
-            prepareForTriggeredMeasurement();
-        }
-
-        return; // Go to top of loop
+    char valuesBuffer[52];
+    sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
+    if(DEBUG_MEASUREMENTS) {
+      writeDebugMessage(F(valuesBuffer));
+    }
+    // Send along to BLE
+    if(bleActive) {
+      ble.println(valuesBuffer);
     }
 
-
-
-    if( WaterBear_Control::ready(Serial2) ){
-        Serial2.println("SERIAL2 Input Ready");
-        awakeTime = RTC.now().unixtime(); // Push awake time forward
-        WaterBear_Control::processControlCommands(Serial2);
-        return;
-
+    if(bursting) {
+      burstCount = burstCount + 1;
     }
 
-    // if DEBUG_BLE
-    /*
-    Serial2.print("BLE");
-    Serial2.println(ble.peek());
-
-    int MAX_REQUEST_LENGTH = 100;
-    char request[MAX_REQUEST_LENGTH] = "";
-    ble.readBytesUntil('<', request, MAX_REQUEST_LENGTH);
-    Serial2.println(request);
-    */
-
-    //Serial2.println("Checking BLE");
-    if(WaterBear_Control::ready(ble) ){
-        Serial2.println("BLE Input Ready");
-        awakeTime = RTC.now().unixtime(); // Push awake time forward
-        WaterBear_Control::processControlCommands(ble);
-        return;
-
-    }
-
-    if(takeMeasurement){
-
-        if(DEBUG_MEASUREMENTS) {
-            Serial2.println("Taking new measurement");
-            Serial2.flush();
-        }
-
-        measureSensorValues();
-
-        if(DEBUG_MEASUREMENTS) {
-            Serial2.println("writeLog");
-        }
-        filesystem->writeLog(values, fieldCount);
-        if(DEBUG_MEASUREMENTS) {
-            Serial2.println("writeLog done");
-        }
-
-        char valuesBuffer[52];
-        sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
-        if(DEBUG_MEASUREMENTS) {
-            Serial2.println(valuesBuffer);
-        }
-        // Send along to BLE
-        if(bleActive) {
-            ble.println(valuesBuffer);
-        }
-
-        if(bursting) {
-            burstCount = burstCount + 1;
-        }
-
-    }
+  }
 
 }
