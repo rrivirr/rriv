@@ -17,8 +17,16 @@
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 
+#include <Atlas_EZO.h> // DO, EC, ORP and pH
+#include <Atlas_EZO_EC.h> // DO, EC, ORP and pH
+#define EC_BAUD_RATE 9600 // This must be correct
+EZO_EC		EC_sensor;  // creates instance of EZO_EC called EC_sensor
+// Above is a user implemented library
+// Atlas also has https://github.com/Atlas-Scientific/Ezo_uart_lib
+// and https://github.com/Atlas-Scientific/Ezo_I2c_lib
+
 #define DEBUG_MEASUREMENTS true
-#define DEBUG_LOOP false
+#define DEBUG_LOOP true
 #define DEBUG_TO_FILE 1
 #define DEBUG_TO_SERIAL 1
 
@@ -117,6 +125,16 @@ void writeDeploymentIdentifier(char * deploymentIdentifier){
   }
 }
 
+
+void writeSerialMessage(const char * message){
+  Serial2.println(message);
+  Serial2.flush();
+}
+
+void writeSerialMessage(const __FlashStringHelper * message){
+  Serial2.println(message);
+  Serial2.flush();
+}
 
 void writeDebugMessage(const char * message){
 #ifdef DEBUG_TO_SERIAL
@@ -425,8 +443,6 @@ int baud = 115200 * 2;
 void setup(void)
 {
 
-  writeDebugMessage(F("Begin setup"));
-
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
@@ -434,7 +450,8 @@ void setup(void)
    while(!Serial2){
      delay(100);
    }
-   writeDebugMessage(F("Seriel2 started"));
+   writeSerialMessage(F("Hello world: serial2"));
+   writeSerialMessage(F("Begin setup"));
 
   //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
@@ -456,7 +473,6 @@ void setup(void)
   // Use remap of I2C1 so that it matches with the arduino sheild header
   // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
-
   // Clear interrupts
   Serial.print("1: NVIC_BASE->ISPR ");
   Serial.println(NVIC_BASE->ISPR[0]);
@@ -477,14 +493,12 @@ void setup(void)
   //  Prepare I2C
   Wire.begin();
   scanIC2(&Wire);
-  writeDebugMessage(F("Wire OK"));
 
   // Clear the alarms so they don't go off during setup
   Clock.turnOffAlarm(1);
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
-  writeDebugMessage(F("Alarms OK"));
 
   DateTime now = RTC.now();
   Serial.println(now.unixtime());
@@ -508,18 +522,13 @@ void setup(void)
   DateTime now3 = RTC.now();
   char message[200];
   sprintf(message, "unixtime: %li", now3.unixtime());
-  writeDebugMessage(message);
+  writeSerialMessage(message);
 
   // SS is on PC6 for now
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
   writeDebugMessage(F("Filesystem started OK"));
 
-  DateTime now2 = RTC.now();
-  Serial.println(now2.unixtime());
-  Serial.flush();
-
   filesystem->setNewDataFile(RTC.now().unixtime());
-
 
   //
   // init ble
@@ -540,9 +549,27 @@ void setup(void)
     sprintf(values[i], "%4d", 0);
   }
 
+  //
+  // Set up interrupts
+  //
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
   awakenedByUser = false;
   exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
+
+
+  //
+  // Set up Atlas sensors
+  //
+  Serial3.begin(EC_BAUD_RATE);
+  EC_sensor.debugOn(); // optional
+  EC_sensor.begin(&Serial3,EC_BAUD_RATE);
+  EC_sensor.initialize(); // Gets a bunch of settings from the circuit
+  EC_sensor.setOnline();
+  Serial.print("The voltage is:");
+  Serial.println(EC_sensor.getVoltage());
+  Serial.print("The sensor K values is set to:");
+  EC_sensor.queryK(); // Asks the senor for it's K value
+  Serial.println(EC_sensor.getK());
 
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
@@ -693,6 +720,11 @@ void loop(void)
     setNextAlarm(); // If we are in this block, alawys set the next alarm
 
     printInterruptStatus();
+    writeDebugMessage(F("Going to sleep"));
+//    Serial2.println("Going to sleep");
+    //Serial2.println("sleep");
+
+    //delay(1000);
 
     // save enabled interrupts
     int iser1 = NVIC_BASE->ISER[0];
@@ -715,7 +747,6 @@ void loop(void)
     enableUserInterrupt();
     awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
-    writeDebugMessage(F("Going to sleep"));
 
     Serial2.end();
 
@@ -767,7 +798,6 @@ void loop(void)
     }
 
     Serial2.begin(baud);
-    writeDebugMessage(F("Woke up"));
 
     // reenable interrupts
     NVIC_BASE->ISER[0] = iser1;
@@ -831,6 +861,19 @@ void loop(void)
     }
 
     measureSensorValues();
+
+    EC_sensor.wake();
+    EC_sensor.querySingleReading();
+    Serial.println("The EC values are:");
+    Serial.print("    EC  = "); Serial.println(EC_sensor.getEC());
+    Serial.print("    TDS = "); Serial.println(EC_sensor.getTDS());
+    Serial.print("    SAL = "); Serial.println(EC_sensor.getSAL());
+    Serial.print("    SG  = "); Serial.println(EC_sensor.getSG());
+    EC_sensor.sleep(); // to save power
+
+    sprintf(values[6], "%f", EC_sensor.getEC());
+    sprintf(values[7], "%f", EC_sensor.getTDS());
+    sprintf(values[8], "%f", EC_sensor.getSAL());
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));
