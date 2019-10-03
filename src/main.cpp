@@ -17,16 +17,22 @@
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 
-#include <Atlas_EZO.h> // DO, EC, ORP and pH
-#include <Atlas_EZO_EC.h> // DO, EC, ORP and pH
-#define EC_BAUD_RATE 9600 // This must be correct
-EZO_EC		EC_sensor;  // creates instance of EZO_EC called EC_sensor
-// Above is a user implemented library
-// Atlas also has https://github.com/Atlas-Scientific/Ezo_uart_lib
-// and https://github.com/Atlas-Scientific/Ezo_I2c_lib
+#include <Ezo_uart.h>
+const uint8_t bufferlen = 32;                         //total buffer size for the response_data array
+char response_data[bufferlen];                        //character array to hold the response data from modules
+String inputstring = "";
+Ezo_uart ezo_ec(Serial1, "EC");
+
+#define SERIAL_BAUD 115200
+#define EZO_BAUD 9600
+#define BAUD_MULTIPLIER 2;
+int serialBaud = SERIAL_BAUD * BAUD_MULTIPLIER;
+int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
+
 
 #define DEBUG_MEASUREMENTS true
-#define DEBUG_LOOP true
+#define DEBUG_LOOP false
+#define DEBUG_USING_SHORT_SLEEP false
 #define DEBUG_TO_FILE 1
 #define DEBUG_TO_SERIAL 1
 
@@ -346,7 +352,8 @@ void setNextAlarm(){
   //
   // Alarm every 10 seconds for debugging
   //
-  if(DEBUG_LOOP == true) {
+  if(DEBUG_USING_SHORT_SLEEP == true) {
+    writeDebugMessage(F("Using short sleep"));
     int AlarmBits = ALRM2_ONCE_PER_MIN;
     AlarmBits <<= 4;
     AlarmBits |= ALRM1_MATCH_SEC;
@@ -438,7 +445,65 @@ void userTriggeredInterrupt(){
 
 }
 
-int baud = 115200 * 2;
+void setupEZO(){
+
+  Serial1.begin(ezoBaud);
+
+  Serial2.println("Start EZO setup");
+
+  inputstring.reserve(20);                            //set aside some bytes for receiving data from the PC
+
+  ezo_ec.send_cmd_no_resp("*ok,0");             //send the command to turn off the *ok response
+
+  // in order to use multiple circuits more effectively we need to turn off continuous mode and the *ok response
+  Serial2.print("C,? : ");
+  ezo_ec.send_cmd("c,?", response_data, bufferlen); // send it to the module of the port we opened
+  Serial2.println(response_data);                  //print the modules response
+
+  Serial2.print("K,? : ");
+  ezo_ec.send_cmd("K,?", response_data, bufferlen); // send it to the module of the port we opened
+  Serial2.println(response_data);
+
+
+  ezo_ec.send_cmd("O,EC,1", response_data, bufferlen); // send it to the module of the port we opened
+  ezo_ec.send_cmd("O,TDS,0", response_data, bufferlen); // send it to the module of the port we opened
+  ezo_ec.send_cmd("O,S,0", response_data, bufferlen); // send it to the module of the port we opened
+
+  Serial2.print("O,? : ");
+  ezo_ec.send_cmd("O,?", response_data, bufferlen); // send it to the module of the port we opened
+  Serial2.println(response_data);
+
+  ezo_ec.send_cmd_no_resp("c,0");               //send the command to turn off continuous mode
+                                          //in this case we arent concerned about waiting for the reply
+  ezo_ec.flush_rx_buffer();                     //clear all the characters that we received from the responses of the above commands
+
+  Serial2.println("Done with EZO setup");
+}
+
+void stopEZO(){
+
+  ezo_ec.send_cmd("Sleep", response_data, bufferlen); // send it to the module of the port we opened
+  Serial2.println(response_data);
+  Serial2.flush();
+
+  Serial1.end();
+
+}
+
+#define SWITCHED_POWER_ENABLE PC6
+
+void setupSwitchedPower(){
+  pinMode(SWITCHED_POWER_ENABLE, OUTPUT); // enable pin on switchable boost converter
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+}
+
+void enableSwitchedPower(){
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+}
+
+void disableSwitchedPower(){
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+}
 
 void setup(void)
 {
@@ -446,7 +511,7 @@ void setup(void)
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
-   Serial2.begin(baud);
+   Serial2.begin(serialBaud);
    while(!Serial2){
      delay(100);
    }
@@ -454,6 +519,7 @@ void setup(void)
    writeSerialMessage(F("Begin setup"));
 
   //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
+
 
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
   pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 10, user interrupt
@@ -464,6 +530,8 @@ void setup(void)
   pinMode(PC2, INPUT_ANALOG);
   pinMode(PC3, INPUT_ANALOG);
 
+  setupSwitchedPower();
+  enableSwitchedPower();
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
@@ -474,10 +542,10 @@ void setup(void)
   // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
   // Clear interrupts
-  Serial.print("1: NVIC_BASE->ISPR ");
-  Serial.println(NVIC_BASE->ISPR[0]);
-  Serial.println(NVIC_BASE->ISPR[1]);
-  Serial.println(NVIC_BASE->ISPR[2]);
+  Serial2.print("1: NVIC_BASE->ISPR ");
+  Serial2.println(NVIC_BASE->ISPR[0]);
+  Serial2.println(NVIC_BASE->ISPR[1]);
+  Serial2.println(NVIC_BASE->ISPR[2]);
 
   NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
   //NVIC_BASE->ICER[0] =  1 << NVIC_EXTI3; // Don't respond to interrupt during setup
@@ -485,13 +553,14 @@ void setup(void)
   clearTimerInterrupt();
   clearUserInterrupt();
 
-  Serial.print("2: NVIC_BASE->ISPR ");
-  Serial.println(NVIC_BASE->ISPR[0]);
-  Serial.println(NVIC_BASE->ISPR[1]);
-  Serial.println(NVIC_BASE->ISPR[2]);
+  Serial2.print("2: NVIC_BASE->ISPR ");
+  Serial2.println(NVIC_BASE->ISPR[0]);
+  Serial2.println(NVIC_BASE->ISPR[1]);
+  Serial2.println(NVIC_BASE->ISPR[2]);
 
   //  Prepare I2C
   Wire.begin();
+  delay(1000);
   scanIC2(&Wire);
 
   // Clear the alarms so they don't go off during setup
@@ -501,7 +570,7 @@ void setup(void)
   Clock.checkIfAlarm(2);
 
   DateTime now = RTC.now();
-  Serial.println(now.unixtime());
+  Serial2.println(now.unixtime());
   //
   // init filesystem
   //
@@ -524,7 +593,6 @@ void setup(void)
   sprintf(message, "unixtime: %li", now3.unixtime());
   writeSerialMessage(message);
 
-  // SS is on PC6 for now
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
   writeDebugMessage(F("Filesystem started OK"));
 
@@ -556,46 +624,14 @@ void setup(void)
   awakenedByUser = false;
   exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
 
-
-  //
-  // Set up Atlas sensors
-  //
-  Serial3.begin(EC_BAUD_RATE);
-  EC_sensor.debugOn(); // optional
-  EC_sensor.begin(&Serial3,EC_BAUD_RATE);
-  EC_sensor.initialize(); // Gets a bunch of settings from the circuit
-  EC_sensor.setOnline();
-  Serial.print("The voltage is:");
-  Serial.println(EC_sensor.getVoltage());
-  Serial.print("The sensor K values is set to:");
-  EC_sensor.queryK(); // Asks the senor for it's K value
-  Serial.println(EC_sensor.getK());
+  setupEZO();
 
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
 
 }
 
-void printDateTime(DateTime now){
-  Serial.println(now.unixtime());
 
-  Serial.print(now.year(), DEC);
-  Serial.print('/');
-  Serial.print(now.month(), DEC);
-  Serial.print('/');
-  Serial.print(now.day(), DEC);
-  // Serial.print(" (");
-  // Serial.print(now.dayOfTheWeek());
-  // Serial.print(") ");
-  Serial.print("  ");
-  Serial.print(now.hour(), DEC);
-  Serial.print(':');
-  Serial.print(now.minute(), DEC);
-  Serial.print(':');
-  Serial.print(now.second(), DEC);
-  Serial.println();
-  Serial.flush();
-}
 
 
 void prepareForTriggeredMeasurement(){
@@ -693,7 +729,7 @@ void loop(void)
     unsigned long currentMillis = millis();
     if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
       DateTime now = RTC.now();
-      printDateTime(now);
+      printDateTime(Serial2, now);
       lastMillis = currentMillis;
       takeMeasurement = true;
     }
@@ -711,6 +747,8 @@ void loop(void)
   // Go to sleep
   if(awaitMeasurementTrigger){
 
+    disableSwitchedPower();
+
     writeDebugMessage(F("Await measurement trigger"));
 
     if(Clock.checkIfAlarm(1)){
@@ -718,8 +756,9 @@ void loop(void)
     }
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
+    stopEZO();
 
-    printInterruptStatus();
+    printInterruptStatus(Serial2);
     writeDebugMessage(F("Going to sleep"));
 //    Serial2.println("Going to sleep");
     //Serial2.println("sleep");
@@ -797,7 +836,8 @@ void loop(void)
 
     }
 
-    Serial2.begin(baud);
+    Serial2.begin(serialBaud);
+    setupEZO();
 
     // reenable interrupts
     NVIC_BASE->ISER[0] = iser1;
@@ -808,13 +848,15 @@ void loop(void)
 
     // We have woken from the interrupt
     writeDebugMessage(F("Awakened by interrupt"));
-    printInterruptStatus();
+    printInterruptStatus(Serial2);
+
+    enableSwitchedPower();
 
     // Actually, we need to check on which interrupt was triggered
     if(awakenedByUser){
 
       writeDebugMessage(F("Awakened by user"));
-      printDateTime(RTC.now());
+      printDateTime(Serial2, RTC.now());
 
       awakenedByUser = false;
       awakeTime = RTC.now().unixtime();
@@ -862,18 +904,21 @@ void loop(void)
 
     measureSensorValues();
 
-    EC_sensor.wake();
-    EC_sensor.querySingleReading();
-    Serial.println("The EC values are:");
-    Serial.print("    EC  = "); Serial.println(EC_sensor.getEC());
-    Serial.print("    TDS = "); Serial.println(EC_sensor.getTDS());
-    Serial.print("    SAL = "); Serial.println(EC_sensor.getSAL());
-    Serial.print("    SG  = "); Serial.println(EC_sensor.getSG());
-    EC_sensor.sleep(); // to save power
 
-    sprintf(values[6], "%f", EC_sensor.getEC());
-    sprintf(values[7], "%f", EC_sensor.getTDS());
-    sprintf(values[8], "%f", EC_sensor.getSAL());
+    // EZO
+    // wake/sleep.  Or re-run setup
+    Serial2.print(ezo_ec.get_name());     //print the modules name
+    Serial2.print(": ");
+    Serial2.println(response_data);                  //print the modules response
+    response_data[0] = 0;                           //clear the modules response
+
+    ezo_ec.send_read();
+    Serial2.print("EZO Reading:");
+    float ecValue = ezo_ec.get_reading();
+    Serial2.print(ecValue);
+    Serial2.println();
+    sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
+
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));

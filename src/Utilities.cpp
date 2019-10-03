@@ -39,16 +39,36 @@ void scanIC2(TwoWire * wire){
 }
 
 
-void printInterruptStatus(){
-    Serial.println("NVIC->ISER:");
-    Serial.println(NVIC_BASE->ISER[0], BIN);
-    Serial.println(NVIC_BASE->ISER[1], BIN);
-    Serial.println(NVIC_BASE->ISER[2], BIN);
-    Serial.println(EXTI_BASE->PR, BIN);
-    Serial.flush();
+void printInterruptStatus(HardwareSerial &serial){
+    serial.println("NVIC->ISER:");
+    serial.println(NVIC_BASE->ISER[0], BIN);
+    serial.println(NVIC_BASE->ISER[1], BIN);
+    serial.println(NVIC_BASE->ISER[2], BIN);
+    serial.println(EXTI_BASE->PR, BIN);
+    serial.flush();
 }
 
 
+void printDateTime(HardwareSerial &serial, DateTime now){
+  serial.println(now.unixtime());
+
+  serial.print(now.year(), DEC);
+  serial.print('/');
+  serial.print(now.month(), DEC);
+  serial.print('/');
+  serial.print(now.day(), DEC);
+  // Serial.print(" (");
+  // Serial.print(now.dayOfTheWeek());
+  // Serial.print(") ");
+  serial.print("  ");
+  serial.print(now.hour(), DEC);
+  serial.print(':');
+  serial.print(now.minute(), DEC);
+  serial.print(':');
+  serial.print(now.second(), DEC);
+  serial.println();
+  serial.flush();
+}
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
 {
