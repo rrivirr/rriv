@@ -1,5 +1,4 @@
 #include <Arduino.h>
-//#include <RTClock.h>
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 
@@ -17,17 +16,23 @@
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 
-#include <Ezo_uart.h>
+#include <Ezo_i2c.h>
+
 const uint8_t bufferlen = 32;                         //total buffer size for the response_data array
 char response_data[bufferlen];                        //character array to hold the response data from modules
 String inputstring = "";
-Ezo_uart ezo_ec(Serial1, "EC");
+
 
 #define SERIAL_BAUD 115200
-#define EZO_BAUD 9600
 #define BAUD_MULTIPLIER 2;
 int serialBaud = SERIAL_BAUD * BAUD_MULTIPLIER;
+
+/*
+// UART EZO setup
+Ezo_uart ezo_ec(Serial1, "EC");
+#define EZO_BAUD 9600;
 int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
+*/
 
 
 #define DEBUG_MEASUREMENTS true
@@ -39,8 +44,12 @@ int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
 // For F103RB
 #define Serial Serial2
 
-TwoWire WIRE1 (1); // Need the I2C_REMAP when remapping... it's a hack they deprecated support for this
+TwoWire WIRE2 (2);
+
+TwoWire WIRE1 (1);
 #define Wire WIRE1
+
+Ezo_board * ezo_ec;
 
 // The DS3231 RTC chip
 DS3231 Clock;
@@ -445,7 +454,46 @@ void userTriggeredInterrupt(){
 
 }
 
-void setupEZO(){
+
+void setupEZOI2C() {
+
+    ezo_ec = new Ezo_board(&WIRE2, 0x64);
+
+    inputstring.reserve(20);
+
+    ezo_ec->send_cmd("L,0");
+    delay(300);
+    ezo_ec->send_cmd("L,1");
+    delay(300);
+
+    // Set probe type
+    ezo_ec->send_cmd("K,1.0");
+    delay(300);
+
+    // Set outputs
+    ezo_ec->send_cmd("O,EC,1");
+    delay(300);
+    ezo_ec->send_cmd("O,TDS,0");
+    delay(300);
+    ezo_ec->send_cmd("O,S,0");
+    delay(300);
+
+    Serial2.println("Done with EZO setup");
+
+}
+
+void stopEZOI2C(){
+
+  ezo_ec->send_cmd("Sleep");
+  Serial2.println(response_data);
+  Serial2.flush();
+
+  Serial1.end();
+
+}
+
+/*
+void setupEZOSerial(){
 
   Serial1.begin(ezoBaud);
 
@@ -479,8 +527,10 @@ void setupEZO(){
 
   Serial2.println("Done with EZO setup");
 }
+*/
 
-void stopEZO(){
+/*
+void stopEZOSerial(){
 
   ezo_ec.send_cmd("Sleep", response_data, bufferlen); // send it to the module of the port we opened
   Serial2.println(response_data);
@@ -489,6 +539,7 @@ void stopEZO(){
   Serial1.end();
 
 }
+*/
 
 #define SWITCHED_POWER_ENABLE PC6
 
@@ -522,7 +573,7 @@ void setup(void)
 
 
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
-  pinMode(PB10, INPUT_PULLDOWN); // This is interrupt line 10, user interrupt
+  //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
 
   pinMode(PB1, INPUT_ANALOG);
   pinMode(PC0, INPUT_ANALOG);
@@ -537,9 +588,6 @@ void setup(void)
 
   // Set up global date time callback for SdFile
   SdFile::dateTimeCallback(dateTime);
-
-  // Use remap of I2C1 so that it matches with the arduino sheild header
-  // AFIO_BASE->MAPR = AFIO_MAPR_I2C1_REMAP;
 
   // Clear interrupts
   Serial2.print("1: NVIC_BASE->ISPR ");
@@ -562,6 +610,9 @@ void setup(void)
   Wire.begin();
   delay(1000);
   scanIC2(&Wire);
+
+  WIRE2.begin();
+  scanIC2(&WIRE2);
 
   // Clear the alarms so they don't go off during setup
   Clock.turnOffAlarm(1);
@@ -622,9 +673,12 @@ void setup(void)
   //
   exti_attach_interrupt(EXTI7, EXTI_PC, timerAlarm, EXTI_FALLING);
   awakenedByUser = false;
-  exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
 
-  setupEZO();
+  // PB10 interrupt disabled, PB10 is I2C2, use a different user interrupt
+  //exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
+
+  //setupEZOSerial();
+  setupEZOI2C();
 
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
@@ -756,7 +810,7 @@ void loop(void)
     }
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
-    stopEZO();
+    //stopEZOSerial();
 
     printInterruptStatus(Serial2);
     writeDebugMessage(F("Going to sleep"));
@@ -837,7 +891,9 @@ void loop(void)
     }
 
     Serial2.begin(serialBaud);
-    setupEZO();
+    //setupEZOSerial();
+    setupEZOI2C();
+
 
     // reenable interrupts
     NVIC_BASE->ISER[0] = iser1;
@@ -907,6 +963,7 @@ void loop(void)
 
     // EZO
     // wake/sleep.  Or re-run setup
+    /*
     Serial2.print(ezo_ec.get_name());     //print the modules name
     Serial2.print(": ");
     Serial2.println(response_data);                  //print the modules response
@@ -918,7 +975,14 @@ void loop(void)
     Serial2.print(ecValue);
     Serial2.println();
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
+    */
 
+    ezo_ec->send_read_cmd();
+    delay(600);
+    float ecValue = ezo_ec->get_last_received_reading();
+    Serial2.print(ecValue);
+    Serial2.println();
+    sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));
