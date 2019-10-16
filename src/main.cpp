@@ -37,17 +37,18 @@ int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
 
 #define DEBUG_MEASUREMENTS true
 #define DEBUG_LOOP false
-#define DEBUG_USING_SHORT_SLEEP false
+#define DEBUG_USING_SHORT_SLEEP true
 #define DEBUG_TO_FILE 1
 #define DEBUG_TO_SERIAL 1
 
 // For F103RB
 #define Serial Serial2
 
-TwoWire WIRE2 (2);
 
 TwoWire WIRE1 (1);
 #define Wire WIRE1
+
+TwoWire Wire2 (2);
 
 Ezo_board * ezo_ec;
 
@@ -457,7 +458,18 @@ void userTriggeredInterrupt(){
 
 void setupEZOI2C() {
 
-    ezo_ec = new Ezo_board(&WIRE2, 0x64);
+    Serial2.println("EZO I2C setup");
+
+    i2c_master_enable(I2C2, 0);
+    Serial2.println("Enabled TwoWire 2");
+    Wire2.begin();
+    delay(1000);
+
+    Serial2.println("Began TwoWire 2");
+    scanIC2(&Wire2);
+
+    Serial2.println("Setting up board");
+    ezo_ec = new Ezo_board(&Wire2, 0x64);
 
     inputstring.reserve(20);
 
@@ -478,17 +490,17 @@ void setupEZOI2C() {
     ezo_ec->send_cmd("O,S,0");
     delay(300);
 
-    Serial2.println("Done with EZO setup");
+    Serial2.println("Done with EZO I2C setup");
 
 }
 
 void stopEZOI2C(){
 
   ezo_ec->send_cmd("Sleep");
-  Serial2.println(response_data);
-  Serial2.flush();
 
-  Serial1.end();
+  i2c_disable(I2C2);
+
+  Serial2.println("Done with EZO I2C stop");
 
 }
 
@@ -569,8 +581,10 @@ void setup(void)
    writeSerialMessage(F("Hello world: serial2"));
    writeSerialMessage(F("Begin setup"));
 
-  //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
+   setupSwitchedPower();
+   enableSwitchedPower();
 
+  //pinMode(PB5, OUTPUT); // Command Mode pin for BLE
 
   pinMode(PC7, INPUT_PULLUP); // This the interrupt line 7
   //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
@@ -581,8 +595,7 @@ void setup(void)
   pinMode(PC2, INPUT_ANALOG);
   pinMode(PC3, INPUT_ANALOG);
 
-  setupSwitchedPower();
-  enableSwitchedPower();
+
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
@@ -610,9 +623,6 @@ void setup(void)
   Wire.begin();
   delay(1000);
   scanIC2(&Wire);
-
-  WIRE2.begin();
-  scanIC2(&WIRE2);
 
   // Clear the alarms so they don't go off during setup
   Clock.turnOffAlarm(1);
@@ -652,7 +662,6 @@ void setup(void)
   //
   // init ble
   //
-
   //initBLE();
 
   readUniqueId();
@@ -811,11 +820,10 @@ void loop(void)
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
     //stopEZOSerial();
+    stopEZOI2C();
 
     printInterruptStatus(Serial2);
     writeDebugMessage(F("Going to sleep"));
-//    Serial2.println("Going to sleep");
-    //Serial2.println("sleep");
 
     //delay(1000);
 
@@ -892,7 +900,6 @@ void loop(void)
 
     Serial2.begin(serialBaud);
     //setupEZOSerial();
-    setupEZOI2C();
 
 
     // reenable interrupts
@@ -907,6 +914,8 @@ void loop(void)
     printInterruptStatus(Serial2);
 
     enableSwitchedPower();
+    delay(500);
+    setupEZOI2C();
 
     // Actually, we need to check on which interrupt was triggered
     if(awakenedByUser){
@@ -977,12 +986,16 @@ void loop(void)
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
     */
 
+    // EZO i2c
+    /* */
     ezo_ec->send_read_cmd();
     delay(600);
     float ecValue = ezo_ec->get_last_received_reading();
+    Serial2.print(F("Got EC value: "));
     Serial2.print(ecValue);
     Serial2.println();
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
+    /* */
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));
