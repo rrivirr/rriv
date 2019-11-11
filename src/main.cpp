@@ -108,7 +108,7 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 // Settings
 char version[5] = "v2.0";
 short interval = 1; //15; // minutes between loggings
-short burstLength = 20; // how many readings in a burst
+short burstLength = 2; //20 // how many readings in a burst
 short fieldCount = 9;
 #define BUFSIZE                        160   // Size of the read buffer for incoming data
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
@@ -371,7 +371,7 @@ void setNextAlarm(){
     short debugSleepSeconds = 30;
     short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
     char message[200];
-    sprintf(message, "Next Alarm, with seconds: %i", nextSeconds);
+    sprintf(message, "Next Alarm, with seconds: %i, now seconds: %i", nextSeconds, seconds);
     writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
   }
@@ -473,10 +473,15 @@ void setupEZOI2C() {
 
     inputstring.reserve(20);
 
-    ezo_ec->send_cmd("L,0");
-    delay(300);
+    Serial2.println("Turning light on");
     ezo_ec->send_cmd("L,1");
-    delay(300);
+    delay(1000);
+    Serial2.println("Turning light off");
+    ezo_ec->send_cmd("L,0");
+    delay(1000);
+    Serial2.println("Turning light on");
+    ezo_ec->send_cmd("L,1");
+    delay(1000);
 
     // Set probe type
     ezo_ec->send_cmd("K,1.0");
@@ -810,8 +815,6 @@ void loop(void)
   // Go to sleep
   if(awaitMeasurementTrigger){
 
-    disableSwitchedPower();
-
     writeDebugMessage(F("Await measurement trigger"));
 
     if(Clock.checkIfAlarm(1)){
@@ -820,7 +823,13 @@ void loop(void)
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
     //stopEZOSerial();
+    writeDebugMessage(F("Stopping EZO I2C"));
     stopEZOI2C();
+
+
+    writeDebugMessage(F("Disabling switched power"));
+    disableSwitchedPower();
+
 
     printInterruptStatus(Serial2);
     writeDebugMessage(F("Going to sleep"));
