@@ -16,7 +16,9 @@
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 
-#include <Ezo_i2c.h>
+//#include <Ezo_i2c.h>
+#include "EC_OEM.h"
+
 
 const uint8_t bufferlen = 32;                         //total buffer size for the response_data array
 char response_data[bufferlen];                        //character array to hold the response data from modules
@@ -50,7 +52,9 @@ TwoWire WIRE1 (1);
 
 TwoWire Wire2 (2);
 
-Ezo_board * ezo_ec;
+//Ezo_board * ezo_ec;
+EC_OEM * oem_ec;
+
 
 // The DS3231 RTC chip
 DS3231 Clock;
@@ -108,7 +112,7 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_
 // Settings
 char version[5] = "v2.0";
 short interval = 1; //15; // minutes between loggings
-short burstLength = 2; //20 // how many readings in a burst
+short burstLength = 20; // how many readings in a burst
 short fieldCount = 9;
 #define BUFSIZE                        160   // Size of the read buffer for incoming data
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
@@ -469,31 +473,56 @@ void setupEZOI2C() {
     scanIC2(&Wire2);
 
     Serial2.println("Setting up board");
-    ezo_ec = new Ezo_board(&Wire2, 0x64);
 
-    inputstring.reserve(20);
+    oem_ec = new EC_OEM(&Wire2, NONE_INT, i2c_id);
+    bool awoke = oem_ec->wakeUp();
+    Serial.println("Device addr EC: "+String(oem_ec->getStoredAddr()) );
+    Serial.println("Device type EC: "+String(oem_ec->getDeviceType()) );
+    Serial.println("Firmware EC: "+String(oem_ec->getFirmwareVersion()) );
+    Serial.println("Awoke: "+String(awoke));
+    Serial.println("Hibernating: "+String(oem_ec->isHibernate()) );
 
-    Serial2.println("Turning light on");
-    ezo_ec->send_cmd("L,1");
-    delay(1000);
-    Serial2.println("Turning light off");
-    ezo_ec->send_cmd("L,0");
-    delay(1000);
-    Serial2.println("Turning light on");
-    ezo_ec->send_cmd("L,1");
-    delay(1000);
+    oem_ec->singleReading();
+    struct param_OEM_EC parameter;
+    parameter = oem_ec->getAllParam();
+    Serial.println("salinity= " + String(parameter.salinity)+
+                   "\nconductivity= " +String(parameter.conductivity)+
+                   "\ntds= " +String(parameter.tds)+
+                   "\nSalinity stable = "+(oem_ec->isSalinityStable()?"yes":"no")
+                   );
+
+
+    //ezo_ec = new Ezo_board(&Wire2, 0x64);
+
+    // inputstring.reserve(20);
+
+    // Serial2.println("Turning light on");
+    // ezo_ec->send_cmd("L,1");
+    // delay(1000);
+    // Serial2.println("Turning light off");
+    // ezo_ec->send_cmd("L,0");
+    // delay(1000);
+    // Serial2.println("Turning light on");
+    // ezo_ec->send_cmd("L,1");
+    // delay(1000);
 
     // Set probe type
-    ezo_ec->send_cmd("K,1.0");
-    delay(300);
+    // ezo_ec->send_cmd("K,1.0");
+    // delay(300);
+    //
+    // // Set outputs
+    // ezo_ec->send_cmd("O,EC,1");
+    // delay(300);
+    // ezo_ec->send_cmd("O,TDS,0");
+    // delay(300);
+    // ezo_ec->send_cmd("O,S,0");
+    // delay(300);
 
-    // Set outputs
-    ezo_ec->send_cmd("O,EC,1");
-    delay(300);
-    ezo_ec->send_cmd("O,TDS,0");
-    delay(300);
-    ezo_ec->send_cmd("O,S,0");
-    delay(300);
+
+    oem_ec->setLedOn(true);
+    //oem_ec->setLedOn(false);
+    //oem_ec->setLedOn(true);
+    oem_ec->setProbeType(1.0);
 
     Serial2.println("Done with EZO I2C setup");
 
@@ -501,7 +530,8 @@ void setupEZOI2C() {
 
 void stopEZOI2C(){
 
-  ezo_ec->send_cmd("Sleep");
+  //ezo_ec->send_cmd("Sleep");
+  oem_ec->setHibernate();
 
   i2c_disable(I2C2);
 
@@ -997,14 +1027,25 @@ void loop(void)
 
     // EZO i2c
     /* */
-    ezo_ec->send_read_cmd();
-    delay(600);
-    float ecValue = ezo_ec->get_last_received_reading();
+    // ezo_ec->send_read_cmd();
+    // delay(600);
+    // float ecValue = ezo_ec->get_last_received_reading();
+    /* */
+
+    // OEM EC
+    bool newDataAvailable = oem_ec->singleReading();
+    float ecValue = -1;
+    if(newDataAvailable){
+      ecValue = oem_ec->getConductivity();
+      oem_ec->clearNewDataRegister();
+    } else {
+      writeDebugMessage(F("New EC data not available"));
+    }
+
     Serial2.print(F("Got EC value: "));
     Serial2.print(ecValue);
     Serial2.println();
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
-    /* */
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));
