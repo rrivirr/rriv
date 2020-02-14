@@ -38,7 +38,7 @@ int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
 
 
 #define DEBUG_MEASUREMENTS true
-#define DEBUG_LOOP false
+#define DEBUG_LOOP true
 #define DEBUG_USING_SHORT_SLEEP true
 #define DEBUG_TO_FILE 1
 #define DEBUG_TO_SERIAL 1
@@ -128,6 +128,7 @@ bool awakenedByUser;
 uint32_t awakeTime = 0;
 uint32_t lastTime = 0;
 short burstCount = 0;
+bool configurationMode = false;
 
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
@@ -459,10 +460,32 @@ void userTriggeredInterrupt(){
 
 }
 
+#define SWITCHED_POWER_ENABLE PC6
+
+void setupSwitchedPower(){
+  pinMode(SWITCHED_POWER_ENABLE, OUTPUT); // enable pin on switchable boost converter
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+}
+
+void enableSwitchedPower(){
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+}
+
+void disableSwitchedPower(){
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+}
+
+
 
 void setupEZOI2C() {
 
     Serial2.println("EZO I2C setup");
+
+    Serial2.println("Power cycle EZO");
+    disableSwitchedPower();
+    delay(1000);
+    enableSwitchedPower();
+    delay(1000);
 
     i2c_master_enable(I2C2, 0);
     Serial2.println("Enabled TwoWire 2");
@@ -588,20 +611,6 @@ void stopEZOSerial(){
 }
 */
 
-#define SWITCHED_POWER_ENABLE PC6
-
-void setupSwitchedPower(){
-  pinMode(SWITCHED_POWER_ENABLE, OUTPUT); // enable pin on switchable boost converter
-  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
-}
-
-void enableSwitchedPower(){
-  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
-}
-
-void disableSwitchedPower(){
-  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
-}
 
 void setup(void)
 {
@@ -826,8 +835,8 @@ void loop(void)
   } else if(awakeForUserInteraction){
     unsigned long currentMillis = millis();
     if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
-      DateTime now = RTC.now();
-      printDateTime(Serial2, now);
+      //DateTime now = RTC.now();
+      //printDateTime(Serial2, now);
       lastMillis = currentMillis;
       takeMeasurement = true;
     }
@@ -977,9 +986,64 @@ void loop(void)
   if( WaterBear_Control::ready(Serial2) ){
     writeDebugMessage(F("SERIAL2 Input Ready"));
     awakeTime = RTC.now().unixtime(); // Push awake time forward
-    WaterBear_Control::processControlCommands(Serial2);
+    int command = WaterBear_Control::processControlCommands(Serial2);
+    switch(command){
+      case WT_CONTROL_CONFIG:
+        writeDebugMessage(F("Entering Configuration Mode"));
+        writeDebugMessage(F("Reset device to enter normal operating mode"));
+        configurationMode = true;
+        break;
+
+      case WT_CONTROL_CAL_DRY:
+        writeDebugMessage(F("DRY_CALIBRATION"));
+        oem_ec->clearCalibrationData();
+        oem_ec->setCalibration(DRY_CALIBRATION);
+        break;
+
+      case WT_CONTROL_CAL_LOW:
+      {
+        writeDebugMessage(F("LOW_POINT_CALIBRATION"));
+        int * lowPointPtr = (int *) WaterBear_Control::getLastPayload();
+        int lowPoint = *lowPointPtr;
+        char logMessage[20];
+        sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
+        writeDebugMessage(logMessage);
+        oem_ec->setCalibration(LOW_POINT_CALIBRATION,  lowPoint);
+      }
+        break;
+
+      case WT_CONTROL_CAL_H:
+      {
+        writeDebugMessage(F("HIGH_POINT_CALIBRATION:"));
+        int * highPointPtr = (int *)  WaterBear_Control::getLastPayload();
+        int highPoint = *highPointPtr;
+        char logMessage[20];
+        sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
+        oem_ec->setCalibration(HIGH_POINT_CALIBRATION,  highPoint);
+      }
+        break;
+
+      // default:
+      //   break;
+    }
+
     return;
   }
+
+  if(configurationMode){
+    bool newDataAvailable = oem_ec->singleReading();
+    float ecValue = -1;
+    if(newDataAvailable){
+      ecValue = oem_ec->getConductivity();
+      oem_ec->clearNewDataRegister();
+      Serial2.print(F("Got EC value: "));
+      Serial2.println(ecValue);
+      Serial2.flush();
+    }
+
+    return;
+  }
+
 
   // if DEBUG_BLE
   /*
