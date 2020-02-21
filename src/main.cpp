@@ -795,7 +795,7 @@ void measureSensorValues(){
 }
 
 unsigned int interactiveModeMeasurementDelay = 1000;
-
+bool newDataAvailable = false;
 
 void loop(void)
 {
@@ -992,6 +992,7 @@ void loop(void)
         writeDebugMessage(F("Entering Configuration Mode"));
         writeDebugMessage(F("Reset device to enter normal operating mode"));
         configurationMode = true;
+        return;
         break;
 
       case WT_CONTROL_CAL_DRY:
@@ -1031,14 +1032,17 @@ void loop(void)
   }
 
   if(configurationMode){
-    bool newDataAvailable = oem_ec->singleReading();
-    float ecValue = -1;
+
     if(newDataAvailable){
+      float ecValue = -1;
       ecValue = oem_ec->getConductivity();
       oem_ec->clearNewDataRegister();
+      newDataAvailable = false;
       Serial2.print(F("Got EC value: "));
       Serial2.println(ecValue);
       Serial2.flush();
+    } else {
+      newDataAvailable = oem_ec->singleReading();
     }
 
     return;
