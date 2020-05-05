@@ -26,7 +26,7 @@ String inputstring = "";
 
 
 #define SERIAL_BAUD 115200
-#define BAUD_MULTIPLIER 2;
+#define BAUD_MULTIPLIER 1; // was 2
 int serialBaud = SERIAL_BAUD * BAUD_MULTIPLIER;
 
 /*

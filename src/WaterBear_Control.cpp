@@ -193,7 +193,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
     } else if(strncmp(request, ">CAL_LOW:", 9) == 0){
       myStream->println(">GOT CAL_LOW<");
       char calibrationPointStringValue[10];
-      strncpy(calibrationPointStringValue, &request[10], 9);
+      strncpy(calibrationPointStringValue, &request[9], 9);
       int value;
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
       if(found == 1){
@@ -208,7 +208,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
     } else if(strncmp(request, ">CAL_HIGH:", 10) == 0){
       myStream->println(">GOT CAL_HIGH<");
       char calibrationPointStringValue[10];
-      strncpy(calibrationPointStringValue, &request[11], 9);
+      strncpy(calibrationPointStringValue, &request[10], 9);
       int value;
       myStream->println(calibrationPointStringValue);
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
