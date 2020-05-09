@@ -4,7 +4,8 @@
 
 
 int WaterBear_Control::state = 0;
-
+void * lastCommandPayload;
+bool lastCommandPayloadAllocated = false;
 
 bool WaterBear_Control::ready(HardwareSerial &port) {
     Stream *myStream = &port;
@@ -32,28 +33,36 @@ bool WaterBear_Control::ready(Stream * myStream) {
 
 
 
-void WaterBear_Control::processControlCommands(HardwareSerial &port) {
+int WaterBear_Control::processControlCommands(HardwareSerial &port) {
   Stream *myStream = &port;
-  WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream);
 }
 
-void WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble) {
+int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble) {
   Stream *myStream = &ble;
-  WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream);
 }
 
-void WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble) {
+int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble) {
   Stream *myStream = &ble;
-  WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream);
 }
 
-void WaterBear_Control::processControlCommands(Stream * myStream) {
+
+void * WaterBear_Control::getLastPayload() {
+  return lastCommandPayload;
+}
+
+int WaterBear_Control::processControlCommands(Stream * myStream) {
 
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
 
   if(WaterBear_Control::state == 0){
-    myStream->println("Peek");
 
+    if(lastCommandPayloadAllocated == true){
+      free(lastCommandPayload);
+      lastCommandPayloadAllocated = false;
+    }
     // awakeTime = RTC.now().unixtime(); // Keep us awake once we are talking to the phone
 
     char request[MAX_REQUEST_LENGTH] = "";
@@ -126,7 +135,7 @@ void WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->flush();
 
       WaterBear_Control::state = 1;
-      return;
+      return WT_CONTROL_NONE;
     } else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
       char UTCTime[11] = "0000000000";
       strncpy(UTCTime, &request[12], 10);
@@ -172,6 +181,46 @@ void WaterBear_Control::processControlCommands(Stream * myStream) {
       // TODO: create and pass a data file writer class
       // setNewDataFile();
 
+    } else if(strncmp(request, ">WT_CONFIG", 10) == 0){
+      myStream->println(">CONFIG<");
+      return WT_CONTROL_CONFIG;
+      // go into config mode
+
+    } else if(strncmp(request, ">CAL_DRY", 8) == 0){
+      myStream->println(">GOT CAL_DRY<");
+      return WT_CONTROL_CAL_DRY;
+
+    } else if(strncmp(request, ">CAL_LOW:", 9) == 0){
+      myStream->println(">GOT CAL_LOW<");
+      char calibrationPointStringValue[10];
+      strncpy(calibrationPointStringValue, &request[9], 9);
+      int value;
+      int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
+      if(found == 1){
+        int * commandPayloadPointer = (int *) malloc(sizeof(int));
+        *commandPayloadPointer = value;
+        lastCommandPayloadAllocated = true;
+        lastCommandPayload = commandPayloadPointer;
+      }
+
+      return WT_CONTROL_CAL_LOW;
+
+    } else if(strncmp(request, ">CAL_HIGH:", 10) == 0){
+      myStream->println(">GOT CAL_HIGH<");
+      char calibrationPointStringValue[10];
+      strncpy(calibrationPointStringValue, &request[10], 9);
+      int value;
+      myStream->println(calibrationPointStringValue);
+      int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
+      if(found == 1){
+        int * commandPayloadPointer = (int *) malloc(sizeof(int));
+        *commandPayloadPointer = value;
+        lastCommandPayloadAllocated = true;
+        lastCommandPayload = commandPayloadPointer;
+      }
+
+      return WT_CONTROL_CAL_H;
+
     } else {
       char lastDownloadDateEmpty[11] = "0000000000";
       strcpy(lastDownloadDate, lastDownloadDateEmpty);
@@ -192,7 +241,7 @@ void WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->read ();  // read and discard any input
 
       WaterBear_Control::state = 0;
-      return;
+      return WT_CONTROL_NONE;
     }
 
     char lastFileNameSent[10];
@@ -211,4 +260,5 @@ void WaterBear_Control::processControlCommands(Stream * myStream) {
     WaterBear_Control::state = 0;
   }
 
+  return WT_CONTROL_NONE;
 }
