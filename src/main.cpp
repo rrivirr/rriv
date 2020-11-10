@@ -3,7 +3,6 @@
 #include <SPI.h>
 
 #include "Adafruit_BluefruitLE_SPI.h"
-//#include "Adafruit_BluefruitLE_UART.h"
 #include "DS3231.h"
 #include "SdFat.h"
 #include "STM32-UID.h"
@@ -16,7 +15,6 @@
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 
-//#include <Ezo_i2c.h>
 #include "EC_OEM.h"
 
 
@@ -24,28 +22,29 @@ const uint8_t bufferlen = 32;                         //total buffer size for th
 char response_data[bufferlen];                        //character array to hold the response data from modules
 String inputstring = "";
 
-
 #define SERIAL_BAUD 115200
-#define BAUD_MULTIPLIER 1; // was 2
-int serialBaud = SERIAL_BAUD * BAUD_MULTIPLIER;
+int serialBaud = SERIAL_BAUD;
+#define BUFSIZE                        160   // Size of the read buffer for incoming data
 
-/*
-// UART EZO setup
-Ezo_uart ezo_ec(Serial1, "EC");
-#define EZO_BAUD 9600;
-int ezoBaud = EZO_BAUD * BAUD_MULTIPLIER;
-*/
+// Settings
+char version[5] = "v2.0";
 
+#define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
+#define DEBUG_LOOP false         // don't sleep
+#define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
+#define DEBUG_TO_FILE 1   // Also send debug messages to the output file
+#define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
 
-#define DEBUG_MEASUREMENTS true
-#define DEBUG_LOOP true
-#define DEBUG_USING_SHORT_SLEEP true
-#define DEBUG_TO_FILE 1
-#define DEBUG_TO_SERIAL 1
+short interval = 5; // minutes between loggings when not in short sleep
+short burstLength = 25; // how many readings in a burst
+#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
+//#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
+
+short fieldCount = 9;
+
 
 // For F103RB
 #define Serial Serial2
-
 
 TwoWire WIRE1 (1);
 #define Wire WIRE1
@@ -54,7 +53,6 @@ TwoWire Wire2 (2);
 
 //Ezo_board * ezo_ec;
 EC_OEM * oem_ec;
-
 
 // The DS3231 RTC chip
 DS3231 Clock;
@@ -109,14 +107,7 @@ uint32 tt;
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
 
-// Settings
-char version[5] = "v2.0";
-short interval = 1; //15; // minutes between loggings
-short burstLength = 20; // how many readings in a burst
-short fieldCount = 9;
-#define BUFSIZE                        160   // Size of the read buffer for incoming data
-#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
-//#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
+
 
 
 // State
@@ -638,8 +629,6 @@ void setup(void)
   pinMode(PC1, INPUT_ANALOG);
   pinMode(PC2, INPUT_ANALOG);
   pinMode(PC3, INPUT_ANALOG);
-
-
 
   //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 

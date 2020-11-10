@@ -23,3 +23,7 @@ The readings will not change at this point.
 At this point you should see the results change to ~80000
 4. It would be wise to test the probe at various dilutions to confirm that it is working correctly. If anything seems awry, start over from step 1, as new data will overwrite the old.
 5. Reset to reenter normal operations. [Though currently the software may need to be altered for that]
+
+
+Check version of Maple is at least: framework-arduinoststm32-maple 2.10000.200103 (1.0.0)
+  This impacts some commands in the platform.ini [build flag, board build]
