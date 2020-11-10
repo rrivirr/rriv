@@ -35,8 +35,8 @@ char version[5] = "v2.0";
 #define DEBUG_TO_FILE 1   // Also send debug messages to the output file
 #define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
 
-short interval = 15; // minutes between loggings when not in short sleep
-short burstLength = 40; // how many readings in a burst
+short interval = 5; // minutes between loggings when not in short sleep
+short burstLength = 25; // how many readings in a burst
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 //#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
 
