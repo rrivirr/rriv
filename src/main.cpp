@@ -3,7 +3,8 @@
 #include <SPI.h>
 
 #include "Adafruit_BluefruitLE_SPI.h"
-#include "DS3231.h"
+//#include "DS3231.h" in waterbear control
+//#include "time.h" in waterbear control
 #include "SdFat.h"
 #include "STM32-UID.h"
 
@@ -32,8 +33,8 @@ char version[5] = "v2.0";
 #define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
 #define DEBUG_LOOP false         // don't sleep
 #define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
-#define DEBUG_TO_FILE 1   // Also send debug messages to the output file
-#define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
+//#define DEBUG_TO_FILE 0   // Also send debug messages to the output file [comment out to disable]
+#define DEBUG_TO_SERIAL 0 // Send debug messages to the serial interface
 
 short interval = 5; // minutes between loggings when not in short sleep
 short burstLength = 25; // how many readings in a burst
@@ -106,10 +107,6 @@ uint32 tt;
 //SPIClass SPI_2(2); //Create an SPI2 object.  This has been moved to a tweak on Adafruit_BluefruitLE_SPI
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
-
-
-
-
 // State
 WaterBear_FileSystem * filesystem;
 char lastDownloadDate[11] = "0000000000";
@@ -120,7 +117,6 @@ uint32_t awakeTime = 0;
 uint32_t lastTime = 0;
 short burstCount = 0;
 bool configurationMode = false;
-
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
@@ -339,8 +335,6 @@ void dateTime(uint16_t* date, uint16_t* time) {
   // return time using FAT_TIME macro to format fields
   *time = FAT_TIME(now.hour(), now.minute(), now.second());
 }
-
-
 
 /**************************************************************************/
 /*
@@ -630,7 +624,9 @@ void setup(void)
   pinMode(PC2, INPUT_ANALOG);
   pinMode(PC3, INPUT_ANALOG);
 
-  //pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+  pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+  //writeSerialMessage(F("blink test:"));
+  //WaterBear_Control::blink(10,250);
 
   // Set up global date time callback for SdFile
   SdFile::dateTimeCallback(dateTime);
@@ -709,6 +705,8 @@ void setup(void)
     values[i] = (char *) malloc(sizeof(char) * 5);
     sprintf(values[i], "%4d", 0);
   }
+  values[2] = (char *) malloc(sizeof(char) * 11);
+    sprintf(values[2], "%10d", 0);
 
   //
   // Set up interrupts
@@ -724,7 +722,8 @@ void setup(void)
 
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
-
+  Serial2.flush();
+  WaterBear_Control::blink(10,100);
 }
 
 
@@ -737,7 +736,7 @@ void prepareForTriggeredMeasurement(){
 void measureSensorValues(){
 
   // Fetch the time
-  unsigned long currentTime = RTC.now().unixtime();
+  //unsigned long currentTime = RTC.now().unixtime();
 
   // TODO: do we need to do this every time ??
   char uuidString[2 * UUID_LENGTH + 1];
@@ -745,7 +744,6 @@ void measureSensorValues(){
   for(short i=0; i < UUID_LENGTH; i++){
     sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
   }
-
 
   // Get the deployment identifier
   // TODO: do we need to do this every time ??
@@ -763,22 +761,22 @@ void measureSensorValues(){
   values[1] = uuidString;
 
   //Serial2.println(currentTime);
-  char timeString[11];
-  sprintf(timeString, "%lu", currentTime);
-  values[2] = timeString;
-  Serial2.println(timeString);
-
+  //char timeString[11]; // unix, 10 digits
+  //sprintf(timeString, "%lu", currentTime);
+  //values[2] = timeString;
+  //WaterBear_Control::timestamp(); // populate values[2] with timestamp
+  sprintf(values[2], "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
+  writeDebugMessage(F("debugging values[2]:"));
+  Serial2.println(values[2]);
+  Serial2.flush();
 
   // Measure the new data
   short sensorCount = 6;
   short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
   for(short i=0; i<sensorCount; i++){
-
     int value = analogRead(sensorPins[i]);
-
     // malloc or ?
     sprintf(values[3+i], "%4d", value);
-
   }
 
 }
@@ -788,7 +786,7 @@ bool newDataAvailable = false;
 
 void loop(void)
 {
-
+  //WaterBear_Control::blink(1,50);
   // Are we bursting ?
   bool bursting = false;
   if(burstCount < burstLength){
@@ -998,21 +996,31 @@ void loop(void)
         char logMessage[20];
         sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
         writeDebugMessage(logMessage);
-        oem_ec->setCalibration(LOW_POINT_CALIBRATION,  lowPoint);
+        oem_ec->setCalibration(LOW_POINT_CALIBRATION, lowPoint);
       }
         break;
 
       case WT_CONTROL_CAL_H:
       {
-        writeDebugMessage(F("HIGH_POINT_CALIBRATION:"));
-        int * highPointPtr = (int *)  WaterBear_Control::getLastPayload();
+        writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
+        int * highPointPtr = (int *) WaterBear_Control::getLastPayload();
         int highPoint = *highPointPtr;
         char logMessage[20];
         sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
-        oem_ec->setCalibration(HIGH_POINT_CALIBRATION,  highPoint);
+        oem_ec->setCalibration(HIGH_POINT_CALIBRATION, highPoint);
       }
         break;
 
+      case WT_SET_RTC:
+      {
+        writeDebugMessage(F("SET_RTC"));
+        time_t * RTCPtr = (time_t *) WaterBear_Control::getLastPayload();
+        time_t RTC = *RTCPtr;
+        char logMessage[20];
+        sprintf(&logMessage[0], "%s %lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
+        WaterBear_Control::setTime(RTC);
+      }
+        break;
       // default:
       //   break;
     }
@@ -1021,6 +1029,14 @@ void loop(void)
   }
 
   if(configurationMode){
+    WaterBear_Control::blink(1,500);
+
+    char testTime[11];
+
+    Serial2.print(F("configMode TS:"));
+    sprintf(testTime, "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
+    Serial2.println(testTime);
+    Serial2.flush();
 
     if(newDataAvailable){
       float ecValue = -1;
@@ -1033,7 +1049,6 @@ void loop(void)
     } else {
       newDataAvailable = oem_ec->singleReading();
     }
-
     return;
   }
 
@@ -1099,9 +1114,9 @@ void loop(void)
       writeDebugMessage(F("New EC data not available"));
     }
 
-    Serial2.print(F("Got EC value: "));
-    Serial2.print(ecValue);
-    Serial2.println();
+    //Serial2.print(F("Got EC value: "));
+    //Serial2.print(ecValue);
+    //Serial2.println();
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
 
     if(DEBUG_MEASUREMENTS) {
@@ -1112,8 +1127,8 @@ void loop(void)
       writeDebugMessage(F("writeLog done"));
     }
 
-    char valuesBuffer[52];
-    sprintf(valuesBuffer, ">WT_VALUES:%s,%s,%s,%s,%s,%s<", values[3], values[4], values[5], values[6], values[7], values[8]);
+    char valuesBuffer[100]; // 52 and not including 0-2
+    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F(valuesBuffer));
     }

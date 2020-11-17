@@ -27,7 +27,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
 }
 
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
-  for(int i=0; i<fieldCount; i++){
+  for(int i=1; i<fieldCount; i++){
     //Serial2.println(values[i]);
     this->logfile.print(values[i]);
     if(i+1 < fieldCount){
