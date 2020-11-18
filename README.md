@@ -1,5 +1,5 @@
 # waterteam-embedded
-
+NOTE: VIEW RAW TO SEE PROPER FORMATTING
 Install the file COLUMNS.TXT into the root directory of your SD Card, and change field names 3-8 to reflect the sensors attached to analog inputs 0-5 (A0 - A5).
 
 Calibration of conductivity probe via Serial:
@@ -24,6 +24,11 @@ At this point you should see the results change to ~80000
 4. It would be wise to test the probe at various dilutions to confirm that it is working correctly. If anything seems awry, start over from step 1, as new data will overwrite the old.
 5. Reset to reenter normal operations. [Though currently the software may need to be altered for that]
 
+To configure time:
+Not necessary but can enter >WT_CONFIG< mode
+Serial command is:
+>WT_SET_RTC:[insert epoch time]<
+example: >WT_SET_RTC:1605578020<
 
 Check version of Maple is at least: framework-arduinoststm32-maple 2.10000.200103 (1.0.0)
   This impacts some commands in the platform.ini [build flag, board build]
