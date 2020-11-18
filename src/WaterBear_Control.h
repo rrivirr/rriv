@@ -40,7 +40,7 @@ class WaterBear_Control
     static void blink(int times, int duration);
     static time_t timestamp();
     static void setTime(time_t toSet);
-    static void t_t2ts(time_t epochTS); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
+    static void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
 
 #if SOFTWARE_SERIAL_AVAILABLE
     static void processControlCommands(SoftwareSerial &port);

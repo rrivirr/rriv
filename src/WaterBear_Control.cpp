@@ -61,9 +61,9 @@ void WaterBear_Control::blink(int times, int duration){
 }
 
   DS3231 ClockWBC;
-  struct tm ts;
 
 time_t WaterBear_Control::timestamp(){
+  struct tm ts;
   bool century = false;
 	bool h24Flag;
 	bool pmFlag;
@@ -80,7 +80,9 @@ time_t WaterBear_Control::timestamp(){
 }
 
 void WaterBear_Control::setTime(time_t toSet){
-  ts = *localtime(&toSet); // convert UTC epoch timestamp time_t value to tm structure
+  struct tm ts;
+
+  ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
   ClockWBC.setClockMode(false); //true for 12h false for 24h
   ClockWBC.setYear(ts.tm_year);
   ClockWBC.setMonth(ts.tm_mon);
@@ -91,15 +93,12 @@ void WaterBear_Control::setTime(time_t toSet){
   ClockWBC.setSecond(ts.tm_sec);
 }
 
-void	WaterBear_Control::t_t2ts(time_t epochTS){
-  char testTime[23];
+void WaterBear_Control::t_t2ts(time_t epochTS, char *humanTime){
+  struct tm ts;
 
-  ts = *localtime(&epochTS); // convert unix to tm structure
-  // Format time, "yyyy/mm/dd hh:mm:ss zzz"(23) = "%Y/%m/%d %H:%M:%S %Z"
-  strftime(testTime, sizeof(testTime), "%Y/%m/%d %w %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
-  Serial2.print("Custom Timestamp: ");
-  Serial2.println(testTime);
-  Serial2.flush();
+  ts = *gmtime(&epochTS); // convert unix to tm structure
+  // Format time, "yyyy-mm-dd hh:mm:ss zzz" = "%Y/%m/%d %H:%M:%S %Z" (yyyy/mm/dd hh:mm:ss zzz) = 23
+  strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
 }
 
 int WaterBear_Control::processControlCommands(Stream * myStream) {

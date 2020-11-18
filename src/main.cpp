@@ -31,17 +31,17 @@ int serialBaud = SERIAL_BAUD;
 char version[5] = "v2.0";
 
 #define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
-#define DEBUG_LOOP false         // don't sleep
+#define DEBUG_LOOP true         // don't sleep
 #define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
 //#define DEBUG_TO_FILE 0   // Also send debug messages to the output file [comment out to disable]
-#define DEBUG_TO_SERIAL 0 // Send debug messages to the serial interface
+#define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
 
 short interval = 5; // minutes between loggings when not in short sleep
 short burstLength = 25; // how many readings in a burst
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 //#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
 
-short fieldCount = 9;
+short fieldCount = 10;
 
 
 // For F103RB
@@ -326,14 +326,15 @@ void initBLE(){
 }
 
 void dateTime(uint16_t* date, uint16_t* time) {
-
-  DateTime now = RTC.now();
-
+  // Fetch time from DS3231 RTC
+  bool century = false;
+	bool h24Flag;
+	bool pmFlag;
   // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(now.year(), now.month(), now.day());
+  *date = FAT_DATE(Clock.getYear() + 1900, Clock.getMonth(century) + 1, Clock.getDate()); // year is since 1900, months range 0-11
 
   // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(now.hour(), now.minute(), now.second());
+  *time = FAT_TIME(Clock.getHour(h24Flag, pmFlag), Clock.getMinute(), Clock.getSecond());
 }
 
 /**************************************************************************/
@@ -599,7 +600,7 @@ void stopEZOSerial(){
 
 void setup(void)
 {
-
+  i2c_bus_reset(I2C1);
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
@@ -701,12 +702,14 @@ void setup(void)
   // Allocate needed memory
   //
   values = (char **) malloc(sizeof(char *) * fieldCount);
-  for(int i = 3; i < 3+fieldCount; i++){
+  for(int i = 4; i < 4+fieldCount; i++){
     values[i] = (char *) malloc(sizeof(char) * 5);
     sprintf(values[i], "%4d", 0);
   }
   values[2] = (char *) malloc(sizeof(char) * 11);
     sprintf(values[2], "%10d", 0);
+  values[3] = (char *) malloc(sizeof(char) * 24);
+    sprintf(values[3], "%23d", 0);
 
   //
   // Set up interrupts
@@ -723,7 +726,6 @@ void setup(void)
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
   Serial2.flush();
-  WaterBear_Control::blink(10,100);
 }
 
 
@@ -734,10 +736,6 @@ void prepareForTriggeredMeasurement(){
 }
 
 void measureSensorValues(){
-
-  // Fetch the time
-  //unsigned long currentTime = RTC.now().unixtime();
-
   // TODO: do we need to do this every time ??
   char uuidString[2 * UUID_LENGTH + 1];
   uuidString[2 * UUID_LENGTH] = '\0';
@@ -757,18 +755,21 @@ void measureSensorValues(){
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
   values[0] = deploymentUUID; // TODO: change to deploymentIdentifier_UUID
 
-  // Log uuid and time
+  // Log uuid
   values[1] = uuidString;
 
-  //Serial2.println(currentTime);
-  //char timeString[11]; // unix, 10 digits
-  //sprintf(timeString, "%lu", currentTime);
-  //values[2] = timeString;
-  //WaterBear_Control::timestamp(); // populate values[2] with timestamp
-  sprintf(values[2], "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
-  writeDebugMessage(F("debugging values[2]:"));
-  Serial2.println(values[2]);
-  Serial2.flush();
+  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
+  time_t currentTime = WaterBear_Control::timestamp();
+
+  sprintf(values[2], "%lld", currentTime); // convert time_t value into string
+    writeDebugMessage(F("debugging values[2]:"));
+    Serial2.println(values[2]);
+    Serial2.flush();
+
+  WaterBear_Control::t_t2ts(currentTime, values[3]);
+    writeDebugMessage(F("debugging values[3]:"));
+    Serial2.println(values[3]);
+    Serial2.flush();
 
   // Measure the new data
   short sensorCount = 6;
@@ -776,7 +777,7 @@ void measureSensorValues(){
   for(short i=0; i<sensorCount; i++){
     int value = analogRead(sensorPins[i]);
     // malloc or ?
-    sprintf(values[3+i], "%4d", value);
+    sprintf(values[4+i], "%4d", value);
   }
 
 }
@@ -1127,8 +1128,8 @@ void loop(void)
       writeDebugMessage(F("writeLog done"));
     }
 
-    char valuesBuffer[100]; // 52 and not including 0-2
-    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
+    char valuesBuffer[100]; // 52 not including 0-3
+    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9]);
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F(valuesBuffer));
     }
