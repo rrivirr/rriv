@@ -41,7 +41,7 @@ short burstLength = 25; // how many readings in a burst
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 //#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
 
-short fieldCount = 10;
+short fieldCount = 11;
 
 
 // For F103RB
@@ -766,7 +766,7 @@ void measureSensorValues(){
     Serial2.println(values[2]);
     Serial2.flush();
 
-  WaterBear_Control::t_t2ts(currentTime, values[3]);
+  WaterBear_Control::t_t2ts(currentTime, values[3]); // convert time_t value to human readable timestamp
     writeDebugMessage(F("debugging values[3]:"));
     Serial2.println(values[3]);
     Serial2.flush();
@@ -1118,7 +1118,7 @@ void loop(void)
     //Serial2.print(F("Got EC value: "));
     //Serial2.print(ecValue);
     //Serial2.println();
-    sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
+    sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
 
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F("writeLog"));
@@ -1128,8 +1128,8 @@ void loop(void)
       writeDebugMessage(F("writeLog done"));
     }
 
-    char valuesBuffer[100]; // 52 not including 0-3
-    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9]);
+    char valuesBuffer[100]; // 52 not including 0-3 & 10
+    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F(valuesBuffer));
     }
