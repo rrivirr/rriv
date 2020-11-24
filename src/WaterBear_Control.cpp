@@ -2,7 +2,6 @@
 
 #define MAX_REQUEST_LENGTH 50
 
-
 int WaterBear_Control::state = 0;
 void * lastCommandPayload;
 bool lastCommandPayloadAllocated = false;
@@ -31,8 +30,6 @@ bool WaterBear_Control::ready(Stream * myStream) {
     }
 }
 
-
-
 int WaterBear_Control::processControlCommands(HardwareSerial &port) {
   Stream *myStream = &port;
   return WaterBear_Control::processControlCommands(myStream);
@@ -48,9 +45,60 @@ int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble) {
   return WaterBear_Control::processControlCommands(myStream);
 }
 
-
 void * WaterBear_Control::getLastPayload() {
   return lastCommandPayload;
+}
+
+void WaterBear_Control::blink(int times, int duration){
+  pinMode(PA5, OUTPUT);
+  for (int i = times; i > 0; i--)
+  {
+    digitalWrite(PA5, HIGH);
+    delay(duration);
+    digitalWrite(PA5, LOW);
+    delay(duration);
+  }
+}
+
+  DS3231 ClockWBC;
+
+time_t WaterBear_Control::timestamp(){
+  struct tm ts;
+  bool century = false;
+	bool h24Flag;
+	bool pmFlag;
+
+  ts.tm_year = ClockWBC.getYear();
+  ts.tm_mon = ClockWBC.getMonth(century);
+  ts.tm_mday = ClockWBC.getDate();
+  ts.tm_wday = ClockWBC.getDoW();
+  ts.tm_hour = ClockWBC.getHour(h24Flag, pmFlag);
+  ts.tm_min = ClockWBC.getMinute();
+  ts.tm_sec = ClockWBC.getSecond();
+  ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  return (mktime(&ts)); // turn tm struct into time_t value
+}
+
+void WaterBear_Control::setTime(time_t toSet){
+  struct tm ts;
+
+  ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
+  ClockWBC.setClockMode(false); //true for 12h false for 24h
+  ClockWBC.setYear(ts.tm_year);
+  ClockWBC.setMonth(ts.tm_mon);
+  ClockWBC.setDate(ts.tm_mday);
+  ClockWBC.setDoW(ts.tm_wday);
+  ClockWBC.setHour(ts.tm_hour);
+  ClockWBC.setMinute(ts.tm_min);
+  ClockWBC.setSecond(ts.tm_sec);
+}
+
+void WaterBear_Control::t_t2ts(time_t epochTS, char *humanTime){
+  struct tm ts;
+
+  ts = *gmtime(&epochTS); // convert unix to tm structure
+  // Format time, "yyyy-mm-dd hh:mm:ss zzz" = "%Y/%m/%d %H:%M:%S %Z" (yyyy/mm/dd hh:mm:ss zzz) = 23
+  strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
 }
 
 int WaterBear_Control::processControlCommands(Stream * myStream) {
@@ -136,14 +184,26 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
 
       WaterBear_Control::state = 1;
       return WT_CONTROL_NONE;
-    } else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
+    }
+    else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
+      myStream->println("GOT SET_RTC<");
       char UTCTime[11] = "0000000000";
       strncpy(UTCTime, &request[12], 10);
-      //UTCTime[10] = '\0';
-      long time = atol(UTCTime);
-      delay(100);
+      time_t value;
+      int found = sscanf(&UTCTime[0], "%lld", &value);
+      if(found == 1){
+        time_t * commandPayloadPointer = (time_t *) malloc(sizeof(time_t));
+        *commandPayloadPointer = value;
+        lastCommandPayloadAllocated = true;
+        lastCommandPayload = commandPayloadPointer;
+      }
+      return WT_SET_RTC;
 
-      myStream->println(">RTC not enabled<");
+      //UTCTime[10] = '\0';
+      //long time = atol(UTCTime);
+      //delay(100);
+
+      //myStream->println(">RTC not enabled<");
       //RTC.adjust(DateTime(time));
 
       //myStream->write( (char *) F(">RECV UTC: "));
@@ -155,14 +215,14 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       //myStream->write( (char *) F("<"));
       //myStream->flush();
 
-      myStream->print(">Received UTC time: ");
-      myStream->print(UTCTime);
-      myStream->print("---");
-      myStream->print(time);
-      myStream->print("---");
+      //myStream->print(">Received UTC time: ");
+      //myStream->print(UTCTime);
+      //myStream->print("---");
+      //myStream->print(time);
+      //myStream->print("---");
       // myStream->print(RTC.now().unixtime());
-      myStream->print("<");
-      myStream->flush();
+      //myStream->print("<");
+      //myStream->flush();
 
       // TODO: create and pass a data file writer class
       // setNewDataFile();
@@ -193,7 +253,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
     } else if(strncmp(request, ">CAL_LOW:", 9) == 0){
       myStream->println(">GOT CAL_LOW<");
       char calibrationPointStringValue[10];
-      strncpy(calibrationPointStringValue, &request[10], 9);
+      strncpy(calibrationPointStringValue, &request[9], 9);
       int value;
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
       if(found == 1){
@@ -208,7 +268,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
     } else if(strncmp(request, ">CAL_HIGH:", 10) == 0){
       myStream->println(">GOT CAL_HIGH<");
       char calibrationPointStringValue[10];
-      strncpy(calibrationPointStringValue, &request[11], 9);
+      strncpy(calibrationPointStringValue, &request[10], 9);
       int value;
       myStream->println(calibrationPointStringValue);
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
