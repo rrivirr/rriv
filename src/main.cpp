@@ -3,8 +3,6 @@
 #include <SPI.h>
 
 #include "Adafruit_BluefruitLE_SPI.h"
-//#include "DS3231.h" in waterbear control
-//#include "time.h" in waterbear control
 #include "SdFat.h"
 #include "STM32-UID.h"
 
@@ -57,7 +55,6 @@ EC_OEM * oem_ec;
 
 // The DS3231 RTC chip
 DS3231 Clock;
-RTClib RTC;
 
 #define ALRM1_MATCH_EVERY_SEC  0b1111  // once a second
 #define ALRM1_MATCH_SEC        0b1110  // when seconds match
@@ -84,7 +81,7 @@ unsigned char uuid[UUID_LENGTH];
 
 // The internal RTC
 //RTClock rt (RTCSEL_LSE); // initialise
-uint32 tt;
+//uint32 tt;
 
 // Pin Mappings for Nucleo Board
 
@@ -660,8 +657,6 @@ void setup(void)
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
 
-  DateTime now = RTC.now();
-  Serial2.println(now.unixtime());
   //
   // init filesystem
   //
@@ -679,15 +674,15 @@ void setup(void)
     readDeploymentIdentifier(deploymentIdentifier);
   }
 
-  DateTime now3 = RTC.now();
-  char message[200];
-  sprintf(message, "unixtime: %li", now3.unixtime());
-  writeSerialMessage(message);
+  time_t setupTime = WaterBear_Control::timestamp();
+  char setupTS[21];
+  sprintf(setupTS, "unixtime: %lld", setupTime);
+  writeSerialMessage(setupTS);
 
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
   writeDebugMessage(F("Filesystem started OK"));
 
-  filesystem->setNewDataFile(RTC.now().unixtime());
+  filesystem->setNewDataFile(setupTime); // name file via epoch timestamp
 
   //
   // init ble
@@ -702,14 +697,19 @@ void setup(void)
   // Allocate needed memory
   //
   values = (char **) malloc(sizeof(char *) * fieldCount);
-  for(int i = 4; i < 4+fieldCount; i++){
+
+  values[0] = (char *) malloc(sizeof(char) * ((2 * UUID_LENGTH + 1))); // Deployment UUID 25
+    sprintf(values[0], "%24d", 0);
+  values[1] = (char *) malloc(sizeof(char) * (DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2)); // UUID 51
+    sprintf(values[1], "%50d", 0);
+  values[2] = (char *) malloc(sizeof(char) * 11); // epoch timestamp
+    sprintf(values[2], "%10d", 0);
+  values[3] = (char *) malloc(sizeof(char) * 24); // human readable timestamp
+    sprintf(values[3], "%23d", 0);
+  for(int i = 4; i < fieldCount; i++){ // 6 sensors + conductivity
     values[i] = (char *) malloc(sizeof(char) * 5);
     sprintf(values[i], "%4d", 0);
   }
-  values[2] = (char *) malloc(sizeof(char) * 11);
-    sprintf(values[2], "%10d", 0);
-  values[3] = (char *) malloc(sizeof(char) * 24);
-    sprintf(values[3], "%23d", 0);
 
   //
   // Set up interrupts
@@ -753,10 +753,12 @@ void measureSensorValues(){
 
   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH+1], uuidString, 2*UUID_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
-  values[0] = deploymentUUID; // TODO: change to deploymentIdentifier_UUID
 
-  // Log uuid
-  values[1] = uuidString;
+  // Log Deployment UUID
+  sprintf(values[0], "%s", deploymentUUID);
+
+  // Log UUID
+  sprintf(values[1], "%s", uuidString);
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   time_t currentTime = WaterBear_Control::timestamp();
@@ -804,7 +806,7 @@ void loop(void)
 
   // Are we awake for user interaction?
   bool awakeForUserInteraction = false;
-  if(RTC.now().unixtime() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
+  if(WaterBear_Control::timestamp() < awakeTime + USER_WAKE_TIMEOUT){ // 5 minute timeout
     awakeForUserInteraction = true;
   } else {
     if(!debugLoop){
@@ -823,8 +825,6 @@ void loop(void)
   } else if(awakeForUserInteraction){
     unsigned long currentMillis = millis();
     if(currentMillis - lastMillis >= interactiveModeMeasurementDelay){
-      //DateTime now = RTC.now();
-      //printDateTime(Serial2, now);
       lastMillis = currentMillis;
       takeMeasurement = true;
     }
@@ -955,12 +955,15 @@ void loop(void)
 
     // Actually, we need to check on which interrupt was triggered
     if(awakenedByUser){
+      char humanTime[26];
+      time_t awakenedTime = WaterBear_Control::timestamp();
 
+      WaterBear_Control::t_t2ts(awakenedTime, humanTime);
       writeDebugMessage(F("Awakened by user"));
-      printDateTime(Serial2, RTC.now());
+      writeDebugMessage(F(humanTime));
 
       awakenedByUser = false;
-      awakeTime = RTC.now().unixtime();
+      awakeTime = awakenedTime;
 
     } else {
       prepareForTriggeredMeasurement();
@@ -973,7 +976,7 @@ void loop(void)
 
   if( WaterBear_Control::ready(Serial2) ){
     writeDebugMessage(F("SERIAL2 Input Ready"));
-    awakeTime = RTC.now().unixtime(); // Push awake time forward
+    awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
     int command = WaterBear_Control::processControlCommands(Serial2);
     switch(command){
       case WT_CONTROL_CONFIG:
@@ -994,8 +997,8 @@ void loop(void)
         writeDebugMessage(F("LOW_POINT_CALIBRATION"));
         int * lowPointPtr = (int *) WaterBear_Control::getLastPayload();
         int lowPoint = *lowPointPtr;
-        char logMessage[20];
-        sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
+        char logMessage[30];
+        sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
         writeDebugMessage(logMessage);
         oem_ec->setCalibration(LOW_POINT_CALIBRATION, lowPoint);
       }
@@ -1006,19 +1009,19 @@ void loop(void)
         writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
         int * highPointPtr = (int *) WaterBear_Control::getLastPayload();
         int highPoint = *highPointPtr;
-        char logMessage[20];
-        sprintf(&logMessage[0], "%s %i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
+        char logMessage[31];
+        sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
         oem_ec->setCalibration(HIGH_POINT_CALIBRATION, highPoint);
       }
         break;
 
-      case WT_SET_RTC:
+      case WT_SET_RTC: // DS3231
       {
         writeDebugMessage(F("SET_RTC"));
         time_t * RTCPtr = (time_t *) WaterBear_Control::getLastPayload();
         time_t RTC = *RTCPtr;
-        char logMessage[20];
-        sprintf(&logMessage[0], "%s %lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
+        char logMessage[24];
+        sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
         WaterBear_Control::setTime(RTC);
       }
         break;
@@ -1030,8 +1033,6 @@ void loop(void)
   }
 
   if(configurationMode){
-    WaterBear_Control::blink(1,500);
-
     char testTime[11];
 
     Serial2.print(F("configMode TS:"));
@@ -1068,7 +1069,7 @@ void loop(void)
   //Serial2.println("Checking BLE");
   if(WaterBear_Control::ready(ble) ){
     writeDebugMessage(F("BLE Input Ready"));
-    awakeTime = RTC.now().unixtime(); // Push awake time forward
+    awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
     WaterBear_Control::processControlCommands(ble);
     return;
   }
@@ -1128,7 +1129,7 @@ void loop(void)
       writeDebugMessage(F("writeLog done"));
     }
 
-    char valuesBuffer[100]; // 52 not including 0-3 & 10
+    char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
     sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
     if(DEBUG_MEASUREMENTS) {
       writeDebugMessage(F(valuesBuffer));

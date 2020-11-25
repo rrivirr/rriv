@@ -111,7 +111,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       free(lastCommandPayload);
       lastCommandPayloadAllocated = false;
     }
-    // awakeTime = RTC.now().unixtime(); // Keep us awake once we are talking to the phone
+    //awakeTime = WaterBear_Control::timestamp(); // Keep us awake once we are talking to the phone
 
     char request[MAX_REQUEST_LENGTH] = "";
     myStream->readBytesUntil('<', request, MAX_REQUEST_LENGTH);
@@ -130,24 +130,15 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->flush();
       delay(100);
       */
-      // DateTime now = RTC.now();
-      char dateString[11];
-      // sprintf(dateString, "%lu", now.unixtime());
+
+      char dateString[26];
+      time_t timeNow = WaterBear_Control::timestamp();
+
+      WaterBear_Control::t_t2ts(timeNow, dateString); // change to 'yyyy-mm-dd hh:mm:ss'?
       myStream->print(">Datalogger Time: ");
-      //myStream->print(now.year());
-      myStream->print("-");
-      //myStream->print(now.month());
-      myStream->print("-");
-      //myStream->print(now.day());
-      myStream->print(" ");
-      //myStream->print(now.hour());
-      myStream->print(":");
-      //myStream->print(now.minute());
-      myStream->print(":");
-      //myStream->print(now.second());
+      myStream->print(dateString);
       myStream->print("<");
       delay(100);
-
 
       myStream->write(">WT_IDENTIFY:");
       // TODO: create and pass a device info object
@@ -159,7 +150,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->flush();
 
       myStream->write(">WT_TIMESTAMP:");
-      //myStream->print(RTC.now().unixtime());
+      myStream->println(WaterBear_Control::timestamp());
       myStream->write("<");
       myStream->flush();
       delay(100);
@@ -198,31 +189,6 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
         lastCommandPayload = commandPayloadPointer;
       }
       return WT_SET_RTC;
-
-      //UTCTime[10] = '\0';
-      //long time = atol(UTCTime);
-      //delay(100);
-
-      //myStream->println(">RTC not enabled<");
-      //RTC.adjust(DateTime(time));
-
-      //myStream->write( (char *) F(">RECV UTC: "));
-      //myStream->print(UTCTime);
-      //myStream->write( (char *) F("--"));
-      //myStream->print(time);
-      //myStream->write( (char *) F("--"));
-      //myStream->print(RTC.now().unixtime());
-      //myStream->write( (char *) F("<"));
-      //myStream->flush();
-
-      //myStream->print(">Received UTC time: ");
-      //myStream->print(UTCTime);
-      //myStream->print("---");
-      //myStream->print(time);
-      //myStream->print("---");
-      // myStream->print(RTC.now().unixtime());
-      //myStream->print("<");
-      //myStream->flush();
 
       // TODO: create and pass a data file writer class
       // setNewDataFile();
