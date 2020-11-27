@@ -228,15 +228,13 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       // setNewDataFile();
 
     } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
-      char deploymentIdentifier[29];
-      strncpy(deploymentIdentifier, &request[11], 28);
-      myStream->println(">DEPLOYMENT IDENTIFER NOT WRITTEN<");
-      // writeDeploymentIdentifier(deploymentIdentifier); // How will we hand the deployment identifier back ??
-                                                         // This is just part of the device object I guess
-      myStream->write(">Wrote: ");
-      myStream->write(deploymentIdentifier);
-      myStream->write("<");
-      myStream->flush();
+      myStream->println("GOT WT_DEPLOY<");
+      char * commandPayloadPointer = (char *) malloc(26);
+      strncpy(commandPayloadPointer, &request[11], 26);
+      commandPayloadPointer[26] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_DEPLOY;
 
       // TODO: create and pass a data file writer class
       // setNewDataFile();
