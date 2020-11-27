@@ -154,8 +154,6 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->write("<");
       myStream->flush();
       delay(100);
-
-
     }
     else if(strncmp(request, ">WT_DOWNLOAD",12) == 0) {
       // Flush the input, would be better to use a delimiter
@@ -177,11 +175,11 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       return WT_CONTROL_NONE;
     }
     else if(strncmp(request, ">WT_SET_RTC:", 12) == 0){
-      myStream->println("GOT SET_RTC<");
-      char UTCTime[11] = "0000000000";
-      strncpy(UTCTime, &request[12], 10);
+      myStream->println("GOT SET_RTC<"); //acknowledge command sent
+      char UTCTime[11] = "0000000000"; // buffer for data to read
+      strncpy(UTCTime, &request[12], 10); // read serial data into char string
       time_t value;
-      int found = sscanf(&UTCTime[0], "%lld", &value);
+      int found = sscanf(&UTCTime[0], "%lld", &value); // turn char string into correct value type
       if(found == 1){
         time_t * commandPayloadPointer = (time_t *) malloc(sizeof(time_t));
         *commandPayloadPointer = value;
@@ -192,27 +190,29 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
 
       // TODO: create and pass a data file writer class
       // setNewDataFile();
-
-    } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
-      char deploymentIdentifier[29];
-      strncpy(deploymentIdentifier, &request[11], 28);
-      myStream->println(">DEPLOYMENT IDENTIFER NOT WRITTEN<");
-      // writeDeploymentIdentifier(deploymentIdentifier); // How will we hand the deployment identifier back ??
-                                                         // This is just part of the device object I guess
-      myStream->write(">Wrote: ");
-      myStream->write(deploymentIdentifier);
-      myStream->write("<");
-      myStream->flush();
-
+    }
+    else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
+      myStream->println("GOT WT_DEPLOY<");
+      char * commandPayloadPointer = (char *) malloc(26);
+      strncpy(commandPayloadPointer, &request[11], 26);
+      commandPayloadPointer[26] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_DEPLOY;
       // TODO: create and pass a data file writer class
       // setNewDataFile();
-
     } else if(strncmp(request, ">WT_CONFIG", 10) == 0){
       myStream->println(">CONFIG<");
       return WT_CONTROL_CONFIG;
       // go into config mode
-
-    } else if(strncmp(request, ">CAL_DRY", 8) == 0){
+    } else if(strncmp(request, ">WT_DEBUG_VALUES", 16) == 0){
+      myStream->println(">DEBUG_VALUES<");
+      return WT_DEBUG_VAlUES;
+    } else if(strncmp(request, ">WT_CLEAR_MODES", 15) == 0){
+      myStream->println(">CLEAR_MODES<");
+      return WT_CLEAR_MODES;
+    }
+    else if(strncmp(request, ">CAL_DRY", 8) == 0){
       myStream->println(">GOT CAL_DRY<");
       return WT_CONTROL_CAL_DRY;
 
@@ -245,7 +245,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
         lastCommandPayload = commandPayloadPointer;
       }
 
-      return WT_CONTROL_CAL_H;
+      return WT_CONTROL_CAL_HIGH;
 
     } else {
       char lastDownloadDateEmpty[11] = "0000000000";

@@ -29,9 +29,9 @@ int serialBaud = SERIAL_BAUD;
 char version[5] = "v2.0";
 
 #define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
-#define DEBUG_LOOP true         // don't sleep
+#define DEBUG_LOOP false         // don't sleep
 #define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
-//#define DEBUG_TO_FILE 0   // Also send debug messages to the output file [comment out to disable]
+#define DEBUG_TO_FILE 1   // Also send debug messages to the output file [comment out to disable]
 #define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
 
 short interval = 5; // minutes between loggings when not in short sleep
@@ -39,8 +39,7 @@ short burstLength = 25; // how many readings in a burst
 #define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
 //#define USER_WAKE_TIMEOUT           15 // Timeout after wakeup from user interaction, seconds
 
-short fieldCount = 11;
-
+short fieldCount = 11; // number of fields to be logged to SDcard file
 
 // For F103RB
 #define Serial Serial2
@@ -114,6 +113,8 @@ uint32_t awakeTime = 0;
 uint32_t lastTime = 0;
 short burstCount = 0;
 bool configurationMode = false;
+bool debugValuesMode = false;
+bool clearModes = false;
 
 void readDeploymentIdentifier(char * deploymentIdentifier){
   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++){
@@ -129,7 +130,6 @@ void writeDeploymentIdentifier(char * deploymentIdentifier){
     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
   }
 }
-
 
 void writeSerialMessage(const char * message){
   Serial2.println(message);
@@ -597,7 +597,7 @@ void stopEZOSerial(){
 
 void setup(void)
 {
-  i2c_bus_reset(I2C1);
+  //i2c_bus_reset(I2C1);
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
@@ -698,10 +698,10 @@ void setup(void)
   //
   values = (char **) malloc(sizeof(char *) * fieldCount);
 
-  values[0] = (char *) malloc(sizeof(char) * ((2 * UUID_LENGTH + 1))); // Deployment UUID 25
-    sprintf(values[0], "%24d", 0);
-  values[1] = (char *) malloc(sizeof(char) * (DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2)); // UUID 51
-    sprintf(values[1], "%50d", 0);
+  values[0] = (char *) malloc(sizeof(char) * (DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2)); // Deployment UUID 51
+    sprintf(values[0], "%50d", 0);
+  values[1] = (char *) malloc(sizeof(char) * ((2 * UUID_LENGTH + 1))); // UUID 25
+    sprintf(values[1], "%24d", 0);
   values[2] = (char *) malloc(sizeof(char) * 11); // epoch timestamp
     sprintf(values[2], "%10d", 0);
   values[3] = (char *) malloc(sizeof(char) * 24); // human readable timestamp
@@ -745,12 +745,11 @@ void measureSensorValues(){
 
   // Get the deployment identifier
   // TODO: do we need to do this every time ??
-  char deploymentIdentifier[29];// = "DEPLOYMENT";
+  char deploymentIdentifier[26];
   readDeploymentIdentifier(deploymentIdentifier);
   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH + 2];
   memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-
   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH+1], uuidString, 2*UUID_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2*UUID_LENGTH] = '\0';
 
@@ -762,16 +761,8 @@ void measureSensorValues(){
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   time_t currentTime = WaterBear_Control::timestamp();
-
   sprintf(values[2], "%lld", currentTime); // convert time_t value into string
-    writeDebugMessage(F("debugging values[2]:"));
-    Serial2.println(values[2]);
-    Serial2.flush();
-
   WaterBear_Control::t_t2ts(currentTime, values[3]); // convert time_t value to human readable timestamp
-    writeDebugMessage(F("debugging values[3]:"));
-    Serial2.println(values[3]);
-    Serial2.flush();
 
   // Measure the new data
   short sensorCount = 6;
@@ -972,26 +963,33 @@ void loop(void)
     return; // Go to top of loop
   }
 
-
-
   if( WaterBear_Control::ready(Serial2) ){
     writeDebugMessage(F("SERIAL2 Input Ready"));
     awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
     int command = WaterBear_Control::processControlCommands(Serial2);
     switch(command){
+      case WT_CLEAR_MODES:
+        writeDebugMessage(F("Clearing Config & Debug Mode"));
+        configurationMode = false;
+        debugValuesMode = false;
+        break;
       case WT_CONTROL_CONFIG:
         writeDebugMessage(F("Entering Configuration Mode"));
         writeDebugMessage(F("Reset device to enter normal operating mode"));
+        writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
         configurationMode = true;
-        return;
         break;
-
+      case WT_DEBUG_VAlUES:
+        writeDebugMessage(F("Entering Value Debug Mode"));
+        writeDebugMessage(F("Reset device to enter normal operating mode"));
+        writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+        debugValuesMode = true;
+        break;
       case WT_CONTROL_CAL_DRY:
         writeDebugMessage(F("DRY_CALIBRATION"));
         oem_ec->clearCalibrationData();
         oem_ec->setCalibration(DRY_CALIBRATION);
         break;
-
       case WT_CONTROL_CAL_LOW:
       {
         writeDebugMessage(F("LOW_POINT_CALIBRATION"));
@@ -1001,10 +999,9 @@ void loop(void)
         sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
         writeDebugMessage(logMessage);
         oem_ec->setCalibration(LOW_POINT_CALIBRATION, lowPoint);
-      }
         break;
-
-      case WT_CONTROL_CAL_H:
+      }
+      case WT_CONTROL_CAL_HIGH:
       {
         writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
         int * highPointPtr = (int *) WaterBear_Control::getLastPayload();
@@ -1012,9 +1009,8 @@ void loop(void)
         char logMessage[31];
         sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
         oem_ec->setCalibration(HIGH_POINT_CALIBRATION, highPoint);
-      }
         break;
-
+      }
       case WT_SET_RTC: // DS3231
       {
         writeDebugMessage(F("SET_RTC"));
@@ -1023,22 +1019,33 @@ void loop(void)
         char logMessage[24];
         sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
         WaterBear_Control::setTime(RTC);
-      }
         break;
+      }
+      case WT_DEPLOY: // Set deployment identifier via serial
+      {
+        writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
+        char * deployPtr = (char *)WaterBear_Control::getLastPayload();
+        char logMessage[46];
+        sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
+        writeDebugMessage(logMessage);
+        writeDeploymentIdentifier(deployPtr);
+        break;
+      }
       // default:
       //   break;
     }
-
     return;
   }
 
   if(configurationMode){
-    char testTime[11];
-
+    //WaterBear_Control::blink(1,500); //slow down rate of responses
+    /*
+    char testTime[11]; // timestamp responses
     Serial2.print(F("configMode TS:"));
     sprintf(testTime, "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
     Serial2.println(testTime);
     Serial2.flush();
+    */
 
     if(newDataAvailable){
       float ecValue = -1;
@@ -1053,8 +1060,6 @@ void loop(void)
     }
     return;
   }
-
-
   // if DEBUG_BLE
   /*
   Serial2.print("BLE");
@@ -1144,5 +1149,11 @@ void loop(void)
     }
 
   }
-
+  if(debugValuesMode){ // print content being logged each second
+    WaterBear_Control::blink(1,500);
+    char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
+    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
+    writeDebugMessage(F(valuesBuffer));
+    return;
+  }
 }
