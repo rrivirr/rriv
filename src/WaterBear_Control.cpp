@@ -190,8 +190,8 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
 
       // TODO: create and pass a data file writer class
       // setNewDataFile();
-    }
-    else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
+
+    } else if(strncmp(request, ">WT_DEPLOY:", 11) == 0){
       myStream->println("GOT WT_DEPLOY<");
       char * commandPayloadPointer = (char *) malloc(26);
       strncpy(commandPayloadPointer, &request[11], 26);
@@ -199,6 +199,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       lastCommandPayloadAllocated = true;
       lastCommandPayload = commandPayloadPointer;
       return WT_DEPLOY;
+
       // TODO: create and pass a data file writer class
       // setNewDataFile();
     } else if(strncmp(request, ">WT_CONFIG", 10) == 0){

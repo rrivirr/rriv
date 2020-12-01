@@ -1030,6 +1030,15 @@ void loop(void)
         writeDebugMessage(logMessage);
         writeDeploymentIdentifier(deployPtr);
         break;
+      case WT_DEPLOY: // Set deployment identifier via serial
+      {
+        writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
+        char * deployPtr = (char *)WaterBear_Control::getLastPayload();
+        char logMessage[46];
+        sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
+        writeDebugMessage(logMessage);
+        writeDeploymentIdentifier(deployPtr);
+        break;
       }
       // default:
       //   break;
