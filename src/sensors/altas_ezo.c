@@ -63,3 +63,30 @@ void stopEZOSerial(){
     Serial2.println();
     sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
     */
+
+
+    //ezo_ec = new Ezo_board(&Wire2, 0x64);
+
+    // inputstring.reserve(20);
+
+    // Serial2.println("Turning light on");
+    // ezo_ec->send_cmd("L,1");
+    // delay(1000);
+    // Serial2.println("Turning light off");
+    // ezo_ec->send_cmd("L,0");
+    // delay(1000);
+    // Serial2.println("Turning light on");
+    // ezo_ec->send_cmd("L,1");
+    // delay(1000);
+
+    // Set probe type
+    // ezo_ec->send_cmd("K,1.0");
+    // delay(300);
+    //
+    // // Set outputs
+    // ezo_ec->send_cmd("O,EC,1");
+    // delay(300);
+    // ezo_ec->send_cmd("O,TDS,0");
+    // delay(300);
+    // ezo_ec->send_cmd("O,S,0");
+    // delay(300);

@@ -1,8 +1,10 @@
 #include "Utilities.h"
+#include "Configuration.h"
 #include "WaterBear_Control.h"
 
 // For F103RM - these should go into their own .h
 #define Serial Serial2
+
 
 // TODO: change Serial.print calls to writeDebugMessage but after filesystem is writable
 
@@ -116,4 +118,44 @@ void printDS3231Time(){
     sprintf(testTime, "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
     Serial2.println(testTime);
     Serial2.flush();
+}
+
+
+void writeSerialMessage(const char * message){
+  Serial2.println(message);
+  Serial2.flush();
+}
+
+void writeSerialMessage(const __FlashStringHelper * message){
+  Serial2.println(message);
+  Serial2.flush();
+}
+
+void writeDebugMessage(const char * message){
+#ifdef DEBUG_TO_SERIAL
+  Serial2.println(message);
+  Serial2.flush();
+#endif
+
+#ifdef DEBUG_TO_FILE
+  debugFilesystemHandle->writeDebugMessage(message);
+#endif
+}
+
+void writeDebugMessage(const __FlashStringHelper * message){
+#ifdef DEBUG_TO_SERIAL
+  Serial2.println(message);
+  Serial2.flush();
+#endif
+
+#ifdef DEBUG_TO_FILE
+  debugFilesystemHandle->writeDebugMessage(reinterpret_cast<const char *>(message));
+#endif
+}
+
+// A small helper
+void error(const __FlashStringHelper*err) {
+  writeDebugMessage(F("Error:"));
+  writeDebugMessage(err);
+  while (1);
 }
