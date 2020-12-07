@@ -15,6 +15,8 @@
 #define WT_DEBUG_VAlUES 1006 // will print out data that's logged
 #define WT_CLEAR_MODES 1007
 
+#define WATERBEAR_CONTROL
+
 class WaterBear_Control
 {
   private:

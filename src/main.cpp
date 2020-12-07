@@ -7,11 +7,16 @@
 #include "STM32-UID.h"
 
 #include "Configuration.h"
+#ifndef WATERBEAR_CONTROL
 #include "WaterBear_Control.h"
-// #include "WaterBear_FileSystem.h"  // Sloppily included via Utilities.h, will be fixed by refactoring debug logger to class 
+#endif
+#ifndef WATERBEAR_FILESYSTEM
+#include "WaterBear_FileSystem.h" 
+#endif
 #include "Utilities.h"
 
 #include "system/low_power.h"
+#include "system/logger.h"
 #include "sensors/atlas_oem.h"
 
 #include <libmaple/iwdg.h>
@@ -117,7 +122,7 @@ void bleFirstRun(){
   // set a mode pin for USART1 if we need to
 
   if(true){
-    writeDebugMessage(F("BLE First Run"));
+    Logger::instance()->writeDebugMessage(F("BLE First Run"));
   }
 
   //ble.setMode(BLUEFRUIT_MODE_COMMAND);
@@ -125,22 +130,22 @@ void bleFirstRun(){
 
   ble.println(F("AT"));
   if(ble.waitForOK()){
-    writeDebugMessage(F("BLE OK"));
+    Logger::instance()->writeDebugMessage(F("BLE OK"));
   } else {
-    writeDebugMessage(F("BLE Not OK"));
+    Logger::instance()->writeDebugMessage(F("BLE Not OK"));
   }
 
   // Send command
   ble.println(F("AT+GAPDEVNAME=WaterBear3"));
   if(ble.waitForOK()){
-    writeDebugMessage(F("Got OK"));
+    Logger::instance()->writeDebugMessage(F("Got OK"));
   } else {
-    writeDebugMessage(F("BLE Error"));
+    Logger::instance()->writeDebugMessage(F("BLE Error"));
     while(1);
   }
   ble.println(F("ATZ"));
   ble.waitForOK();
-  writeDebugMessage(F("Got OK"));
+  Logger::instance()->writeDebugMessage(F("Got OK"));
 
 //  ble.setMode(BLUEFRUIT_MODE_DATA);
 
@@ -153,7 +158,7 @@ void readUniqueId(){
     uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
 
-  writeDebugMessage(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash
+  Logger::instance()->writeDebugMessage(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash
   // Log uuid and time
   // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
   char uuidString[2 * UUID_LENGTH + 1];
@@ -161,21 +166,21 @@ void readUniqueId(){
   for(short i=0; i < UUID_LENGTH; i++){
       sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
   }
-  writeDebugMessage(uuidString);
+  Logger::instance()->writeDebugMessage(uuidString);
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
   if(memcmp(uuid, uninitializedEEPROM, UUID_LENGTH) == 0){
-    writeDebugMessage(F("Generate or Retrieve UUID"));
+    Logger::instance()->writeDebugMessage(F("Generate or Retrieve UUID"));
     getSTM32UUID(uuid);
 
-    writeDebugMessage(F("UUID to Write:"));
+    Logger::instance()->writeDebugMessage(F("UUID to Write:"));
     char uuidString[2 * UUID_LENGTH + 1];
     uuidString[2 * UUID_LENGTH] = '\0';
     for(short i=0; i < UUID_LENGTH; i++){
         sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-    writeDebugMessage(uuidString);
+    Logger::instance()->writeDebugMessage(uuidString);
 
     for(int i=0; i < UUID_LENGTH; i++){
       unsigned int address = EEPROM_UUID_ADDRESS_START + i;
@@ -187,11 +192,11 @@ void readUniqueId(){
       uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
     }
 
-    writeDebugMessage(F("UUID in EEPROM:"));
+    Logger::instance()->writeDebugMessage(F("UUID in EEPROM:"));
     for(short i=0; i < UUID_LENGTH; i++){
         sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-    writeDebugMessage(uuidString);
+    Logger::instance()->writeDebugMessage(uuidString);
 
    }
 
@@ -203,38 +208,38 @@ bool bleActive = false;
 void initBLE(){
   bool debugBLE = true;
   if(debugBLE){
-    writeDebugMessage(F("Initializing the Bluefruit LE module: "));
+    Logger::instance()->writeDebugMessage(F("Initializing the Bluefruit LE module: "));
   }
   bleActive = ble.begin(true, true);
 
   if(debugBLE){
     if(bleActive){
-      writeDebugMessage(F("Tried to init - BLE active"));
+      Logger::instance()->writeDebugMessage(F("Tried to init - BLE active"));
     } else {
-      writeDebugMessage(F("Tried to init - BLE NOT active"));
+      Logger::instance()->writeDebugMessage(F("Tried to init - BLE NOT active"));
     }
   }
 
   if ( !bleActive )
   {
     if(debugBLE){
-      writeDebugMessage(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+      Logger::instance()->writeDebugMessage(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
     }
     return;
 
     // error
   } else {
 
-    writeDebugMessage(F("Performing a factory reset: "));
+    Logger::instance()->writeDebugMessage(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ){
-      error(F("Couldn't factory reset"));
+      Logger::instance()->error(F("Couldn't factory reset"));
     }
 
     ble.println(F("AT"));
     if(ble.waitForOK()){
-      writeDebugMessage(F("AT OK"));
+      Logger::instance()->writeDebugMessage(F("AT OK"));
     } else {
-         writeDebugMessage(F("AT NOT OK"));
+         Logger::instance()->writeDebugMessage(F("AT NOT OK"));
     }
 
     bleFirstRun();
@@ -242,13 +247,13 @@ void initBLE(){
   }
 
   if(debugBLE){
-    writeDebugMessage(F("BLE OK!") );
+    Logger::instance()->writeDebugMessage(F("BLE OK!") );
   }
 /*
   if ( FACTORYRESET_ENABLE )
   {
     // Perform a factory reset to make sure everything is in a known state
-    writeDebugMessage(F("Performing a factory reset: "));
+    Logger::instance()->writeDebugMessage(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ){
       error(F("Couldn't factory reset"));
     }
@@ -291,7 +296,7 @@ void setNextAlarm(){
   // Alarm every 10 seconds for debugging
   //
   if(DEBUG_USING_SHORT_SLEEP == true) {
-    writeDebugMessage(F("Using short sleep"));
+    Logger::instance()->writeDebugMessage(F("Using short sleep"));
     int AlarmBits = ALRM2_ONCE_PER_MIN;
     AlarmBits <<= 4;
     AlarmBits |= ALRM1_MATCH_SEC;
@@ -300,7 +305,7 @@ void setNextAlarm(){
     short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
     char message[200];
     sprintf(message, "Next Alarm, with seconds: %i, now seconds: %i", nextSeconds, seconds);
-    writeDebugMessage(message);
+    Logger::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
   }
 
@@ -315,7 +320,7 @@ void setNextAlarm(){
     short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
     char message[200];
     sprintf(message, "Next Alarm, with minutes: %i", nextMinutes);
-    writeDebugMessage(message);
+    Logger::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
   }
 
@@ -367,7 +372,7 @@ void timerAlarm(){
 
   disableTimerInterrupt();
   clearTimerInterrupt();
-  //writeDebugMessage("TIMER ALARM");
+  //Logger::instance()->writeDebugMessage("TIMER ALARM");
   //enableTimerInterrupt();
 
 }
@@ -376,7 +381,7 @@ void userTriggeredInterrupt(){
 
   disableUserInterrupt();
   clearUserInterrupt();
-  //writeDebugMessage("USER TRIGGERED INTERRUPT");
+  //Logger::instance()->writeDebugMessage("USER TRIGGERED INTERRUPT");
   //enableUserInterrupt();
   awakenedByUser = true;
 
@@ -390,12 +395,12 @@ void setupSwitchedPower(){
 }
 
 void enableSwitchedPower(){
-  writeDebugMessage(F("Enabling switched power"));
+  Logger::instance()->writeDebugMessage(F("Enabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
 }
 
 void disableSwitchedPower(){
-  writeDebugMessage(F("Disabling switched power"));
+  Logger::instance()->writeDebugMessage(F("Disabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 
@@ -410,12 +415,12 @@ void cycleSwitchablePower(){
 void enableI2C2(){
   
   i2c_master_enable(I2C2, 0);
-  writeDebugMessage(F("Enabled I2C2"));
+  Logger::instance()->writeDebugMessage(F("Enabled I2C2"));
   
   Wire2.begin();
   delay(1000);
   
-  writeDebugMessage(F("Began TwoWire 2"));
+  Logger::instance()->writeDebugMessage(F("Began TwoWire 2"));
   scanIC2(&Wire2);
 
 }
@@ -424,13 +429,13 @@ void powerUpSwitchableComponents(){
   cycleSwitchablePower();
   enableI2C2();
   setupEC_OEM(&Wire2);
-  writeDebugMessage(F("Switchable components powered up"));
+  Logger::instance()->writeDebugMessage(F("Switchable components powered up"));
 }
 
 void powerDownSwitchableComponents(){
   hibernateEC_OEM();
   i2c_disable(I2C2);
-  writeDebugMessage(F("Switchable components powered down"));
+  Logger::instance()->writeDebugMessage(F("Switchable components powered down"));
 }
 
 void setup(void)
@@ -443,8 +448,8 @@ void setup(void)
    while(!Serial2){
      delay(100);
    }
-   writeSerialMessage(F("Hello world: serial2"));
-   writeSerialMessage(F("Begin Setup"));
+   Logger::instance()->writeSerialMessage(F("Hello world: serial2"));
+   Logger::instance()->writeSerialMessage(F("Begin Setup"));
 
    setupSwitchedPower();
    enableSwitchedPower();
@@ -461,7 +466,7 @@ void setup(void)
   pinMode(PC3, INPUT_ANALOG);
 
   pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
-  //writeDebugMessage(F("blink test:"));
+  //Logger::instance()->writeDebugMessage(F("blink test:"));
   //WaterBear_Control::blink(10,250);
 
   // Set up global date time callback for SdFile
@@ -470,7 +475,7 @@ void setup(void)
   char  message[100];
   // Clear interrupts
   sprintf(message, "1: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
-  writeSerialMessage(F(message));
+  Logger::instance()->writeSerialMessage(F(message));
 
   NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
   //NVIC_BASE->ICER[0] =  1 << NVIC_EXTI3; // Don't respond to interrupt during setup
@@ -479,7 +484,7 @@ void setup(void)
   clearUserInterrupt();
 
   sprintf(message, "2: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
-  writeSerialMessage(message);
+  Logger::instance()->writeSerialMessage(message);
 
   //  Prepare I2C
   Wire.begin();
@@ -502,7 +507,7 @@ void setup(void)
   readDeploymentIdentifier(deploymentIdentifier);
   unsigned char empty[1] = {0xFF};
   if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
-    //writeDebugMessage(F(">NoDplyment<"));
+    //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
 
     writeDeploymentIdentifier(defaultDeployment);
     readDeploymentIdentifier(deploymentIdentifier);
@@ -511,11 +516,11 @@ void setup(void)
   time_t setupTime = WaterBear_Control::timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
-  writeSerialMessage(setupTS);
+  Logger::instance()->Logger::instance()->writeSerialMessage(setupTS);
 
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
-  debugFilesystemHandle = filesystem; // for debug utiility.  TODO: factor to property of cpp class
-  writeDebugMessage(F("Filesystem started OK"));
+  Logger::instance()->filesystem = filesystem;
+  Logger::instance()->Logger::instance()->writeDebugMessage(F("Filesystem started OK"));
 
   filesystem->setNewDataFile(setupTime); // name file via epoch timestamp
 
@@ -558,7 +563,7 @@ void setup(void)
   powerUpSwitchableComponents();
 
   /* We're ready to go! */
-  writeDebugMessage(F("done with setup"));
+  Logger::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 }
 
@@ -617,7 +622,7 @@ void loop(void)
   // Are we bursting ?
   bool bursting = false;
   if(burstCount < burstLength){
-    writeDebugMessage(F("Bursting"));
+    Logger::instance()->writeDebugMessage(F("Bursting"));
     bursting = true;
   }
 
@@ -634,7 +639,7 @@ void loop(void)
     awakeForUserInteraction = true;
   } else {
     if(!debugLoop){
-      writeDebugMessage(F("Not awake for user interaction"));
+      Logger::instance()->writeDebugMessage(F("Not awake for user interaction"));
     }
   }
   if(!awakeForUserInteraction) {
@@ -658,7 +663,7 @@ void loop(void)
   // Should we sleep until a measurement is triggered?
   bool awaitMeasurementTrigger = false;
   if(!bursting && !awakeForUserInteraction){
-    writeDebugMessage(F("Not bursting or awake"));
+    Logger::instance()->writeDebugMessage(F("Not bursting or awake"));
     awaitMeasurementTrigger = true;
   }
 
@@ -666,10 +671,10 @@ void loop(void)
   // Go to sleep
   if(awaitMeasurementTrigger){
 
-    writeDebugMessage(F("Await measurement trigger"));
+    Logger::instance()->writeDebugMessage(F("Await measurement trigger"));
 
     if(Clock.checkIfAlarm(1)){
-      writeDebugMessage(F("Alarm 1"));
+      Logger::instance()->writeDebugMessage(F("Alarm 1"));
     }
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
@@ -677,7 +682,7 @@ void loop(void)
     disableSwitchedPower();
 
     printInterruptStatus(Serial2);
-    writeDebugMessage(F("Going to sleep"));
+    Logger::instance()->writeDebugMessage(F("Going to sleep"));
 
     // save enabled interrupts
     int iser1 = NVIC_BASE->ISER[0];
@@ -715,7 +720,7 @@ void loop(void)
     disableUserInterrupt();
 
     // We have woken from the interrupt
-    writeDebugMessage(F("Awakened by interrupt"));
+    Logger::instance()->writeDebugMessage(F("Awakened by interrupt"));
     printInterruptStatus(Serial2);
 
     powerUpSwitchableComponents();
@@ -726,8 +731,8 @@ void loop(void)
       time_t awakenedTime = WaterBear_Control::timestamp();
 
       WaterBear_Control::t_t2ts(awakenedTime, humanTime);
-      writeDebugMessage(F("Awakened by user"));
-      writeDebugMessage(F(humanTime));
+      Logger::instance()->writeDebugMessage(F("Awakened by user"));
+      Logger::instance()->writeDebugMessage(F(humanTime));
 
       awakenedByUser = false;
       awakeTime = awakenedTime;
@@ -740,46 +745,46 @@ void loop(void)
   }
 
   if( WaterBear_Control::ready(Serial2) ){
-    writeDebugMessage(F("SERIAL2 Input Ready"));
+    Logger::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
     awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
     int command = WaterBear_Control::processControlCommands(Serial2);
     switch(command){
       case WT_CLEAR_MODES:
-        writeDebugMessage(F("Clearing Config & Debug Mode"));
+        Logger::instance()->writeDebugMessage(F("Clearing Config & Debug Mode"));
         configurationMode = false;
         debugValuesMode = false;
         break;
       case WT_CONTROL_CONFIG:
-        writeDebugMessage(F("Entering Configuration Mode"));
-        writeDebugMessage(F("Reset device to enter normal operating mode"));
-        writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+        Logger::instance()->writeDebugMessage(F("Entering Configuration Mode"));
+        Logger::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+        Logger::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
         configurationMode = true;
         break;
       case WT_DEBUG_VAlUES:
-        writeDebugMessage(F("Entering Value Debug Mode"));
-        writeDebugMessage(F("Reset device to enter normal operating mode"));
-        writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+        Logger::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
+        Logger::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+        Logger::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
         debugValuesMode = true;
         break;
       case WT_CONTROL_CAL_DRY:
-        writeDebugMessage(F("DRY_CALIBRATION"));
+        Logger::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
         clearECCalibrationData();
         setECDryPointCalibration();
         break;
       case WT_CONTROL_CAL_LOW:
       {
-        writeDebugMessage(F("LOW_POINT_CALIBRATION"));
+        Logger::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
         int * lowPointPtr = (int *) WaterBear_Control::getLastPayload();
         int lowPoint = *lowPointPtr;
         char logMessage[30];
         sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
-        writeDebugMessage(logMessage);
+        Logger::instance()->writeDebugMessage(logMessage);
         setECLowPointCalibration(lowPoint);
         break;
       }
       case WT_CONTROL_CAL_HIGH:
       {
-        writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
+        Logger::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
         int * highPointPtr = (int *) WaterBear_Control::getLastPayload();
         int highPoint = *highPointPtr;
         char logMessage[31];
@@ -789,7 +794,7 @@ void loop(void)
       }
       case WT_SET_RTC: // DS3231
       {
-        writeDebugMessage(F("SET_RTC"));
+        Logger::instance()->writeDebugMessage(F("SET_RTC"));
         time_t * RTCPtr = (time_t *) WaterBear_Control::getLastPayload();
         time_t RTC = *RTCPtr;
         char logMessage[24];
@@ -799,16 +804,16 @@ void loop(void)
       }
       case WT_DEPLOY: // Set deployment identifier via serial
       {
-        writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
+        Logger::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
         char * deployPtr = (char *)WaterBear_Control::getLastPayload();
         char logMessage[46];
         sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
-        writeDebugMessage(logMessage);
+        Logger::instance()->writeDebugMessage(logMessage);
         writeDeploymentIdentifier(deployPtr);
         break;
       }
       default:
-        writeDebugMessage(F("Invalid command code"));
+        Logger::instance()->writeDebugMessage(F("Invalid command code"));
         break;
     }
     return;
@@ -823,13 +828,13 @@ void loop(void)
     if(newDataAvailable){
       char message[100];
       sprintf(message, "Got EC value: %f", ecValue);
-      writeDebugMessage(message);
+      Logger::instance()->writeDebugMessage(message);
     }
     return;
   }
   
   if(WaterBear_Control::ready(ble) ){
-    writeDebugMessage(F("BLE Input Ready"));
+    Logger::instance()->writeDebugMessage(F("BLE Input Ready"));
     awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
     WaterBear_Control::processControlCommands(ble);
     return;
@@ -838,7 +843,7 @@ void loop(void)
   if(takeMeasurement){
 
     if(DEBUG_MEASUREMENTS) {
-      writeDebugMessage(F("Taking new measurement"));
+      Logger::instance()->writeDebugMessage(F("Taking new measurement"));
     }
 
     measureSensorValues();
@@ -847,7 +852,7 @@ void loop(void)
     float ecValue = -1;
     bool newDataAvailable = readECDataIfAvailable(&ecValue);
     if(!newDataAvailable){
-      writeDebugMessage(F("New EC data not available"));
+      Logger::instance()->writeDebugMessage(F("New EC data not available"));
     }
 
     //Serial2.print(F("Got EC value: "));
@@ -856,17 +861,17 @@ void loop(void)
     sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
 
     if(DEBUG_MEASUREMENTS) {
-      writeDebugMessage(F("writeLog"));
+      Logger::instance()->writeDebugMessage(F("writeLog"));
     }
     filesystem->writeLog(values, fieldCount);
     if(DEBUG_MEASUREMENTS) {
-      writeDebugMessage(F("writeLog done"));
+      Logger::instance()->writeDebugMessage(F("writeLog done"));
     }
 
     char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
     sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
     if(DEBUG_MEASUREMENTS) {
-      writeDebugMessage(F(valuesBuffer));
+      Logger::instance()->writeDebugMessage(F(valuesBuffer));
     }
     // Send along to BLE
     if(bleActive) {
@@ -882,7 +887,7 @@ void loop(void)
     blink(1,500);
     char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
     sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
-    writeDebugMessage(F(valuesBuffer));
+    Logger::instance()->writeDebugMessage(F(valuesBuffer));
     return;
   }
 }

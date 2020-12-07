@@ -121,41 +121,4 @@ void printDS3231Time(){
 }
 
 
-void writeSerialMessage(const char * message){
-  Serial2.println(message);
-  Serial2.flush();
-}
 
-void writeSerialMessage(const __FlashStringHelper * message){
-  Serial2.println(message);
-  Serial2.flush();
-}
-
-void writeDebugMessage(const char * message){
-#ifdef DEBUG_TO_SERIAL
-  Serial2.println(message);
-  Serial2.flush();
-#endif
-
-#ifdef DEBUG_TO_FILE
-  debugFilesystemHandle->writeDebugMessage(message);
-#endif
-}
-
-void writeDebugMessage(const __FlashStringHelper * message){
-#ifdef DEBUG_TO_SERIAL
-  Serial2.println(message);
-  Serial2.flush();
-#endif
-
-#ifdef DEBUG_TO_FILE
-  debugFilesystemHandle->writeDebugMessage(reinterpret_cast<const char *>(message));
-#endif
-}
-
-// A small helper
-void error(const __FlashStringHelper*err) {
-  writeDebugMessage(F("Error:"));
-  writeDebugMessage(err);
-  while (1);
-}

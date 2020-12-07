@@ -2,6 +2,8 @@
 #include "SdFat.h"
 #include "DS3231.h"
 
+#define WATERBEAR_FILESYSTEM
+
 class WaterBear_FileSystem
 {
 
