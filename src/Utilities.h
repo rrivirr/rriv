@@ -10,3 +10,7 @@ void printDateTime(HardwareSerial &serial, DateTime now);
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data );
 byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress );
+
+
+void blink(int times, int duration);
+void printDS3231Time();

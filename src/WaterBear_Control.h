@@ -39,7 +39,6 @@ class WaterBear_Control
     static bool ready(Adafruit_BluefruitLE_UART &ble);
     static bool ready(Adafruit_BluefruitLE_SPI &ble);
 
-    static void blink(int times, int duration);
     static time_t timestamp();
     static void setTime(time_t toSet);
     static void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz

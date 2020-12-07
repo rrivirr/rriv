@@ -6,24 +6,20 @@
 #include "SdFat.h"
 #include "STM32-UID.h"
 
+#include "Configuration.h"
 #include "Utilities.h"
 #include "WaterBear_Control.h"
 #include "WaterBear_FileSystem.h"
 
-#include <libmaple/pwr.h>
-#include <libmaple/scb.h>
-#include <libmaple/rcc.h>
+#include "system/low_power.h"
 
-#include "EC_OEM.h"
+#include "sensors/atlas-oem.h"
 
 
 const uint8_t bufferlen = 32;                         //total buffer size for the response_data array
 char response_data[bufferlen];                        //character array to hold the response data from modules
 String inputstring = "";
 
-#define SERIAL_BAUD 115200
-int serialBaud = SERIAL_BAUD;
-#define BUFSIZE                        160   // Size of the read buffer for incoming data
 
 // Settings
 char version[5] = "v2.0";
@@ -50,7 +46,6 @@ TwoWire WIRE1 (1);
 TwoWire Wire2 (2);
 
 //Ezo_board * ezo_ec;
-EC_OEM * oem_ec;
 
 // The DS3231 RTC chip
 DS3231 Clock;
@@ -451,148 +446,56 @@ void setupSwitchedPower(){
 }
 
 void enableSwitchedPower(){
+  writeDebugMessage(F("Enabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
 }
 
 void disableSwitchedPower(){
+  writeDebugMessage(F("Disabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 
+void cycleSwitchablePower(){
+  Serial2.println("Power cycle EZO");
+  disableSwitchedPower();
+  delay(1000);
+  enableSwitchedPower();
+  delay(1000);
+}
 
-
-void setupEZOI2C() {
-
-    Serial2.println("EZO I2C setup");
-
-    Serial2.println("Power cycle EZO");
-    disableSwitchedPower();
-    delay(1000);
-    enableSwitchedPower();
-    delay(1000);
-
-    i2c_master_enable(I2C2, 0);
-    Serial2.println("Enabled TwoWire 2");
-    Wire2.begin();
-    delay(1000);
-
-    Serial2.println("Began TwoWire 2");
-    scanIC2(&Wire2);
-
-    Serial2.println("Setting up board");
-
-    oem_ec = new EC_OEM(&Wire2, NONE_INT, i2c_id);
-    bool awoke = oem_ec->wakeUp();
-    Serial.println("Device addr EC: "+String(oem_ec->getStoredAddr()) );
-    Serial.println("Device type EC: "+String(oem_ec->getDeviceType()) );
-    Serial.println("Firmware EC: "+String(oem_ec->getFirmwareVersion()) );
-    Serial.println("Awoke: "+String(awoke));
-    Serial.println("Hibernating: "+String(oem_ec->isHibernate()) );
-
-    oem_ec->singleReading();
-    struct param_OEM_EC parameter;
-    parameter = oem_ec->getAllParam();
-    Serial.println("salinity= " + String(parameter.salinity)+
-                   "\nconductivity= " +String(parameter.conductivity)+
-                   "\ntds= " +String(parameter.tds)+
-                   "\nSalinity stable = "+(oem_ec->isSalinityStable()?"yes":"no")
-                   );
-
-
-    //ezo_ec = new Ezo_board(&Wire2, 0x64);
-
-    // inputstring.reserve(20);
-
-    // Serial2.println("Turning light on");
-    // ezo_ec->send_cmd("L,1");
-    // delay(1000);
-    // Serial2.println("Turning light off");
-    // ezo_ec->send_cmd("L,0");
-    // delay(1000);
-    // Serial2.println("Turning light on");
-    // ezo_ec->send_cmd("L,1");
-    // delay(1000);
-
-    // Set probe type
-    // ezo_ec->send_cmd("K,1.0");
-    // delay(300);
-    //
-    // // Set outputs
-    // ezo_ec->send_cmd("O,EC,1");
-    // delay(300);
-    // ezo_ec->send_cmd("O,TDS,0");
-    // delay(300);
-    // ezo_ec->send_cmd("O,S,0");
-    // delay(300);
-
-
-    oem_ec->setLedOn(true);
-    //oem_ec->setLedOn(false);
-    //oem_ec->setLedOn(true);
-    oem_ec->setProbeType(1.0);
-
-    Serial2.println("Done with EZO I2C setup");
+void enableI2C2(){
+  
+  i2c_master_enable(I2C2, 0);
+  Serial2.println("Enabled I2C2");
+  
+  Wire2.begin();
+  delay(1000);
+  
+  Serial2.println("Began TwoWire 2");
+  scanIC2(&Wire2);
 
 }
 
-void stopEZOI2C(){
+void powerUpSwitchableComponents(){
+  cycleSwitchablePower();
+  enableI2C2();
+  setupEC_OEM(&Wire2);
+    Serial2.println("Switchable components powered up");
+}
 
-  //ezo_ec->send_cmd("Sleep");
-  oem_ec->setHibernate();
-
+void powerDownSwitchableComponents(){
+  hibernateEC_OEM();
   i2c_disable(I2C2);
-
-  Serial2.println("Done with EZO I2C stop");
-
+  Serial2.println("Switchable components powered down");
 }
 
-/*
-void setupEZOSerial(){
-
-  Serial1.begin(ezoBaud);
-
-  Serial2.println("Start EZO setup");
-
-  inputstring.reserve(20);                            //set aside some bytes for receiving data from the PC
-
-  ezo_ec.send_cmd_no_resp("*ok,0");             //send the command to turn off the *ok response
-
-  // in order to use multiple circuits more effectively we need to turn off continuous mode and the *ok response
-  Serial2.print("C,? : ");
-  ezo_ec.send_cmd("c,?", response_data, bufferlen); // send it to the module of the port we opened
-  Serial2.println(response_data);                  //print the modules response
-
-  Serial2.print("K,? : ");
-  ezo_ec.send_cmd("K,?", response_data, bufferlen); // send it to the module of the port we opened
-  Serial2.println(response_data);
 
 
-  ezo_ec.send_cmd("O,EC,1", response_data, bufferlen); // send it to the module of the port we opened
-  ezo_ec.send_cmd("O,TDS,0", response_data, bufferlen); // send it to the module of the port we opened
-  ezo_ec.send_cmd("O,S,0", response_data, bufferlen); // send it to the module of the port we opened
 
-  Serial2.print("O,? : ");
-  ezo_ec.send_cmd("O,?", response_data, bufferlen); // send it to the module of the port we opened
-  Serial2.println(response_data);
 
-  ezo_ec.send_cmd_no_resp("c,0");               //send the command to turn off continuous mode
-                                          //in this case we arent concerned about waiting for the reply
-  ezo_ec.flush_rx_buffer();                     //clear all the characters that we received from the responses of the above commands
 
-  Serial2.println("Done with EZO setup");
-}
-*/
 
-/*
-void stopEZOSerial(){
 
-  ezo_ec.send_cmd("Sleep", response_data, bufferlen); // send it to the module of the port we opened
-  Serial2.println(response_data);
-  Serial2.flush();
-
-  Serial1.end();
-
-}
-*/
 
 
 void setup(void)
@@ -601,7 +504,7 @@ void setup(void)
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
-   Serial2.begin(serialBaud);
+   Serial2.begin(SERIAL_BAUD);
    while(!Serial2){
      delay(100);
    }
@@ -720,8 +623,7 @@ void setup(void)
   // PB10 interrupt disabled, PB10 is I2C2, use a different user interrupt
   //exti_attach_interrupt(EXTI10, EXTI_PB, userTriggeredInterrupt, EXTI_RISING);
 
-  //setupEZOSerial();
-  setupEZOI2C();
+  powerUpSwitchableComponents();
 
   /* We're ready to go! */
   writeDebugMessage(F("done with setup"));
@@ -776,7 +678,6 @@ void measureSensorValues(){
 }
 
 unsigned int interactiveModeMeasurementDelay = 1000;
-bool newDataAvailable = false;
 
 void loop(void)
 {
@@ -840,19 +741,11 @@ void loop(void)
     }
 
     setNextAlarm(); // If we are in this block, alawys set the next alarm
-    //stopEZOSerial();
-    writeDebugMessage(F("Stopping EZO I2C"));
-    stopEZOI2C();
-
-
-    writeDebugMessage(F("Disabling switched power"));
+    powerDownSwitchableComponents();
     disableSwitchedPower();
-
 
     printInterruptStatus(Serial2);
     writeDebugMessage(F("Going to sleep"));
-
-    //delay(1000);
 
     // save enabled interrupts
     int iser1 = NVIC_BASE->ISER[0];
@@ -875,59 +768,12 @@ void loop(void)
     enableUserInterrupt();
     awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
-
     Serial2.end();
 
-    // TODO: use STOP mode
-    if(true) { // STOP mode
-      // Clear PDDS and LPDS bits
-      PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+    enterStopMode();
+    //enterSleepMode()
 
-      // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
-      PWR_BASE->CR |= PWR_CR_CWUF;
-      PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
-
-      // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
-
-      //  Unset Power down deepsleep bit.
-      PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
-      // set Low-power deepsleep.
-      PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
-
-      SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
-      //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
-
-      SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
-
-      rcc_switch_sysclk(RCC_CLKSRC_HSI);
-      rcc_turn_off_clk(RCC_CLK_PLL);
-
-      __asm volatile( "dsb" );
-      systick_disable();
-      __asm volatile( "wfi" );
-      systick_enable();
-      __asm volatile( "isb" );
-
-      rcc_turn_on_clk(RCC_CLK_PLL);
-      while(!rcc_is_clk_ready(RCC_CLK_PLL))
-      ;
-
-      // Finally, switch to the now-ready PLL as the main clock source.
-      rcc_switch_sysclk(RCC_CLKSRC_PLL);
-
-    } else { // SLEEP mode
-
-      __asm volatile( "dsb" );
-      systick_disable();
-      __asm volatile( "wfi" );
-      systick_enable();
-      //__asm volatile( "isb" );
-
-    }
-
-    Serial2.begin(serialBaud);
-    //setupEZOSerial();
-
+    Serial2.begin(SERIAL_BAUD);
 
     // reenable interrupts
     NVIC_BASE->ISER[0] = iser1;
@@ -940,9 +786,7 @@ void loop(void)
     writeDebugMessage(F("Awakened by interrupt"));
     printInterruptStatus(Serial2);
 
-    enableSwitchedPower();
-    delay(500);
-    setupEZOI2C();
+    powerUpSwitchableComponents();
 
     // Actually, we need to check on which interrupt was triggered
     if(awakenedByUser){
@@ -987,8 +831,8 @@ void loop(void)
         break;
       case WT_CONTROL_CAL_DRY:
         writeDebugMessage(F("DRY_CALIBRATION"));
-        oem_ec->clearCalibrationData();
-        oem_ec->setCalibration(DRY_CALIBRATION);
+        clearECCalibrationData();
+        setECDryPointCalibration();
         break;
       case WT_CONTROL_CAL_LOW:
       {
@@ -998,7 +842,7 @@ void loop(void)
         char logMessage[30];
         sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
         writeDebugMessage(logMessage);
-        oem_ec->setCalibration(LOW_POINT_CALIBRATION, lowPoint);
+        setECLowPointCalibration(lowPoint);
         break;
       }
       case WT_CONTROL_CAL_HIGH:
@@ -1008,7 +852,7 @@ void loop(void)
         int highPoint = *highPointPtr;
         char logMessage[31];
         sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
-        oem_ec->setCalibration(HIGH_POINT_CALIBRATION, highPoint);
+        setECHighPointCalibration(highPoint);
         break;
       }
       case WT_SET_RTC: // DS3231
@@ -1030,57 +874,28 @@ void loop(void)
         writeDebugMessage(logMessage);
         writeDeploymentIdentifier(deployPtr);
         break;
-      case WT_DEPLOY: // Set deployment identifier via serial
-      {
-        writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
-        char * deployPtr = (char *)WaterBear_Control::getLastPayload();
-        char logMessage[46];
-        sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
-        writeDebugMessage(logMessage);
-        writeDeploymentIdentifier(deployPtr);
-        break;
       }
-      // default:
-      //   break;
+      default:
+        writeDebugMessage(F("Invalid command code"));
+        break;
     }
     return;
   }
 
   if(configurationMode){
-    //WaterBear_Control::blink(1,500); //slow down rate of responses
-    /*
-    char testTime[11]; // timestamp responses
-    Serial2.print(F("configMode TS:"));
-    sprintf(testTime, "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
-    Serial2.println(testTime);
-    Serial2.flush();
-    */
-
+    // blink(1,500); //slow down rate of responses
+    // printDS3231Time();
+  
+    float ecValue = -1;
+    bool newDataAvailable = readECDataIfAvailable(&ecValue);
     if(newDataAvailable){
-      float ecValue = -1;
-      ecValue = oem_ec->getConductivity();
-      oem_ec->clearNewDataRegister();
-      newDataAvailable = false;
       Serial2.print(F("Got EC value: "));
       Serial2.println(ecValue);
       Serial2.flush();
-    } else {
-      newDataAvailable = oem_ec->singleReading();
     }
     return;
   }
-  // if DEBUG_BLE
-  /*
-  Serial2.print("BLE");
-  Serial2.println(ble.peek());
-
-  int MAX_REQUEST_LENGTH = 100;
-  char request[MAX_REQUEST_LENGTH] = "";
-  ble.readBytesUntil('<', request, MAX_REQUEST_LENGTH);
-  Serial2.println(request);
-  */
-
-  //Serial2.println("Checking BLE");
+  
   if(WaterBear_Control::ready(ble) ){
     writeDebugMessage(F("BLE Input Ready"));
     awakeTime = WaterBear_Control::timestamp(); // Push awake time forward
@@ -1096,37 +911,10 @@ void loop(void)
 
     measureSensorValues();
 
-
-    // EZO
-    // wake/sleep.  Or re-run setup
-    /*
-    Serial2.print(ezo_ec.get_name());     //print the modules name
-    Serial2.print(": ");
-    Serial2.println(response_data);                  //print the modules response
-    response_data[0] = 0;                           //clear the modules response
-
-    ezo_ec.send_read();
-    Serial2.print("EZO Reading:");
-    float ecValue = ezo_ec.get_reading();
-    Serial2.print(ecValue);
-    Serial2.println();
-    sprintf(values[4], "%4f", ecValue); // stuff EC value into values[4] for the moment.
-    */
-
-    // EZO i2c
-    /* */
-    // ezo_ec->send_read_cmd();
-    // delay(600);
-    // float ecValue = ezo_ec->get_last_received_reading();
-    /* */
-
     // OEM EC
-    bool newDataAvailable = oem_ec->singleReading();
     float ecValue = -1;
-    if(newDataAvailable){
-      ecValue = oem_ec->getConductivity();
-      oem_ec->clearNewDataRegister();
-    } else {
+    bool newDataAvailable = readECDataIfAvailable(&ecValue);
+    if(!newDataAvailable){
       writeDebugMessage(F("New EC data not available"));
     }
 
@@ -1159,7 +947,7 @@ void loop(void)
 
   }
   if(debugValuesMode){ // print content being logged each second
-    WaterBear_Control::blink(1,500);
+    blink(1,500);
     char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
     sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
     writeDebugMessage(F(valuesBuffer));

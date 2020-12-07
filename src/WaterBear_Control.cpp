@@ -2,6 +2,7 @@
 
 #define MAX_REQUEST_LENGTH 50
 
+DS3231 ClockWBC;
 int WaterBear_Control::state = 0;
 void * lastCommandPayload;
 bool lastCommandPayloadAllocated = false;
@@ -49,18 +50,6 @@ void * WaterBear_Control::getLastPayload() {
   return lastCommandPayload;
 }
 
-void WaterBear_Control::blink(int times, int duration){
-  pinMode(PA5, OUTPUT);
-  for (int i = times; i > 0; i--)
-  {
-    digitalWrite(PA5, HIGH);
-    delay(duration);
-    digitalWrite(PA5, LOW);
-    delay(duration);
-  }
-}
-
-  DS3231 ClockWBC;
 
 time_t WaterBear_Control::timestamp(){
   struct tm ts;

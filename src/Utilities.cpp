@@ -1,4 +1,5 @@
 #include "Utilities.h"
+#include "WaterBear_Control.h"
 
 // For F103RM - these should go into their own .h
 #define Serial Serial2
@@ -93,4 +94,24 @@ byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress )
   if (wire->available()) rdata = wire->read();
 
   return rdata;
+}
+
+
+void blink(int times, int duration){
+  pinMode(PA5, OUTPUT);
+  for (int i = times; i > 0; i--)
+  {
+    digitalWrite(PA5, HIGH);
+    delay(duration);
+    digitalWrite(PA5, LOW);
+    delay(duration);
+  }
+}
+
+void printDS3231Time(){
+    char testTime[11]; // timestamp responses
+    Serial2.print(F("configMode TS:"));
+    sprintf(testTime, "%lld", WaterBear_Control::timestamp()); // convert time_t value into string
+    Serial2.println(testTime);
+    Serial2.flush();
 }
