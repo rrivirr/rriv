@@ -4,6 +4,8 @@
 // For F103RM - these should go into their own .h
 #define Serial Serial2
 
+// TODO: change Serial.print calls to writeDebugMessage but after filesystem is writable
+
 void scanIC2(TwoWire * wire){
   Serial.println("Scanning...");
   byte error, address;

@@ -7,14 +7,14 @@
 #include "STM32-UID.h"
 
 #include "Configuration.h"
-#include "Utilities.h"
 #include "WaterBear_Control.h"
-#include "WaterBear_FileSystem.h"
+// #include "WaterBear_FileSystem.h"  // Sloppily included via Utilities.h, will be fixed by refactoring debug logger to class 
+#include "Utilities.h"
 
 #include "system/low_power.h"
+#include "sensors/atlas_oem.h"
 
-#include "sensors/atlas-oem.h"
-
+#include <libmaple/iwdg.h>
 
 const uint8_t bufferlen = 32;                         //total buffer size for the response_data array
 char response_data[bufferlen];                        //character array to hold the response data from modules
@@ -24,11 +24,7 @@ String inputstring = "";
 // Settings
 char version[5] = "v2.0";
 
-#define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
-#define DEBUG_LOOP false         // don't sleep
-#define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
-#define DEBUG_TO_FILE 1   // Also send debug messages to the output file [comment out to disable]
-#define DEBUG_TO_SERIAL 1 // Send debug messages to the serial interface
+
 
 short interval = 5; // minutes between loggings when not in short sleep
 short burstLength = 25; // how many readings in a burst
@@ -73,27 +69,14 @@ DS3231 Clock;
 
 unsigned char uuid[UUID_LENGTH];
 
-// The internal RTC
-//RTClock rt (RTCSEL_LSE); // initialise
-//uint32 tt;
+
 
 // Pin Mappings for Nucleo Board
-
 // BLE USART
 //#define D4 PB5
 //int bluefruitModePin = D4;
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
-// Bluefruit on SPI
-#define BLUEFRUIT_SPI_SCK   PB13
-#define BLUEFRUIT_SPI_MISO  PB14
-#define BLUEFRUIT_SPI_MOSI  PB15
-
-// Pullup
-#define BLUEFRUIT_SPI_CS    PB8
-
-#define BLUEFRUIT_SPI_IRQ   PB9
-#define BLUEFRUIT_SPI_RST   PC4
 
 //SPIClass SPI_2(2); //Create an SPI2 object.  This has been moved to a tweak on Adafruit_BluefruitLE_SPI
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
@@ -126,44 +109,6 @@ void writeDeploymentIdentifier(char * deploymentIdentifier){
   }
 }
 
-void writeSerialMessage(const char * message){
-  Serial2.println(message);
-  Serial2.flush();
-}
-
-void writeSerialMessage(const __FlashStringHelper * message){
-  Serial2.println(message);
-  Serial2.flush();
-}
-
-void writeDebugMessage(const char * message){
-#ifdef DEBUG_TO_SERIAL
-  Serial2.println(message);
-  Serial2.flush();
-#endif
-
-#ifdef DEBUG_TO_FILE
-  filesystem->writeDebugMessage(message);
-#endif
-}
-
-void writeDebugMessage(const __FlashStringHelper * message){
-#ifdef DEBUG_TO_SERIAL
-  Serial2.println(message);
-  Serial2.flush();
-#endif
-
-#ifdef DEBUG_TO_FILE
-  filesystem->writeDebugMessage(reinterpret_cast<const char *>(message));
-#endif
-}
-
-// A small helper
-void error(const __FlashStringHelper*err) {
-  writeDebugMessage(F("Error:"));
-  writeDebugMessage(err);
-  while (1);
-}
 
 
 void bleFirstRun(){
@@ -172,7 +117,7 @@ void bleFirstRun(){
   // set a mode pin for USART1 if we need to
 
   if(true){
-    writeDebugMessage("BLE First Run");
+    writeDebugMessage(F("BLE First Run"));
   }
 
   //ble.setMode(BLUEFRUIT_MODE_COMMAND);
@@ -180,22 +125,22 @@ void bleFirstRun(){
 
   ble.println(F("AT"));
   if(ble.waitForOK()){
-    writeDebugMessage("BLE OK");
+    writeDebugMessage(F("BLE OK"));
   } else {
-    writeDebugMessage("BLE Not OK");
+    writeDebugMessage(F("BLE Not OK"));
   }
 
   // Send command
   ble.println(F("AT+GAPDEVNAME=WaterBear3"));
   if(ble.waitForOK()){
-    writeDebugMessage("Got OK");
+    writeDebugMessage(F("Got OK"));
   } else {
-    writeDebugMessage("BLE Error");
+    writeDebugMessage(F("BLE Error"));
     while(1);
   }
   ble.println(F("ATZ"));
   ble.waitForOK();
-  writeDebugMessage("Got OK");
+  writeDebugMessage(F("Got OK"));
 
 //  ble.setMode(BLUEFRUIT_MODE_DATA);
 
@@ -224,7 +169,7 @@ void readUniqueId(){
     writeDebugMessage(F("Generate or Retrieve UUID"));
     getSTM32UUID(uuid);
 
-    Serial2.println(F("UUID to Write:"));
+    writeDebugMessage(F("UUID to Write:"));
     char uuidString[2 * UUID_LENGTH + 1];
     uuidString[2 * UUID_LENGTH] = '\0';
     for(short i=0; i < UUID_LENGTH; i++){
@@ -264,9 +209,9 @@ void initBLE(){
 
   if(debugBLE){
     if(bleActive){
-      writeDebugMessage("Tried to init - BLE active");
+      writeDebugMessage(F("Tried to init - BLE active"));
     } else {
-      writeDebugMessage("Tried to init - BLE NOT active");
+      writeDebugMessage(F("Tried to init - BLE NOT active"));
     }
   }
 
@@ -287,9 +232,9 @@ void initBLE(){
 
     ble.println(F("AT"));
     if(ble.waitForOK()){
-      writeDebugMessage("AT OK");
+      writeDebugMessage(F("AT OK"));
     } else {
-         writeDebugMessage("AT NOT OK");
+         writeDebugMessage(F("AT NOT OK"));
     }
 
     bleFirstRun();
@@ -303,7 +248,7 @@ void initBLE(){
   if ( FACTORYRESET_ENABLE )
   {
     // Perform a factory reset to make sure everything is in a known state
-    Serial2.println(F("Performing a factory reset: "));
+    writeDebugMessage(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ){
       error(F("Couldn't factory reset"));
     }
@@ -422,7 +367,7 @@ void timerAlarm(){
 
   disableTimerInterrupt();
   clearTimerInterrupt();
-  //Serial2.println("TIMER ALARM");
+  //writeDebugMessage("TIMER ALARM");
   //enableTimerInterrupt();
 
 }
@@ -431,8 +376,7 @@ void userTriggeredInterrupt(){
 
   disableUserInterrupt();
   clearUserInterrupt();
-  //Serial2.println("USER TRIGGERED INTERRUPT");
-  //Serial2.flush();
+  //writeDebugMessage("USER TRIGGERED INTERRUPT");
   //enableUserInterrupt();
   awakenedByUser = true;
 
@@ -466,12 +410,12 @@ void cycleSwitchablePower(){
 void enableI2C2(){
   
   i2c_master_enable(I2C2, 0);
-  Serial2.println("Enabled I2C2");
+  writeDebugMessage(F("Enabled I2C2"));
   
   Wire2.begin();
   delay(1000);
   
-  Serial2.println("Began TwoWire 2");
+  writeDebugMessage(F("Began TwoWire 2"));
   scanIC2(&Wire2);
 
 }
@@ -480,27 +424,18 @@ void powerUpSwitchableComponents(){
   cycleSwitchablePower();
   enableI2C2();
   setupEC_OEM(&Wire2);
-    Serial2.println("Switchable components powered up");
+  writeDebugMessage(F("Switchable components powered up"));
 }
 
 void powerDownSwitchableComponents(){
   hibernateEC_OEM();
   i2c_disable(I2C2);
-  Serial2.println("Switchable components powered down");
+  writeDebugMessage(F("Switchable components powered down"));
 }
-
-
-
-
-
-
-
-
-
 
 void setup(void)
 {
-  //i2c_bus_reset(I2C1);
+  //i2c_bus_reset(I2C1); // if stuck in Scanning, this may help
   // Start up Serial2
   // Need to do an if(Serial2) after an amount of time, just disable it
   // Note that this is double the actual BAUD due to HSI clocking of processor
@@ -509,7 +444,7 @@ void setup(void)
      delay(100);
    }
    writeSerialMessage(F("Hello world: serial2"));
-   writeSerialMessage(F("Begin setup"));
+   writeSerialMessage(F("Begin Setup"));
 
    setupSwitchedPower();
    enableSwitchedPower();
@@ -526,17 +461,16 @@ void setup(void)
   pinMode(PC3, INPUT_ANALOG);
 
   pinMode(PA5, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
-  //writeSerialMessage(F("blink test:"));
+  //writeDebugMessage(F("blink test:"));
   //WaterBear_Control::blink(10,250);
 
   // Set up global date time callback for SdFile
   SdFile::dateTimeCallback(dateTime);
 
+  char  message[100];
   // Clear interrupts
-  Serial2.print("1: NVIC_BASE->ISPR ");
-  Serial2.println(NVIC_BASE->ISPR[0]);
-  Serial2.println(NVIC_BASE->ISPR[1]);
-  Serial2.println(NVIC_BASE->ISPR[2]);
+  sprintf(message, "1: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
+  writeSerialMessage(F(message));
 
   NVIC_BASE->ICER[0] =  1 << NVIC_EXTI_9_5; // Don't respond to interrupt during setup
   //NVIC_BASE->ICER[0] =  1 << NVIC_EXTI3; // Don't respond to interrupt during setup
@@ -544,10 +478,8 @@ void setup(void)
   clearTimerInterrupt();
   clearUserInterrupt();
 
-  Serial2.print("2: NVIC_BASE->ISPR ");
-  Serial2.println(NVIC_BASE->ISPR[0]);
-  Serial2.println(NVIC_BASE->ISPR[1]);
-  Serial2.println(NVIC_BASE->ISPR[2]);
+  sprintf(message, "2: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
+  writeSerialMessage(message);
 
   //  Prepare I2C
   Wire.begin();
@@ -570,8 +502,7 @@ void setup(void)
   readDeploymentIdentifier(deploymentIdentifier);
   unsigned char empty[1] = {0xFF};
   if(memcmp(deploymentIdentifier, empty, 1) == 0 ) {
-    //Serial2.print(">NoDplyment<");
-    //Serial2.flush();
+    //writeDebugMessage(F(">NoDplyment<"));
 
     writeDeploymentIdentifier(defaultDeployment);
     readDeploymentIdentifier(deploymentIdentifier);
@@ -583,6 +514,7 @@ void setup(void)
   writeSerialMessage(setupTS);
 
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, PC8);
+  debugFilesystemHandle = filesystem; // for debug utiility.  TODO: factor to property of cpp class
   writeDebugMessage(F("Filesystem started OK"));
 
   filesystem->setNewDataFile(setupTime); // name file via epoch timestamp
@@ -889,9 +821,9 @@ void loop(void)
     float ecValue = -1;
     bool newDataAvailable = readECDataIfAvailable(&ecValue);
     if(newDataAvailable){
-      Serial2.print(F("Got EC value: "));
-      Serial2.println(ecValue);
-      Serial2.flush();
+      char message[100];
+      sprintf(message, "Got EC value: %f", ecValue);
+      writeDebugMessage(message);
     }
     return;
   }
