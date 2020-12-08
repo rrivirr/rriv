@@ -25,12 +25,6 @@ extern short burstLength; // how many readings in a burst
 
 extern short fieldCount; // number of fields to be logged to SDcard file
 
-// Pin Mappings for Nucleo Board
-// BLE USART
-//#define D4 PB5
-//int bluefruitModePin = D4;
-//Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
-
 // State
 extern WaterBear_FileSystem *filesystem;
 extern unsigned char uuid[UUID_LENGTH];
