@@ -5,7 +5,7 @@
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include "DS3231.h"
 #include "configuration.h"
-#include "WaterBear_Control.h"
+#include "system/control.h"
 
 void scanIC2(TwoWire * wire);
 

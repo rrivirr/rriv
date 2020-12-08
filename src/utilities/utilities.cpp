@@ -1,6 +1,6 @@
 #include "Utilities.h"
-#include "components/monitor.h"
-#include "components/clock.h"
+#include "system/monitor.h"
+#include "system/clock.h"
 
 // For F103RM convienience in this file
 #define Serial Serial2

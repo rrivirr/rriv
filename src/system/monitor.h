@@ -1,7 +1,7 @@
 #ifndef WATERBEAR_LOGGER
 #define WATERBEAR_LOGGER
 
-#include "WaterBear_FileSystem.h"
+#include "filesystem.h"
 
 class Monitor
 {

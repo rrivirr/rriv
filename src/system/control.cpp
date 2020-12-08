@@ -1,5 +1,5 @@
-#include "WaterBear_Control.h"
-#include "components/clock.h"
+#include "control.h"
+#include "clock.h"
 
 #define MAX_REQUEST_LENGTH 50
 

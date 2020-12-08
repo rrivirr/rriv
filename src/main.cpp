@@ -1,23 +1,22 @@
 #include <Arduino.h>
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
-
 #include "SdFat.h"
-#include "lib/STM32-UID.h"
 
 #include "configuration.h"
-#include "WaterBear_Control.h"
-#include "WaterBear_FileSystem.h"
-#include "utilities.h"
+#include "utilities/utilities.h"
 
-#include "components/hardware.h"
-#include "components/interrupts.h"
-#include "components/eeprom.h"
-#include "components/low_power.h"
-#include "components/monitor.h"
-#include "components/clock.h"
-#include "components/ble.h"
-#include "components/switched_power.h"
+#include "system/control.h"
+#include "system/filesystem.h"
+#include "system/hardware.h"
+#include "system/interrupts.h"
+#include "system/eeprom.h"
+#include "system/low_power.h"
+#include "system/monitor.h"
+#include "system/clock.h"
+#include "system/ble.h"
+#include "system/switched_power.h"
+
 #include "sensors/atlas_oem.h"
 
 #include <libmaple/iwdg.h>
@@ -35,8 +34,6 @@ short fieldCount = 11; // number of fields to be logged to SDcard file
 //#define D4 PB5
 //int bluefruitModePin = D4;
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
-
-/// Begin Main System Entity
 
 // State
 WaterBear_FileSystem *filesystem;
@@ -212,8 +209,8 @@ void measureSensorValues()
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   time_t currentTime = timestamp();
-  sprintf(values[2], "%lld", currentTime);           // convert time_t value into string
-  t_t2ts(currentTime, values[3]); // convert time_t value to human readable timestamp
+  sprintf(values[2], "%lld", currentTime); // convert time_t value into string
+  t_t2ts(currentTime, values[3]);          // convert time_t value to human readable timestamp
 
   // Measure the new data
   short sensorCount = 6;
@@ -224,54 +221,6 @@ void measureSensorValues()
     // malloc or ?
     sprintf(values[4 + i], "%4d", value);
   }
-}
-
-/// End Main System Entity
-
-void setup(void)
-{
-
-  startSerial2();
-
-  setupSwitchedPower();
-  enableSwitchedPower();
-
-  setupHardwarePins();
-
-  //blinkTest();
-
-  // Don't respond to interrupts during setup
-  disableClockInterrupt();
-  disableUserInterrupt();
-
-  clearClockInterrupt();
-  clearUserInterrupt();
-
-  //  Prepare I2C
-  Wire.begin();
-  delay(1000);
-  scanIC2(&Wire);
-
-  // Clear the alarms so they don't go off during setup
-  clearAllAlarms();
-
-  initializeFilesystem();
-
-  //initBLE();
-
-  readUniqueId(uuid);
-
-  allocateMeasurementValuesMemory();
-
-  setupWakeInterrupts();
-
-  powerUpSwitchableComponents();
-
-  setNotBursting();
-
-  /* We're ready to go! */
-  Monitor::instance()->writeDebugMessage(F("done with setup"));
-  Serial2.flush();
 }
 
 bool checkBursting()
@@ -341,6 +290,252 @@ bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
   return takeMeasurement;
 }
 
+void stopAndAwaitTrigger()
+{
+  Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
+
+  if (Clock.checkIfAlarm(1))
+  {
+    Monitor::instance()->writeDebugMessage(F("Alarm 1"));
+  }
+
+  setNextAlarm(interval); // If we are in this block, alawys set the next alarm
+  powerDownSwitchableComponents();
+  disableSwitchedPower();
+
+  printInterruptStatus(Serial2);
+  Monitor::instance()->writeDebugMessage(F("Going to sleep"));
+
+  // save enabled interrupts
+  int iser1, iser2, iser3;
+  storeAllInterrupts(iser1, iser2, iser3);
+
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
+  clearUserInterrupt();
+
+  enableClockInterrupt();
+  enableUserInterrupt();
+  awakenedByUser = false; // Don't go into sleep mode with any interrupt state
+
+  Serial2.end();
+
+  enterStopMode();
+  //enterSleepMode()
+
+  Serial2.begin(SERIAL_BAUD);
+
+  reenableAllInterrupts(iser1, iser2, iser3);
+  disableClockInterrupt();
+  disableUserInterrupt();
+
+  // We have woken from the interrupt
+  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
+  printInterruptStatus(Serial2);
+
+  powerUpSwitchableComponents();
+
+  // We need to check on which interrupt was triggered
+  if (awakenedByUser)
+  {
+    prepareForUserInteraction();
+  }
+  else
+  {
+    prepareForTriggeredMeasurement();
+  }
+}
+
+void handleControlCommand()
+{
+  Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
+  awakeTime = timestamp(); // Push awake time forward
+  int command = WaterBear_Control::processControlCommands(Serial2);
+  switch (command)
+  {
+  case WT_CLEAR_MODES:
+    Monitor::instance()->writeDebugMessage(F("Clearing Config & Debug Mode"));
+    configurationMode = false;
+    debugValuesMode = false;
+    break;
+  case WT_CONTROL_CONFIG:
+    Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
+    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+    configurationMode = true;
+    break;
+  case WT_DEBUG_VAlUES:
+    Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
+    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+    debugValuesMode = true;
+    break;
+  case WT_CONTROL_CAL_DRY:
+    Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
+    clearECCalibrationData();
+    setECDryPointCalibration();
+    break;
+  case WT_CONTROL_CAL_LOW:
+  {
+    Monitor::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
+    int *lowPointPtr = (int *)WaterBear_Control::getLastPayload();
+    int lowPoint = *lowPointPtr;
+    char logMessage[30];
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    setECLowPointCalibration(lowPoint);
+    break;
+  }
+  case WT_CONTROL_CAL_HIGH:
+  {
+    Monitor::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
+    int *highPointPtr = (int *)WaterBear_Control::getLastPayload();
+    int highPoint = *highPointPtr;
+    char logMessage[31];
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
+    setECHighPointCalibration(highPoint);
+    break;
+  }
+  case WT_SET_RTC: // DS3231
+  {
+    Monitor::instance()->writeDebugMessage(F("SET_RTC"));
+    time_t *RTCPtr = (time_t *)WaterBear_Control::getLastPayload();
+    time_t RTC = *RTCPtr;
+    char logMessage[24];
+    sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
+    setTime(RTC);
+    break;
+  }
+  case WT_DEPLOY: // Set deployment identifier via serial
+  {
+    Monitor::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
+    char *deployPtr = (char *)WaterBear_Control::getLastPayload();
+    char logMessage[46];
+    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    writeDeploymentIdentifier(deployPtr);
+    break;
+  }
+  default:
+    Monitor::instance()->writeDebugMessage(F("Invalid command code"));
+    break;
+  }
+}
+
+void monitorConfiguration()
+{
+  // blink(1,500); //slow down rate of responses
+  // printDS3231Time();
+
+  float ecValue = -1;
+  bool newDataAvailable = readECDataIfAvailable(&ecValue);
+  if (newDataAvailable)
+  {
+    char message[100];
+    sprintf(message, "Got EC value: %f", ecValue);
+    Monitor::instance()->writeDebugMessage(message);
+  }
+}
+
+void takeNewMeasurement()
+{
+  if (DEBUG_MEASUREMENTS)
+  {
+    Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
+  }
+
+  measureSensorValues();
+
+  // OEM EC
+  float ecValue = -1;
+  bool newDataAvailable = readECDataIfAvailable(&ecValue);
+  if (!newDataAvailable)
+  {
+    Monitor::instance()->writeDebugMessage(F("New EC data not available"));
+  }
+
+  //Serial2.print(F("Got EC value: "));
+  //Serial2.print(ecValue);
+  //Serial2.println();
+  sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
+
+  if (DEBUG_MEASUREMENTS)
+  {
+    Monitor::instance()->writeDebugMessage(F("writeLog"));
+  }
+  filesystem->writeLog(values, fieldCount);
+  if (DEBUG_MEASUREMENTS)
+  {
+    Monitor::instance()->writeDebugMessage(F("writeLog done"));
+  }
+}
+
+void trackBurst(bool bursting)
+{
+  if (bursting)
+  {
+    burstCount = burstCount + 1;
+  }
+}
+
+void monitorValues()
+{
+  // print content being logged each second
+  blink(1, 500);
+  char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
+  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
+  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+  printToBLE(valuesBuffer);
+}
+
+// Setup and Loop
+
+void setup(void)
+{
+
+  startSerial2();
+
+  setupSwitchedPower();
+  enableSwitchedPower();
+
+  setupHardwarePins();
+
+  //blinkTest();
+
+  // Don't respond to interrupts during setup
+  disableClockInterrupt();
+  disableUserInterrupt();
+
+  clearClockInterrupt();
+  clearUserInterrupt();
+
+  //  Prepare I2C
+  Wire.begin();
+  delay(1000);
+  scanIC2(&Wire);
+
+  // Clear the alarms so they don't go off during setup
+  clearAllAlarms();
+
+  initializeFilesystem();
+
+  //initBLE();
+
+  readUniqueId(uuid);
+
+  allocateMeasurementValuesMemory();
+
+  setupWakeInterrupts();
+
+  powerUpSwitchableComponents();
+
+  setNotBursting();
+
+  /* We're ready to go! */
+  Monitor::instance()->writeDebugMessage(F("done with setup"));
+  Serial2.flush();
+}
+
 void loop(void)
 {
   bool bursting = checkBursting();
@@ -356,156 +551,21 @@ void loop(void)
     awaitMeasurementTrigger = true;
   }
 
-  // Go to sleep
-  if (awaitMeasurementTrigger)
+  if (awaitMeasurementTrigger) // Go to sleep
   {
-
-    Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
-
-    if (Clock.checkIfAlarm(1))
-    {
-      Monitor::instance()->writeDebugMessage(F("Alarm 1"));
-    }
-
-    setNextAlarm(interval); // If we are in this block, alawys set the next alarm
-    powerDownSwitchableComponents();
-    disableSwitchedPower();
-
-    printInterruptStatus(Serial2);
-    Monitor::instance()->writeDebugMessage(F("Going to sleep"));
-
-    // save enabled interrupts
-    int iser1, iser2, iser3;
-    storeAllInterrupts(iser1, iser2, iser3);
-
-    clearAllInterrupts();
-    clearAllPendingInterrupts();
-    clearUserInterrupt();
-
-    enableClockInterrupt();
-    enableUserInterrupt();
-    awakenedByUser = false; // Don't go into sleep mode with any interrupt state
-
-    Serial2.end();
-
-    enterStopMode();
-    //enterSleepMode()
-
-    Serial2.begin(SERIAL_BAUD);
-
-    reenableAllInterrupts(iser1, iser2, iser3);
-    disableClockInterrupt();
-    disableUserInterrupt();
-
-    // We have woken from the interrupt
-    Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
-    printInterruptStatus(Serial2);
-
-    powerUpSwitchableComponents();
-
-    // We need to check on which interrupt was triggered
-    if (awakenedByUser)
-    {
-      prepareForUserInteraction();
-    }
-    else
-    {
-      prepareForTriggeredMeasurement();
-    }
-
+    stopAndAwaitTrigger();
     return; // Go to top of loop
   }
 
   if (WaterBear_Control::ready(Serial2))
   {
-    Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
-    awakeTime = timestamp(); // Push awake time forward
-    int command = WaterBear_Control::processControlCommands(Serial2);
-    switch (command)
-    {
-    case WT_CLEAR_MODES:
-      Monitor::instance()->writeDebugMessage(F("Clearing Config & Debug Mode"));
-      configurationMode = false;
-      debugValuesMode = false;
-      break;
-    case WT_CONTROL_CONFIG:
-      Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
-      Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-      Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-      configurationMode = true;
-      break;
-    case WT_DEBUG_VAlUES:
-      Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
-      Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-      Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-      debugValuesMode = true;
-      break;
-    case WT_CONTROL_CAL_DRY:
-      Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
-      clearECCalibrationData();
-      setECDryPointCalibration();
-      break;
-    case WT_CONTROL_CAL_LOW:
-    {
-      Monitor::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
-      int *lowPointPtr = (int *)WaterBear_Control::getLastPayload();
-      int lowPoint = *lowPointPtr;
-      char logMessage[30];
-      sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
-      Monitor::instance()->writeDebugMessage(logMessage);
-      setECLowPointCalibration(lowPoint);
-      break;
-    }
-    case WT_CONTROL_CAL_HIGH:
-    {
-      Monitor::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
-      int *highPointPtr = (int *)WaterBear_Control::getLastPayload();
-      int highPoint = *highPointPtr;
-      char logMessage[31];
-      sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
-      setECHighPointCalibration(highPoint);
-      break;
-    }
-    case WT_SET_RTC: // DS3231
-    {
-      Monitor::instance()->writeDebugMessage(F("SET_RTC"));
-      time_t *RTCPtr = (time_t *)WaterBear_Control::getLastPayload();
-      time_t RTC = *RTCPtr;
-      char logMessage[24];
-      sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
-      setTime(RTC);
-      break;
-    }
-    case WT_DEPLOY: // Set deployment identifier via serial
-    {
-      Monitor::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
-      char *deployPtr = (char *)WaterBear_Control::getLastPayload();
-      char logMessage[46];
-      sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
-      Monitor::instance()->writeDebugMessage(logMessage);
-      writeDeploymentIdentifier(deployPtr);
-      break;
-    }
-    default:
-      Monitor::instance()->writeDebugMessage(F("Invalid command code"));
-      break;
-    }
+    handleControlCommand();
     return;
   }
 
   if (configurationMode)
   {
-    // blink(1,500); //slow down rate of responses
-    // printDS3231Time();
-
-    float ecValue = -1;
-    bool newDataAvailable = readECDataIfAvailable(&ecValue);
-    if (newDataAvailable)
-    {
-      char message[100];
-      sprintf(message, "Got EC value: %f", ecValue);
-      Monitor::instance()->writeDebugMessage(message);
-    }
+    monitorConfiguration();
     return;
   }
 
@@ -519,57 +579,16 @@ void loop(void)
 
   if (takeMeasurement)
   {
-
+    takeNewMeasurement();
+    trackBurst(bursting);
     if (DEBUG_MEASUREMENTS)
     {
-      Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
-    }
-
-    measureSensorValues();
-
-    // OEM EC
-    float ecValue = -1;
-    bool newDataAvailable = readECDataIfAvailable(&ecValue);
-    if (!newDataAvailable)
-    {
-      Monitor::instance()->writeDebugMessage(F("New EC data not available"));
-    }
-
-    //Serial2.print(F("Got EC value: "));
-    //Serial2.print(ecValue);
-    //Serial2.println();
-    sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
-
-    if (DEBUG_MEASUREMENTS)
-    {
-      Monitor::instance()->writeDebugMessage(F("writeLog"));
-    }
-    filesystem->writeLog(values, fieldCount);
-    if (DEBUG_MEASUREMENTS)
-    {
-      Monitor::instance()->writeDebugMessage(F("writeLog done"));
-    }
-
-    char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
-    if (DEBUG_MEASUREMENTS)
-    {
-      Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-    }
-
-    printToBLE(valuesBuffer);
-
-    if (bursting)
-    {
-      burstCount = burstCount + 1;
+      monitorValues();
     }
   }
+
   if (debugValuesMode)
-  { // print content being logged each second
-    blink(1, 500);
-    char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-    sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
-    Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-    return;
+  {
+    monitorValues();
   }
 }

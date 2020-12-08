@@ -1,5 +1,5 @@
 #include "atlas_oem.h"
-#include "components/monitor.h"
+#include "system/monitor.h"
 
 EC_OEM *oem_ec;
 
