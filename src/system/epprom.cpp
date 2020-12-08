@@ -1,6 +1,6 @@
 #include "eeprom.h"
 #include "monitor.h"
-#include "STM32-UID.h"
+#include "utilities/STM32-UID.h"
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
 {

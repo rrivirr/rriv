@@ -71,6 +71,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
     myStream->flush();
     delay(100);
 
+
     if(strncmp(request, ">WT_OPEN", 19) == 0) {
       // TODO:  Need to pass firmware version to control somehow
       /*
@@ -92,7 +93,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
 
       myStream->write(">WT_IDENTIFY:");
       // TODO: create and pass a device info object
-      myStream->print("NOTIMPLEMENTED");
+      myStream->print(F("NOTIMPLEMENTED"));
       for(int i=0; i<8; i++){
 //        myStream->print((unsigned int) uuid[2*i], HEX);
       }
@@ -106,6 +107,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       delay(100);
     }
     else if(strncmp(request, ">WT_DOWNLOAD",12) == 0) {
+
       // Flush the input, would be better to use a delimiter
       // May not be necessary now
       unsigned long now = millis ();

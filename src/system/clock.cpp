@@ -2,6 +2,8 @@
 #include "configuration.h"
 #include "monitor.h"
 
+DS3231 Clock;
+
 void setNextAlarm(short interval){
 
   Clock.turnOffAlarm(1); // Clear the Control Register

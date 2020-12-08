@@ -3,7 +3,7 @@
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
-
+#include <libmaple/systick.h>
 
 void enterStopMode(){
     // Clear PDDS and LPDS bits

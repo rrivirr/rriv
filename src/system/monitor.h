@@ -13,6 +13,8 @@ public:
 
 public:
     static Monitor* instance();
+    static void test();
+
 
     Monitor();
 

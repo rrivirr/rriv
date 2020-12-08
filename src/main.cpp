@@ -6,13 +6,13 @@
 #include "configuration.h"
 #include "utilities/utilities.h"
 
+#include "system/monitor.h"
 #include "system/control.h"
 #include "system/filesystem.h"
 #include "system/hardware.h"
 #include "system/interrupts.h"
 #include "system/eeprom.h"
 #include "system/low_power.h"
-#include "system/monitor.h"
 #include "system/clock.h"
 #include "system/ble.h"
 #include "system/switched_power.h"
@@ -41,7 +41,6 @@ unsigned char uuid[UUID_LENGTH];
 char lastDownloadDate[11] = "0000000000";
 char **values;
 unsigned long lastMillis = 0;
-bool awakenedByUser;
 uint32_t awakeTime = 0;
 uint32_t lastTime = 0;
 short burstCount = 0;
@@ -73,6 +72,8 @@ void powerDownSwitchableComponents()
 {
   hibernateEC_OEM();
   i2c_disable(I2C2);
+  Monitor::test();
+
   Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
 }
 

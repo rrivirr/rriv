@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
-bool awakenedByUser = false; // usused now, refactor into class property
-
+bool awakenedByUser = false; 
 void clearClockInterrupt()
 {
   EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line

@@ -27,4 +27,6 @@ void storeAllInterrupts(int& iser1, int& iser2, int& iser3);
 
 void reenableAllInterrupts(int iser1, int iser2, int iser3);
 
+extern bool awakenedByUser;
+
 #endif

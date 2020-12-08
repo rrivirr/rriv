@@ -3,9 +3,12 @@
 Monitor * monitor = new Monitor();
 
 // get default logger
-static Monitor* instance(){
+Monitor* Monitor::instance(){
   return monitor;
 }
+
+void Monitor::test(){}
+
 
 Monitor::Monitor(){}
 

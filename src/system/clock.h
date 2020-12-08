@@ -4,7 +4,7 @@
 #include "DS3231.h"
 
 // The DS3231 RTC chip
-DS3231 Clock;
+extern DS3231 Clock;
 
 #define ALRM1_MATCH_EVERY_SEC  0b1111  // once a second
 #define ALRM1_MATCH_SEC        0b1110  // when seconds match
