@@ -1,23 +1,25 @@
-#include "logger.h"
+#include "monitor.h"
 
-Logger * logger = new Logger();
+Monitor * monitor = new Monitor();
 
 // get default logger
-static Logger* instance(){
-  return logger;
+static Monitor* instance(){
+  return monitor;
 }
 
-void Logger::writeSerialMessage(const char * message){
+Monitor::Monitor(){}
+
+void Monitor::writeSerialMessage(const char * message){
   Serial2.println(message);
   Serial2.flush();
 }
 
-void Logger::writeSerialMessage(const __FlashStringHelper * message){
+void Monitor::writeSerialMessage(const __FlashStringHelper * message){
   Serial2.println(message);
   Serial2.flush();
 }
 
-void Logger::writeDebugMessage(const char * message){
+void Monitor::writeDebugMessage(const char * message){
   if(this->logToSerial){
     this->writeSerialMessage(message);
   }
@@ -27,7 +29,7 @@ void Logger::writeDebugMessage(const char * message){
   }
 }
 
-void Logger::writeDebugMessage(const __FlashStringHelper * message){
+void Monitor::writeDebugMessage(const __FlashStringHelper * message){
   if(this->logToSerial){
     this->writeSerialMessage(message);
   }
@@ -38,7 +40,7 @@ void Logger::writeDebugMessage(const __FlashStringHelper * message){
 }
 
 // A small helper
-void Logger::error(const __FlashStringHelper*err) {
+void Monitor::error(const __FlashStringHelper*err) {
   writeDebugMessage(F("Error:"));
   writeDebugMessage(err);
   while (1);

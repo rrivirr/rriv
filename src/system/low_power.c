@@ -1,7 +1,9 @@
+#include "low_power.h"
 
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
+
 
 void enterStopMode(){
     // Clear PDDS and LPDS bits

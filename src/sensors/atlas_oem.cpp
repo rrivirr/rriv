@@ -1,14 +1,13 @@
-#include "atlas-oem.h"
-#include "Utilities.h"
-#include "system/logger.h"
+#include "atlas_oem.h"
+#include "components/monitor.h"
 
 EC_OEM *oem_ec;
 
 void setupEC_OEM(TwoWire *wire)
 {
 
-  Logger::instance()->writeDebugMessage(F("EC I2C setup"));
-  Logger::instance()->writeDebugMessage(F("Setting up board"));
+  Monitor::instance()->writeDebugMessage(F("EC I2C setup"));
+  Monitor::instance()->writeDebugMessage(F("Setting up board"));
 
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
   bool awoke = oem_ec->wakeUp();
@@ -16,23 +15,23 @@ void setupEC_OEM(TwoWire *wire)
   char message[300];
   sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
           oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
-  Logger::instance()->writeDebugMessage(message);
+  Monitor::instance()->writeDebugMessage(message);
 
   oem_ec->singleReading();
   struct param_OEM_EC parameter;
   parameter = oem_ec->getAllParam();
 
-  Logger::instance()->writeDebugMessage(F("test:"));
+  Monitor::instance()->writeDebugMessage(F("test:"));
   sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
           parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
-  Logger::instance()->writeDebugMessage(message);
+  Monitor::instance()->writeDebugMessage(message);
 
   oem_ec->setLedOn(true);
   //oem_ec->setLedOn(false);
   //oem_ec->setLedOn(true);
   oem_ec->setProbeType(1.0);
 
-  Logger::instance()->writeDebugMessage(F("Done with EZO I2C setup"));
+  Monitor::instance()->writeDebugMessage(F("Done with EZO I2C setup"));
 }
 
 void hibernateEC_OEM()

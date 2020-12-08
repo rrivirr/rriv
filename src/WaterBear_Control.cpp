@@ -1,8 +1,8 @@
 #include "WaterBear_Control.h"
+#include "components/clock.h"
 
 #define MAX_REQUEST_LENGTH 50
 
-DS3231 ClockWBC;
 int WaterBear_Control::state = 0;
 void * lastCommandPayload;
 bool lastCommandPayloadAllocated = false;
@@ -51,45 +51,6 @@ void * WaterBear_Control::getLastPayload() {
 }
 
 
-time_t WaterBear_Control::timestamp(){
-  struct tm ts;
-  bool century = false;
-	bool h24Flag;
-	bool pmFlag;
-
-  ts.tm_year = ClockWBC.getYear();
-  ts.tm_mon = ClockWBC.getMonth(century);
-  ts.tm_mday = ClockWBC.getDate();
-  ts.tm_wday = ClockWBC.getDoW();
-  ts.tm_hour = ClockWBC.getHour(h24Flag, pmFlag);
-  ts.tm_min = ClockWBC.getMinute();
-  ts.tm_sec = ClockWBC.getSecond();
-  ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
-  return (mktime(&ts)); // turn tm struct into time_t value
-}
-
-void WaterBear_Control::setTime(time_t toSet){
-  struct tm ts;
-
-  ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
-  ClockWBC.setClockMode(false); //true for 12h false for 24h
-  ClockWBC.setYear(ts.tm_year);
-  ClockWBC.setMonth(ts.tm_mon);
-  ClockWBC.setDate(ts.tm_mday);
-  ClockWBC.setDoW(ts.tm_wday);
-  ClockWBC.setHour(ts.tm_hour);
-  ClockWBC.setMinute(ts.tm_min);
-  ClockWBC.setSecond(ts.tm_sec);
-}
-
-void WaterBear_Control::t_t2ts(time_t epochTS, char *humanTime){
-  struct tm ts;
-
-  ts = *gmtime(&epochTS); // convert unix to tm structure
-  // Format time, "yyyy-mm-dd hh:mm:ss zzz" = "%Y/%m/%d %H:%M:%S %Z" (yyyy/mm/dd hh:mm:ss zzz) = 23
-  strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
-}
-
 int WaterBear_Control::processControlCommands(Stream * myStream) {
 
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
@@ -121,9 +82,9 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       */
 
       char dateString[26];
-      time_t timeNow = WaterBear_Control::timestamp();
+      time_t timeNow = timestamp();
 
-      WaterBear_Control::t_t2ts(timeNow, dateString); // change to 'yyyy-mm-dd hh:mm:ss'?
+      t_t2ts(timeNow, dateString); // change to 'yyyy-mm-dd hh:mm:ss'?
       myStream->print(">Datalogger Time: ");
       myStream->print(dateString);
       myStream->print("<");
@@ -139,7 +100,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream) {
       myStream->flush();
 
       myStream->write(">WT_TIMESTAMP:");
-      myStream->println(WaterBear_Control::timestamp());
+      myStream->println(timestamp());
       myStream->write("<");
       myStream->flush();
       delay(100);

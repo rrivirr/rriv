@@ -1,8 +1,9 @@
-#ifndef WATERBEAR_FILESYSTEM
-#include "WaterBear_FileSystem.h" 
-#endif
+#ifndef WATERBEAR_LOGGER
+#define WATERBEAR_LOGGER
 
-class Logger
+#include "WaterBear_FileSystem.h"
+
+class Monitor
 {
 
 public:
@@ -11,9 +12,9 @@ public:
     WaterBear_FileSystem * filesystem = NULL;
 
 public:
-    static Logger* instance();
+    static Monitor* instance();
 
-    Logger();
+    Monitor();
 
     void writeSerialMessage(const char * message);
     void writeSerialMessage(const __FlashStringHelper * message);
@@ -22,3 +23,5 @@ public:
     void error(const __FlashStringHelper*err);
 
 };
+
+#endif

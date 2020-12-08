@@ -1,6 +1,4 @@
-#ifndef WATERBEAR_FILESYSTEM
 #include "WaterBear_FileSystem.h"
-#endif
 
 char dataDirectory[6] = "/Data";
 

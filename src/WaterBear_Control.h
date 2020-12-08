@@ -1,3 +1,6 @@
+#ifndef WATERBEAR_CONTROL
+#define WATERBEAR_CONTROL
+
 #include "Arduino.h"
 #include "Adafruit_BluefruitLE_UART.h"
 #include "Adafruit_BluefruitLE_SPI.h"
@@ -14,8 +17,6 @@
 
 #define WT_DEBUG_VAlUES 1006 // will print out data that's logged
 #define WT_CLEAR_MODES 1007
-
-#define WATERBEAR_CONTROL
 
 class WaterBear_Control
 {
@@ -41,11 +42,13 @@ class WaterBear_Control
     static bool ready(Adafruit_BluefruitLE_UART &ble);
     static bool ready(Adafruit_BluefruitLE_SPI &ble);
 
-    static time_t timestamp();
-    static void setTime(time_t toSet);
-    static void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
+    // static time_t timestamp();
+    // static void setTime(time_t toSet);
+    // static void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
 
 #if SOFTWARE_SERIAL_AVAILABLE
     static void processControlCommands(SoftwareSerial &port);
 #endif
 };
+
+#endif
