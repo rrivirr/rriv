@@ -7,9 +7,6 @@ Monitor* Monitor::instance(){
   return monitor;
 }
 
-void Monitor::test(){}
-
-
 Monitor::Monitor(){}
 
 void Monitor::writeSerialMessage(const char * message){

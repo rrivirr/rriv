@@ -51,8 +51,6 @@ void powerDownSwitchableComponents()
 {
   hibernateEC_OEM();
   i2c_disable(I2C2);
-  Monitor::test();
-
   Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
 }
 
