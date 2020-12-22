@@ -1,4 +1,7 @@
-#include "Arduino.h"
+#ifndef WATERBEAR_FILESYSTEM
+#define WATERBEAR_FILESYSTEM
+
+// #include "Arduino.h"
 #include "SdFat.h"
 #include "DS3231.h"
 
@@ -23,3 +26,5 @@ public:
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
 
 };
+
+#endif
