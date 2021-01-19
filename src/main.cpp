@@ -5,7 +5,6 @@
 
 void setup(void)
 {
-
   startSerial2();
 
   setupSwitchedPower();
@@ -23,6 +22,7 @@ void setup(void)
   clearUserInterrupt();
 
   //  Prepare I2C
+  i2c_bus_reset(I2C1);
   Wire.begin();
   delay(1000);
   scanIC2(&Wire);
@@ -42,17 +42,23 @@ void setup(void)
 
   powerUpSwitchableComponents();
 
-  setNotBursting();
+  setNotBursting(); // prevents bursting during first loop
+
+  //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
 
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 }
 
-
 void loop(void)
 {
   bool bursting = checkBursting();
+  if (bursting)
+  {
+    waterBearWatchdog(burstCount, burstLength);
+  }
+
   bool debugLoop = checkDebugLoop();
   bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
   bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);
@@ -101,8 +107,12 @@ void loop(void)
     }
   }
 
-  if (debugValuesMode)
+  if (debugValuesMode) // blink and print out values 0 - 10 once per second
   {
+    if (burstCount == burstLength) // will cause loop() to continue until mode turned off
+    {
+      prepareForTriggeredMeasurement();
+    }
     monitorValues();
   }
 }
