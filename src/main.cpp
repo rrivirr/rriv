@@ -54,11 +54,6 @@ void setup(void)
 void loop(void)
 {
   bool bursting = checkBursting();
-  if (bursting)
-  {
-    waterBearWatchdog(burstCount, burstLength);
-  }
-
   bool debugLoop = checkDebugLoop();
   bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
   bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);

@@ -3,6 +3,8 @@
 
 #include <libmaple/libmaple.h>
 
+// NOTE: from the register, this is not present in stm32f103rb
+
 /* Debug MCU register map */
 typedef struct dbgmcu_reg_map {
     __IO uint32 CR;      /*< Control register */
@@ -10,6 +12,11 @@ typedef struct dbgmcu_reg_map {
 
 /* Debug MCU register map base pointer */
 #define DBGMCU_BASE                        ((struct dbgmcu_reg_map*)0xE0042004)
+
+/*
+#define DBGMCU_CR_IWDG_STOP_BIT              8
+#define DBGMCU_CR_IWDG_STOP                (1U << DBGMCU_CR_IWDG_STOP_BIT) // The watchdog counter clock is stopped when the core is halted
+*/
 
 /*
  * Register bit definitions
@@ -46,10 +53,11 @@ typedef struct dbgmcu_reg_map {
 #define DBGMCU_CR_STOP_BIT                   1
 #define DBGMCU_CR_SLEEP_BIT                  0
 
-#define DBGMCU_CR_IWDG_STOP                (1U << DBGMCU_CR_IWDG_STOP_BIT) // The watchdog counter clock is stopped when the core is halted
+#define DBGMCU_CR_WWDG_STOP                  (1U << DBGMCU_CR_IWDG_STOP_BIT)
+#define DBGMCU_CR_IWDG_STOP                  (1U << DBGMCU_CR_IWDG_STOP_BIT) // The watchdog counter clock is stopped when the core is halted
 
-#define DBGMCU_CR_STANDBY                 (0U << DBGMCU_CR_STANDBY_BIT)
-#define DBGMCU_CR_STOP                   (0U << DBGMCU_CR_STOP_BIT)
-#define DBGMCU_CR_SLEEP                  (0U << DBGMCU_CR_SLEEP_BIT)
+#define DBGMCU_CR_STANDBY                    (1U << DBGMCU_CR_STANDBY_BIT)
+#define DBGMCU_CR_STOP                       (1U << DBGMCU_CR_STOP_BIT)
+#define DBGMCU_CR_SLEEP                      (1U << DBGMCU_CR_SLEEP_BIT)
 
 #endif

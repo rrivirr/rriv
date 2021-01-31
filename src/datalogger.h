@@ -15,7 +15,6 @@
 #include "system/low_power.h"
 #include "system/monitor.h"
 #include "system/switched_power.h"
-#include "system/watchdog.h"
 
 #include "sensors/atlas_oem.h"
 

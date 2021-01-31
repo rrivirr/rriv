@@ -7,6 +7,7 @@
 // public:
   void enterStopMode();
   void enterSleepMode();
+  void alwaysPowerOff();
 // }
 
 #endif
