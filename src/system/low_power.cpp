@@ -40,6 +40,10 @@ void enterStopMode()
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
 
+  spi_peripheral_disable(SPI1);  // this one is used by the SD card
+
+  // adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
+
   //adc_disable(ADC1) // need to turn back on and recalibrate? when waking
 
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
@@ -73,7 +77,10 @@ void alwaysPowerOff()
   usb_power_off();
 
   usart_disable(Serial1.c_dev());
+
   usart_disable(Serial3.c_dev());
+
+  spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
   timer_disable(&timer1);
   timer_disable(&timer2);
@@ -85,15 +92,16 @@ void alwaysPowerOff()
   ADC2->regs->CR2 &= ~ADC_CR2_TSVREFE;
 
   // adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
-  // adc_disable(ADC2); // should always be off
-  adc_disable_all();
+  adc_disable(ADC2); // should always be off
+  // adc_disable_all();
 
-  // digital to analog converter, could alwayd be disabled
+
+  // digital to analog converter, could always be disabled
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
 
-  rcc_clk_disable(RCC_ADC1);
-  rcc_clk_disable(RCC_ADC2);
+  rcc_clk_disable( RCC_ADC1);
+  rcc_clk_disable( RCC_ADC2);
   rcc_clk_disable( RCC_ADC3);
   rcc_clk_disable( RCC_AFIO);
   rcc_clk_disable( RCC_BKP);
@@ -141,8 +149,7 @@ void alwaysPowerOff()
 
 // any pins changed need to be set back to the right stuff when we wake
 // need to find out what pinModes are default or how to reset them
-/*
-  pinMode(PA1, INPUT);  // INPUT_ANALOG was suggested
+  pinMode(PA1, INPUT);  // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
   pinMode(PA2, INPUT);
   pinMode(PA3, INPUT);
   pinMode(PA4, INPUT);
@@ -187,6 +194,58 @@ void alwaysPowerOff()
   pinMode(PC13, INPUT);
   pinMode(PC14, INPUT);
   pinMode(PC15, INPUT);
-*/
+
+}
+
+void restorePinDefaults(){
+
+  // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
+  pinMode(PA1, OUTPUT); // USART2_RTS/ADC12_IN1/TIM2_CH2
+  pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
+  pinMode(PA3, OUTPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
+  pinMode(PA4, OUTPUT); // SPI1_NSS/USART2_CK/ADC12_IN4
+  pinMode(PA5, OUTPUT); // SPI1_SCK/ADC12_IN5
+  pinMode(PA6, OUTPUT); // SPI1_MISO/ADC12_IN6/TIM3_CH1
+  pinMode(PA7, OUTPUT); // SPI1_MOSI/ADC12_IN7/TIM3_CH2
+  pinMode(PA8, OUTPUT); // USART1_CK/TIM1_CH1/MCO
+  pinMode(PA9, OUTPUT); // USART1_TX/TIM1_CH2
+  pinMode(PA10, OUTPUT); // USART1_RX/TIM1_CH3
+  pinMode(PA11, OUTPUT); // USART1_CTS/CANRX/USBDM/TIM1_CH4
+  pinMode(PA12, OUTPUT); // USART1_RTS/CANTX/USBDP/TIM1_ETR
+  pinMode(PA13, OUTPUT); // JTMS/SWDIO
+  pinMode(PA14, OUTPUT); // JTCK/SWCLK
+  pinMode(PA15, OUTPUT); // JTDI
+  // PB0 ADC12_IN8/TIM3_CH3
+  pinMode(PB1, OUTPUT); // ADC12_IN9/TIM3_CH4
+  pinMode(PB2, OUTPUT); // PB2/BOOT1
+  pinMode(PB3, OUTPUT); // JTDO
+  pinMode(PB4, OUTPUT); // JNTRST
+  pinMode(PB5, OUTPUT); // I2C1_SMBAI
+  pinMode(PB6, OUTPUT); // I2C1_SCL/TIM4_CH1
+  pinMode(PB7, OUTPUT); // I2C1_SDA/TIM4_CH2
+  pinMode(PB8, OUTPUT); // TIM4_CH3
+  pinMode(PB9, OUTPUT); // TIM4_CH4
+  pinMode(PB10, OUTPUT); // I2C2_SCL/USART3_TX
+  pinMode(PB11, OUTPUT); // I2C2_SDA/USART3_RX
+  pinMode(PB12, OUTPUT); // SPI2_NSS/I2C2_SMBAI/USART3_CK/TIM1_BKIN
+  pinMode(PB13, OUTPUT); // SPI2_SCK/USART3_CTS/TIM1_CH1N
+  pinMode(PB14, OUTPUT); // SPI2_MISO/USART3_RTS/TIM1_CH2N
+  pinMode(PB15, OUTPUT); // SPI2_MOSI/TIM1_CH3N
+  // PC0 ADC12_IN10
+  pinMode(PC1, OUTPUT); // ADC12_IN11
+  pinMode(PC2, OUTPUT); // ADC12_IN12
+  pinMode(PC3, OUTPUT); // ADC12_IN13
+  pinMode(PC4, OUTPUT); // ADC12_IN14
+  pinMode(PC5, OUTPUT); // ADC12_IN15
+  pinMode(PC6, OUTPUT);
+  pinMode(PC7, OUTPUT);
+  pinMode(PC8, OUTPUT);
+  pinMode(PC9, OUTPUT);
+  pinMode(PC10, OUTPUT);
+  pinMode(PC11, OUTPUT);
+  pinMode(PC12, OUTPUT);
+  pinMode(PC13, OUTPUT); // PC13-TAMPER-RTC
+  pinMode(PC14, OUTPUT); // PC14-OSC32_IN
+  pinMode(PC15, OUTPUT); // PC15-OSC32_OUT
 
 }
