@@ -8,6 +8,7 @@
   void enterStopMode();
   void enterSleepMode();
   void alwaysPowerOff();
+  void disableHardwarePins();
   void restorePinDefaults();
 // }
 

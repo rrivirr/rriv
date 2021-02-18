@@ -95,7 +95,6 @@ void alwaysPowerOff()
   adc_disable(ADC2); // should always be off
   // adc_disable_all();
 
-
   // digital to analog converter, could always be disabled
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
@@ -153,7 +152,7 @@ void alwaysPowerOff()
   pinMode(PA2, INPUT);
   pinMode(PA3, INPUT);
   pinMode(PA4, INPUT);
-  pinMode(PA5, INPUT);
+
   pinMode(PA6, INPUT);
   pinMode(PA7, INPUT);
   pinMode(PA8, INPUT);
@@ -164,7 +163,7 @@ void alwaysPowerOff()
   pinMode(PA13, INPUT);
   pinMode(PA14, INPUT);
   pinMode(PA15, INPUT);
-  pinMode(PB1, INPUT);
+
   pinMode(PB2, INPUT);
   pinMode(PB3, INPUT);
   pinMode(PB4, INPUT);
@@ -179,13 +178,11 @@ void alwaysPowerOff()
   pinMode(PB13, INPUT);
   pinMode(PB14, INPUT);
   pinMode(PB15, INPUT);
-  pinMode(PC1, INPUT);
-  pinMode(PC2, INPUT);
-  pinMode(PC3, INPUT);
+
   pinMode(PC4, INPUT);
   pinMode(PC5, INPUT);
   pinMode(PC6, INPUT);
-  pinMode(PC7, INPUT);
+
   pinMode(PC8, INPUT);
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
@@ -194,10 +191,21 @@ void alwaysPowerOff()
   pinMode(PC13, INPUT);
   pinMode(PC14, INPUT);
   pinMode(PC15, INPUT);
+}
 
+void disableHardwarePins(){
+  pinMode(PA5, INPUT);
+  pinMode(PB1, INPUT);
+  pinMode(PC0, INPUT); // wasn't originally listed
+  pinMode(PC1, INPUT);
+  pinMode(PC2, INPUT);
+  pinMode(PC3, INPUT);
+  pinMode(PC7, INPUT);
 }
 
 void restorePinDefaults(){
+
+  // setup hardware pins and test if it works, we may not need to do anything other than that
 
   // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
   pinMode(PA1, OUTPUT); // USART2_RTS/ADC12_IN1/TIM2_CH2

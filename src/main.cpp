@@ -42,6 +42,8 @@ void setup(void)
 
   powerUpSwitchableComponents();
 
+  alwaysPowerOff(); // what order should this be in?
+
   setNotBursting(); // prevents bursting during first loop
 
   //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
