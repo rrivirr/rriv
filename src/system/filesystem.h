@@ -24,7 +24,7 @@ public:
   void setDeploymentIdentifier(char * deploymentIdentifier);
   void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
-
+  //////void shutdownSDCard(); // sdcard off and on for low power
 };
 
 #endif

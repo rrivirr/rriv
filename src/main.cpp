@@ -5,6 +5,10 @@
 
 void setup(void)
 {
+  alwaysPowerOff(); // what order should this be in?
+  //disable unused components
+  //disable unused pins
+
   startSerial2();
 
   setupSwitchedPower();
@@ -42,8 +46,6 @@ void setup(void)
 
   powerUpSwitchableComponents();
 
-  alwaysPowerOff(); // what order should this be in?
-
   setNotBursting(); // prevents bursting during first loop
 
   //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
@@ -53,6 +55,7 @@ void setup(void)
   Serial2.flush();
 }
 
+/* main run loop order of operation: */
 void loop(void)
 {
   bool bursting = checkBursting();

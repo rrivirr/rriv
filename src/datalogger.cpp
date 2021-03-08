@@ -29,10 +29,11 @@ bool clearModes = false;
 
 void enableI2C2()
 {
+  i2c_disable(I2C2);
   i2c_master_enable(I2C2, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
 
-  //i2c_bus_reset(I2C2);
+  i2c_bus_reset(I2C2);
   Wire2.begin();
   delay(1000);
 
@@ -48,7 +49,7 @@ void powerUpSwitchableComponents()
   Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
 }
 
-void powerDownSwitchableComponents()
+void powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
   hibernateEC_OEM();
   i2c_disable(I2C2);
@@ -80,6 +81,9 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
+  pinMode(PA3, OUTPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
 }
 
 void blinkTest()
@@ -322,8 +326,20 @@ void stopAndAwaitTrigger()
 
   Serial2.end();
 
+////// shutdownSDCard();
+/*
+  filesystem->logfile.sync();
+  filesystem->logfile.close();
+  filesystem->sd.end();
+*/
+
   enterStopMode();
   //enterSleepMode()
+
+  ///////upon awakening
+  //i2c 1 & 2 + resets (note 2 is in switchable components currently)
+  //reopen sd card file (save file name? or use variable that has it already)
+  //
 
   Serial2.begin(SERIAL_BAUD);
 

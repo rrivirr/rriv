@@ -35,6 +35,9 @@ void enterStopMode()
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
+  ///* switch components off */
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+    digitalWrite(PC8, LOW);
   usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
@@ -42,25 +45,32 @@ void enterStopMode()
 
   spi_peripheral_disable(SPI1);  // this one is used by the SD card
 
-  // adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
+  // this might be redundant
+  ADC1->regs->CR2 &= ~ADC_CR2_TSVREFE;  // turning off the temperature sensor that's in the ADC
 
-  //adc_disable(ADC1) // need to turn back on and recalibrate? when waking
+  adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
+
+  ///// switch hardware pins to input //
 
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
   rcc_turn_off_clk(RCC_CLK_PLL);
   rcc_turn_off_clk(RCC_CLK_LSI);
 
-  __asm__ volatile( "dsb" );
+  __asm__ volatile( "dsb" ); // assembly: data synchronization barrier
   systick_disable();
-  __asm__ volatile( "wfi" );
+  __asm__ volatile( "wfi" ); // assembly: wait for interrupt
+  // wake up on interrupt
   systick_enable();
-  __asm__ volatile( "isb" );
+  __asm__ volatile( "isb" ); // assembly: instruction synchronization barrier
 
   rcc_turn_on_clk(RCC_CLK_PLL);
   while(!rcc_is_clk_ready(RCC_CLK_PLL));
 
   //Finally, switch to the now-ready PLL as the main clock source.
   rcc_switch_sysclk(RCC_CLKSRC_PLL);
+
+  /////turn stuff back on (components, hardware pins)
+
 }
 
 void enterSleepMode()
@@ -74,6 +84,7 @@ void enterSleepMode()
 
 void alwaysPowerOff()
 {
+  //disable unused components()
   usb_power_off();
 
   usart_disable(Serial1.c_dev());
@@ -88,7 +99,6 @@ void alwaysPowerOff()
   timer_disable(&timer4);
 
   // this might be redundant
-  ADC1->regs->CR2 &= ~ADC_CR2_TSVREFE;  // turning off the temperature sensor that's in the ADC
   ADC2->regs->CR2 &= ~ADC_CR2_TSVREFE;
 
   // adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
@@ -98,6 +108,10 @@ void alwaysPowerOff()
   // digital to analog converter, could always be disabled
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
+
+  //rtc - can disable?  this could be always be disabled
+  RCC_BASE->BDCR &= ~RCC_BDCR_RTCEN; // fix typo in rcc.h while version locked to 9.0.0
+  RCC_BASE->BDCR &= ~RCC_BDCR_LSEON;
 
   rcc_clk_disable( RCC_ADC1);
   rcc_clk_disable( RCC_ADC2);
@@ -148,9 +162,10 @@ void alwaysPowerOff()
 
 // any pins changed need to be set back to the right stuff when we wake
 // need to find out what pinModes are default or how to reset them
-  pinMode(PA1, INPUT);  // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
-  pinMode(PA2, INPUT);
-  pinMode(PA3, INPUT);
+//disable unused pins()
+  pinMode(PA0, INPUT); // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
+  pinMode(PA1, INPUT); // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
+
   pinMode(PA4, INPUT);
 
   pinMode(PA6, INPUT);
@@ -163,6 +178,8 @@ void alwaysPowerOff()
   pinMode(PA13, INPUT);
   pinMode(PA14, INPUT);
   pinMode(PA15, INPUT);
+
+  pinMode(PB0, INPUT); // PB0 ADC12_IN8/TIM3_CH3
 
   pinMode(PB2, INPUT);
   pinMode(PB3, INPUT);
@@ -183,7 +200,7 @@ void alwaysPowerOff()
   pinMode(PC5, INPUT);
   pinMode(PC6, INPUT);
 
-  pinMode(PC8, INPUT);
+
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
   pinMode(PC11, INPUT);
@@ -194,6 +211,7 @@ void alwaysPowerOff()
 }
 
 void disableHardwarePins(){
+  // check pins again on new board //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
   pinMode(PC0, INPUT); // wasn't originally listed
@@ -201,13 +219,16 @@ void disableHardwarePins(){
   pinMode(PC2, INPUT);
   pinMode(PC3, INPUT);
   pinMode(PC7, INPUT);
+  pinMode(PC8, INPUT);
+  pinMode(PA2, INPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
+  pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
 }
 
 void restorePinDefaults(){
 
   // setup hardware pins and test if it works, we may not need to do anything other than that
 
-  // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
+  pinMode(PA0, OUTPUT);// PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
   pinMode(PA1, OUTPUT); // USART2_RTS/ADC12_IN1/TIM2_CH2
   pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   pinMode(PA3, OUTPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
@@ -223,7 +244,8 @@ void restorePinDefaults(){
   pinMode(PA13, OUTPUT); // JTMS/SWDIO
   pinMode(PA14, OUTPUT); // JTCK/SWCLK
   pinMode(PA15, OUTPUT); // JTDI
-  // PB0 ADC12_IN8/TIM3_CH3
+
+  pinMode(PB0, OUTPUT);// PB0 ADC12_IN8/TIM3_CH3
   pinMode(PB1, OUTPUT); // ADC12_IN9/TIM3_CH4
   pinMode(PB2, OUTPUT); // PB2/BOOT1
   pinMode(PB3, OUTPUT); // JTDO
@@ -239,6 +261,7 @@ void restorePinDefaults(){
   pinMode(PB13, OUTPUT); // SPI2_SCK/USART3_CTS/TIM1_CH1N
   pinMode(PB14, OUTPUT); // SPI2_MISO/USART3_RTS/TIM1_CH2N
   pinMode(PB15, OUTPUT); // SPI2_MOSI/TIM1_CH3N
+
   // PC0 ADC12_IN10
   pinMode(PC1, OUTPUT); // ADC12_IN11
   pinMode(PC2, OUTPUT); // ADC12_IN12
