@@ -7,6 +7,11 @@
 // public:
   void enterStopMode();
   void enterSleepMode();
+  void alwaysPowerOff(); // split into components and pins
+  //void components off
+  //void hardware pins off
+  void disableHardwarePins();
+  void restorePinDefaults(); // not necessary?
 // }
 
 #endif
