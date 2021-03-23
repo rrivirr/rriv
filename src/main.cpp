@@ -5,9 +5,9 @@
 
 void setup(void)
 {
-  alwaysPowerOff(); // what order should this be in?
-  //disable unused components
-  //disable unused pins
+  // disable unused components and hardware pins //
+  componentsAlwaysOff();
+  hardwarePinsAlwaysOff();
 
   startSerial2();
 

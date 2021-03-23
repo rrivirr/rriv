@@ -35,22 +35,8 @@ void enterStopMode()
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
-  ///* switch components off */
-  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
-    digitalWrite(PC8, LOW);
-  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
-  i2c_disable(I2C1);  // other chips on waterbear board
-  i2c_disable(I2C2);  // Atlas EC chip, external chips
-                      // this is a place where using a timer as a watchdog may be important
-
-  spi_peripheral_disable(SPI1);  // this one is used by the SD card
-
-  // this might be redundant
-  ADC1->regs->CR2 &= ~ADC_CR2_TSVREFE;  // turning off the temperature sensor that's in the ADC
-
-  adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
-
-  ///// switch hardware pins to input //
+  componentsStopMode();
+  hardwarePinsStopMode(); // switch to input mode
 
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
   rcc_turn_off_clk(RCC_CLK_PLL);
@@ -70,6 +56,8 @@ void enterStopMode()
   rcc_switch_sysclk(RCC_CLKSRC_PLL);
 
   /////turn stuff back on (components, hardware pins)
+  componentsBurstMode();
+  setupHardwarePins(); // used from setup steps in datalogger
 
 }
 
@@ -82,9 +70,8 @@ void enterSleepMode()
   //__asm volatile( "isb" );
 }
 
-void alwaysPowerOff()
+void componentsAlwaysOff()
 {
-  //disable unused components()
   usb_power_off();
 
   usart_disable(Serial1.c_dev());
@@ -159,9 +146,13 @@ void alwaysPowerOff()
   rcc_clk_disable( RCC_UART4);
   rcc_clk_disable( RCC_UART5);
   rcc_clk_disable( RCC_USB);
+}
 
-// any pins changed need to be set back to the right stuff when we wake
+void hardwarePinsAlwaysOff()
+{
+// any pins changed need to be set back to the right modes when we wake
 // need to find out what pinModes are default or how to reset them
+
 //disable unused pins()
   pinMode(PA0, INPUT); // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
   pinMode(PA1, INPUT); // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
@@ -210,7 +201,26 @@ void alwaysPowerOff()
   pinMode(PC15, INPUT);
 }
 
-void disableHardwarePins(){
+void componentsStopMode()
+{
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, LOW);
+  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+  i2c_disable(I2C1);  // other chips on waterbear board
+  i2c_disable(I2C2);  // Atlas EC chip, external chips
+                      // this is a place where using a timer as a watchdog may be important
+
+  spi_peripheral_disable(SPI1);  // this one is used by the SD card
+
+  // this might be redundant
+  ADC1->regs->CR2 &= ~ADC_CR2_TSVREFE;  // turning off the temperature sensor that's in the ADC
+  //^ does this need to be re-enabled? - kc
+
+  adc_disable(ADC1); // turn off when asleep, potentially recalibrate when waking
+}
+
+void hardwarePinsStopMode()
+{
   // check pins again on new board //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
@@ -224,7 +234,19 @@ void disableHardwarePins(){
   pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
 }
 
-void restorePinDefaults(){
+void componentsBurstMode()
+{
+  //pinmode?
+  usart_enable(Serial2.c_dev());
+  i2c_master_enable(I2C1, I2C_BUS_RESET);
+  i2c_master_enable(I2C2, I2C_BUS_RESET);
+  
+  spi_peripheral_enable(SPI1);
+  adc_enable(ADC1);
+}
+
+void restorePinDefaults()
+{
 
   // setup hardware pins and test if it works, we may not need to do anything other than that
 
@@ -262,7 +284,7 @@ void restorePinDefaults(){
   pinMode(PB14, OUTPUT); // SPI2_MISO/USART3_RTS/TIM1_CH2N
   pinMode(PB15, OUTPUT); // SPI2_MOSI/TIM1_CH3N
 
-  // PC0 ADC12_IN10
+  pinMode(PC0, OUTPUT); // ADC12_IN10
   pinMode(PC1, OUTPUT); // ADC12_IN11
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13

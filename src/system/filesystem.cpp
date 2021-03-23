@@ -149,7 +149,6 @@ void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier
   strcpy(deploymentIdentifier, newDeploymentIdentifier);
 }
 
-
 void WaterBear_FileSystem::setNewDataFile(long unixtime)
 {
   /*Serial2.println("oki");
@@ -260,7 +259,6 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   //Serial2.println(ret);
 }
 
-
 void WaterBear_FileSystem::printCurrentDirListing()
 {
   this->sd.vwd()->rewind();
@@ -272,4 +270,12 @@ void WaterBear_FileSystem::printCurrentDirListing()
     Serial2.println(sdFilename);
     dirFile.close();
   }
+}
+
+void WaterBear_FileSystem::closeFileSystem()
+{
+  this->logfile.sync();
+  this->logfile.close();
+  this->sd.end();
+  sd.
 }

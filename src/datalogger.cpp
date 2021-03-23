@@ -326,12 +326,7 @@ void stopAndAwaitTrigger()
 
   Serial2.end();
 
-////// shutdownSDCard();
-/*
-  filesystem->logfile.sync();
-  filesystem->logfile.close();
-  filesystem->sd.end();
-*/
+  /////WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard?
 
   enterStopMode();
   //enterSleepMode()
