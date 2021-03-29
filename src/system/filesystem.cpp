@@ -274,8 +274,7 @@ void WaterBear_FileSystem::printCurrentDirListing()
 
 void WaterBear_FileSystem::closeFileSystem()
 {
-  this->logfile.sync();
-  this->logfile.close();
-  this->sd.end();
-  sd.
+  //this->logfile.sync();
+  this->logfile.close(); // syncs then closes
+  //this->sd.end // doesn't exist
 }
