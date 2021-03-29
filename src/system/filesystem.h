@@ -25,6 +25,7 @@ public:
   void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
+  // when reopening, either same file or new file
 };
 
 #endif
