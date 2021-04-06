@@ -3,7 +3,7 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 5;     // minutes between loggings when not in short sleep
+short interval = 1;     // minutes between loggings when not in short sleep
 short burstLength = 25; // how many readings in a burst
 
 short fieldCount = 11; // number of fields to be logged to SDcard file
@@ -26,12 +26,15 @@ short burstCount = 0;
 bool configurationMode = false;
 bool debugValuesMode = false;
 bool clearModes = false;
+bool tempCalMode = false;
+bool tempCalibrated = false;
 
 void enableI2C2()
 {
   i2c_master_enable(I2C2, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
 
+  //i2c_bus_reset(I2C2);
   Wire2.begin();
   delay(1000);
 
@@ -69,6 +72,7 @@ void startSerial2()
 
 void setupHardwarePins()
 {
+  Monitor::instance()->writeDebugMessage(F("setting up hardware pins"));
   //pinMode(BLE_COMMAND_MODE_PIN, OUTPUT); // Command Mode pin for BLE
   pinMode(INTERRUPT_LINE_7_PIN, INPUT_PULLUP); // This the interrupt line 7
   //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
@@ -196,7 +200,6 @@ void measureSensorValues()
   for (short i = 0; i < sensorCount; i++)
   {
     int value = analogRead(sensorPins[i]);
-    // malloc or ?
     sprintf(values[4 + i], "%4d", value);
   }
 }
@@ -222,6 +225,27 @@ bool checkDebugLoop()
     debugLoop = DEBUG_LOOP;
   }
   return debugLoop;
+}
+
+bool checkThermistorCalibration()
+{
+  unsigned char data = 0;
+  unsigned char * dataPtr = &data;
+  unsigned int calTime;
+  bool thermistorCalibrated = false;
+
+  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+  calTime = *(unsigned int*)dataPtr;
+  if (calTime > 1617681773 && calTime != 4294967295)
+  {
+    //Monitor::instance()->writeDebugMessage(F("thermistor calibrated"));
+    thermistorCalibrated = true;
+  }
+  else
+  {
+    //Monitor::instance()->writeDebugMessage(F("thermistor not calibrated"));
+  }
+  return thermistorCalibrated;
 }
 
 bool checkAwakeForUserInteraction(bool debugLoop)
@@ -332,9 +356,10 @@ void handleControlCommand()
   switch (command)
   {
   case WT_CLEAR_MODES:
-    Monitor::instance()->writeDebugMessage(F("Clearing Config & Debug Mode"));
+    Monitor::instance()->writeDebugMessage(F("Clearing Config, Debug, & TempCal modes"));
     configurationMode = false;
     debugValuesMode = false;
+    tempCalMode = false;
     break;
   case WT_CONTROL_CONFIG:
     Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
@@ -394,25 +419,114 @@ void handleControlCommand()
     writeDeploymentIdentifier(deployPtr);
     break;
   }
+  case WT_CAL_TEMP: // display raw temperature readings, and calibrated if available
+  {
+    Monitor::instance()->writeDebugMessage(F("Entering Temperature Calibration Mode"));
+    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+    tempCalMode = true;
+    break;
+  }
+  case WT_TEMP_CAL_LOW:
+  {
+    clearThermistorCalibration();
+    Monitor::instance()->writeDebugMessage(F("LOW_TEMP_CALIBRATION")); // input in xxx.xxC
+    unsigned short *lowTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
+    unsigned short lowTemp = *lowTempPtr;
+    char logMessage[30];
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_CAL: "), lowTemp);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    writeEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char*)&lowTemp, TEMPERATURE_C1_ADDRESS_LENGTH);
+
+    unsigned short voltage = analogRead(PB1);
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_VOLTAGE: "), voltage);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    writeEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V1_ADDRESS_LENGTH);
+    break;
+  }
+  case WT_TEMP_CAL_HIGH:
+  {
+    Monitor::instance()->writeDebugMessage(F("HIGH_TEMP_CALIBRATION")); // input in xxx.xxC
+    unsigned short *highTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
+    unsigned short highTemp = *highTempPtr;
+    char logMessage[30];
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_CAL: "), highTemp);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    writeEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char*)&highTemp, TEMPERATURE_C2_ADDRESS_LENGTH);
+
+    unsigned short voltage = analogRead(PB1);
+    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_VOLTAGE: "), voltage);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    writeEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V2_ADDRESS_LENGTH);
+    calibrateThermistor();
+    break;
+  }
   default:
     Monitor::instance()->writeDebugMessage(F("Invalid command code"));
     break;
   }
 }
 
-void monitorConfiguration()
+void clearThermistorCalibration()
 {
-  // blink(1,500); //slow down rate of responses
-  // printDS3231Time();
-
-  float ecValue = -1;
-  bool newDataAvailable = readECDataIfAvailable(&ecValue);
-  if (newDataAvailable)
+  Monitor::instance()->writeDebugMessage(F("clearing thermistor EEPROM registers"));
+  for (size_t i = 0; i < TEMPERATURE_BLOCK_LENGTH; i++)
   {
-    char message[100];
-    sprintf(message, "Got EC value: %f", ecValue);
-    Monitor::instance()->writeDebugMessage(message);
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, TEMPERATURE_C1_ADDRESS_START+i, 255);
   }
+}
+
+void calibrateThermistor() // calibrate using linear slope equation, log time
+{
+  //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
+  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+  float c1,v1,c2,v2,m,b;
+  unsigned short slope, read;
+  unsigned int intercept;
+  unsigned char * dataPtr = (unsigned char *)&read;
+  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
+  c1 = *(unsigned short *)dataPtr;
+  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
+  v1 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
+  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
+  c2 = *(unsigned short *)dataPtr;
+  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
+  v2 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
+  m = (v2-v1)/(c2-c1);
+  b = (((m*(0-c1)) + v1) + ((m*(0-c2)) + v2))/2; //average at two points
+
+  slope = m * TEMPERATURE_SCALER;
+  writeEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&slope, TEMPERATURE_M_ADDRESS_LENGTH);
+  intercept = b;
+  writeEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char*)&intercept, TEMPERATURE_B_ADDRESS_LENGTH);
+  unsigned int tempCalTime= timestamp();
+  writeEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&tempCalTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+  Monitor::instance()->writeDebugMessage(F("thermistor calibration complete"));
+}
+
+float calculateTemperature()
+{
+  //v = mx+b  =>  x = (v-b)/m
+  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+  float temperature = -1;
+  if (checkThermistorCalibration() == true)
+  {
+    unsigned char data = 0;
+    unsigned char * dataPtr = &data;
+    float m, b, rawData;
+    rawData = analogRead(PB1);
+
+    readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
+    m = *(unsigned short *)dataPtr / TEMPERATURE_SCALER;
+    readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
+    b = *(unsigned int *)dataPtr / TEMPERATURE_SCALER;
+    temperature = (rawData-b)/m;
+  }
+  else
+  {
+    Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
+  }
+  return temperature;
 }
 
 void takeNewMeasurement()
@@ -456,12 +570,71 @@ void trackBurst(bool bursting)
   }
 }
 
+// displays conductivity readings but can be configured to display time
+// should there be separate modes to display various specific things? or add flags to the config mode?
+void monitorConfiguration()
+{
+  blink(1,500); //slow down rate of responses to 1s
+  //flag time stamps
+  //printDS3231Time();
+
+  //flag conductivity readings
+  /*
+  float ecValue = -1;
+  bool newDataAvailable = readECDataIfAvailable(&ecValue);
+  if (newDataAvailable)
+  {
+    char message[100];
+    sprintf(message, "Got EC value: %f", ecValue);
+    Monitor::instance()->writeDebugMessage(message);
+  }*/
+
+  //flag thermistor readings
+  char valuesBuffer[35];
+  sprintf(valuesBuffer, "configMode raw voltage: %i", analogRead(PB1));
+  Monitor::instance()->writeDebugMessage(valuesBuffer);
+}
+
 void monitorValues()
 {
   // print content being logged each second
   blink(1, 500);
   char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10]);
+  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
+      values[0], values[1], values[2], values[3], values[4], values[5],
+      values[6],values[7], values[8], values[9], values[10]);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
   printToBLE(valuesBuffer);
+}
+
+void monitorTemperature() // print out calibration information & current readings
+{
+  blink(1,500);
+  unsigned short c1, v1, c2, v2, m;
+  unsigned int b;
+  unsigned int calTime;
+  unsigned char data = 0;
+  unsigned char * dataPtr = &data;
+
+  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
+  c1 = *(unsigned short *)dataPtr; //4
+  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
+  v1 = *(unsigned short *)dataPtr; //4
+  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
+  c2 = *(unsigned short *)dataPtr; //4
+  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
+  v2 = *(unsigned short *)dataPtr; //4
+  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
+  m = *(unsigned short *)dataPtr; //4
+  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
+  b = *(unsigned int *)dataPtr; // 5
+  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+  calTime = *(unsigned int *)dataPtr; // 10
+
+  float temperature = calculateTemperature();
+
+  char valuesBuffer[150];
+  sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
+  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 }
