@@ -593,6 +593,20 @@ void monitorConfiguration()
   char valuesBuffer[35];
   sprintf(valuesBuffer, "configMode raw voltage: %i", analogRead(PB1));
   Monitor::instance()->writeDebugMessage(valuesBuffer);
+
+  //test code simplified calls to write and read eeprom
+  /*
+  int test = 1337;
+  Serial2.println("writing 1337");
+  Serial2.flush();
+  writeExposedBytes(TEST_START, (unsigned char *)&test, TEST_LENGTH);
+
+  unsigned short read = 0;
+  readExposedBytes(TEST_START,(unsigned char *)&read, TEST_LENGTH);
+  Serial2.print("reading:");
+  Serial2.println(read);
+  Serial2.flush();
+  */
 }
 
 void monitorValues()

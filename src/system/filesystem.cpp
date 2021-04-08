@@ -180,7 +180,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime) {
       while(1);
     }
 
-    char header[100];
+    char header[150];
     int n = columnsFile.fgets(header, sizeof(header));
     if (header[n - 1] == '\n') {
           // remove '\n'
