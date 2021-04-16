@@ -6,7 +6,7 @@ char version[5] = "v2.0";
 short interval = 1;     // minutes between loggings when not in short sleep
 short burstLength = 25; // how many readings in a burst
 
-short fieldCount = 11; // number of fields to be logged to SDcard file
+short fieldCount = 22; // number of fields to be logged to SDcard file
 
 // Pin Mappings for Nucleo Board
 // BLE USART
@@ -28,6 +28,7 @@ bool debugValuesMode = false;
 bool clearModes = false;
 bool tempCalMode = false;
 bool tempCalibrated = false;
+short controlFlag = 0;
 
 void enableI2C2()
 {
@@ -133,11 +134,24 @@ void allocateMeasurementValuesMemory()
   sprintf(values[2], "%10d", 0);
   values[3] = (char *)malloc(sizeof(char) * 24); // human readable timestamp
   sprintf(values[3], "%23d", 0);
-  for (int i = 4; i < fieldCount; i++)
-  { // 6 sensors + conductivity
+  for (int i = 4; i <= 10; i++)
+  { // 6 sensors + conductivity + 6 for temp calibration data
     values[i] = (char *)malloc(sizeof(char) * 5);
     sprintf(values[i], "%4d", 0);
   }
+  values[11] = (char *)malloc(sizeof(char) * 11); // epoch timestamp for temp calibration
+  sprintf(values[11], "%10d", 0);
+  for (int i = 12; i <= 18; i++)
+  { // temp calibration data C1, V1, C2, V2, M, B, temp reading
+    values[i] = (char *)malloc(sizeof(char) * 7);
+    sprintf(values[i], "%6d", 0);
+  }
+  values[19] = (char *)malloc(sizeof(char) * 3); // burst count
+  sprintf(values[19], "%2d", 0);
+  values[20] = (char *)malloc(sizeof(char) * 11); // user serial value input
+  sprintf(values[20], "%10d", 0);
+  values[21] = (char *)malloc(sizeof(char) * 31); // user serial notes input
+  sprintf(values[21], "%30d", 0);
 }
 
 void prepareForTriggeredMeasurement()
@@ -202,6 +216,25 @@ void measureSensorValues()
     int value = analogRead(sensorPins[i]);
     sprintf(values[4 + i], "%4d", value);
   }
+  // Measure and log temperature data and calibration info -> move to seperate function?
+  unsigned int uiData = 0;
+  unsigned short usData = 0;
+
+  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+  sprintf(values[11], "%i", uiData);
+  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C1_ADDRESS_LENGTH);
+  sprintf(values[12], "%i", usData);
+  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V1_ADDRESS_LENGTH);
+  sprintf(values[13], "%i", usData);
+  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C2_ADDRESS_LENGTH);
+  sprintf(values[14], "%i", usData);
+  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V2_ADDRESS_LENGTH);
+  sprintf(values[15], "%i", usData);
+  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_M_ADDRESS_LENGTH);
+  sprintf(values[16], "%i", usData);
+  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_B_ADDRESS_LENGTH);
+  sprintf(values[17], "%i", uiData);
+  sprintf(values[18], "%.2f", calculateTemperature());
 }
 
 bool checkBursting()
@@ -229,21 +262,13 @@ bool checkDebugLoop()
 
 bool checkThermistorCalibration()
 {
-  unsigned char data = 0;
-  unsigned char * dataPtr = &data;
-  unsigned int calTime;
+  unsigned int calTime = 0;
   bool thermistorCalibrated = false;
 
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  calTime = *(unsigned int*)dataPtr;
+  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&calTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
   if (calTime > 1617681773 && calTime != 4294967295)
   {
-    //Monitor::instance()->writeDebugMessage(F("thermistor calibrated"));
     thermistorCalibrated = true;
-  }
-  else
-  {
-    //Monitor::instance()->writeDebugMessage(F("thermistor not calibrated"));
   }
   return thermistorCalibrated;
 }
@@ -253,7 +278,8 @@ bool checkAwakeForUserInteraction(bool debugLoop)
   // Are we awake for user interaction?
   bool awakeForUserInteraction = false;
   if (timestamp() < awakeTime + USER_WAKE_TIMEOUT)
-  { // 5 minute timeout
+  {
+    Monitor::instance()->writeDebugMessage(F("Awake for user interaction"));
     awakeForUserInteraction = true;
   }
   else
@@ -282,7 +308,7 @@ bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
   else if (awakeForUserInteraction)
   {
     unsigned long currentMillis = millis();
-    int interactiveMeasurementDelay = 1000;
+    unsigned int interactiveMeasurementDelay = 1000;
     if (currentMillis - lastMillis >= interactiveMeasurementDelay)
     {
       lastMillis = currentMillis;
@@ -356,23 +382,35 @@ void handleControlCommand()
   switch (command)
   {
   case WT_CLEAR_MODES:
+  {
     Monitor::instance()->writeDebugMessage(F("Clearing Config, Debug, & TempCal modes"));
     configurationMode = false;
     debugValuesMode = false;
     tempCalMode = false;
+    controlFlag = 0;
     break;
+  }
   case WT_CONTROL_CONFIG:
+  {
     Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
     Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
     Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
     configurationMode = true;
+    char *flagPtr = (char *)WaterBear_Control::getLastPayload();
+    char logMessage[30];
+    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("ConfigMode: "), flagPtr);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    processControlFlag(flagPtr);
     break;
+  }
   case WT_DEBUG_VAlUES:
+  {
     Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
     Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
     Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
     debugValuesMode = true;
     break;
+  }
   case WT_CONTROL_CAL_DRY:
     Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
     clearECCalibrationData();
@@ -461,6 +499,50 @@ void handleControlCommand()
     calibrateThermistor();
     break;
   }
+  case WT_USER_VALUE:
+  {
+    Monitor::instance()->writeDebugMessage(F("USER_VALUE"));
+    char *userValuePtr = (char *)WaterBear_Control::getLastPayload();
+    char logMessage[24];
+    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_VALUE: "), userValuePtr);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    sprintf(values[20], "%s", userValuePtr);
+    break;
+  }
+  case WT_USER_NOTE:
+  {
+    Monitor::instance()->writeDebugMessage(F("USER_NOTE"));
+    char *userNotePtr = (char *)WaterBear_Control::getLastPayload();
+    char logMessage[42];
+    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_NOTE: "), userNotePtr);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    sprintf(values[21], "%s", userNotePtr);
+    break;
+  }
+  case WT_USER_INPUT:
+  {
+    Monitor::instance()->writeDebugMessage(F("USER_INPUT"));
+    char *userInputPtr = (char *)WaterBear_Control::getLastPayload();
+    char logMessage[55];
+    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_INPUT: "), userInputPtr);
+    Monitor::instance()->writeDebugMessage(logMessage);
+    for (size_t i = 0; i < 42 ; i++)
+    {
+      if (userInputPtr[i] == '&')
+      {
+        sprintf(values[21], "%s", &userInputPtr[i+1]);
+        userInputPtr[i] = '\0';
+        sprintf(values[20], "%s", userInputPtr);
+        break;
+      }
+      else if (userInputPtr[i] == '\0')
+      {
+        Monitor::instance()->writeDebugMessage(F("incorrect format, delimiter is &"));
+        break;
+      }
+    }
+    break;
+  }
   default:
     Monitor::instance()->writeDebugMessage(F("Invalid command code"));
     break;
@@ -511,16 +593,19 @@ float calculateTemperature()
   float temperature = -1;
   if (checkThermistorCalibration() == true)
   {
-    unsigned char data = 0;
-    unsigned char * dataPtr = &data;
-    float m, b, rawData;
-    rawData = analogRead(PB1);
-
-    readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
-    m = *(unsigned short *)dataPtr / TEMPERATURE_SCALER;
-    readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
-    b = *(unsigned int *)dataPtr / TEMPERATURE_SCALER;
-    temperature = (rawData-b)/m;
+    unsigned short m = 0;
+    unsigned int b = 0;
+    float rawData = analogRead(PB1);
+    if (rawData == 0) // indicates thermistor disconnect
+    {
+      temperature = -2;
+    }
+    else
+    {
+      readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
+      readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
+      temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
+    }
   }
   else
   {
@@ -535,7 +620,6 @@ void takeNewMeasurement()
   {
     Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
   }
-
   measureSensorValues();
 
   // OEM EC
@@ -550,6 +634,8 @@ void takeNewMeasurement()
   //Serial2.print(ecValue);
   //Serial2.println();
   sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
+
+  sprintf(values[19], "%i", burstCount); // log burstCount
 
   if (DEBUG_MEASUREMENTS)
   {
@@ -570,30 +656,35 @@ void trackBurst(bool bursting)
   }
 }
 
-// displays conductivity readings but can be configured to display time
-// should there be separate modes to display various specific things? or add flags to the config mode?
+// displays relevant readings based on controlFlag
 void monitorConfiguration()
 {
-  blink(1,500); //slow down rate of responses to 1s
-  //flag time stamps
-  //printDS3231Time();
-
-  //flag conductivity readings
-  /*
-  float ecValue = -1;
-  bool newDataAvailable = readECDataIfAvailable(&ecValue);
-  if (newDataAvailable)
+  blink(1,500); //slow down rate of responses to 1/s
+  if (controlFlag == 0)
   {
-    char message[100];
-    sprintf(message, "Got EC value: %f", ecValue);
-    Monitor::instance()->writeDebugMessage(message);
-  }*/
-
-  //flag thermistor readings
-  char valuesBuffer[35];
-  sprintf(valuesBuffer, "configMode raw voltage: %i", analogRead(PB1));
-  Monitor::instance()->writeDebugMessage(valuesBuffer);
-
+    Monitor::instance()->writeDebugMessage(F("Error: no control Flag"));
+  }
+  if (controlFlag == 1) // time stamps
+  {
+    printDS3231Time();
+  }
+  if (controlFlag == 2) // conductivity readings
+  {
+    float ecValue = -1;
+    bool newDataAvailable = readECDataIfAvailable(&ecValue);
+    if (newDataAvailable)
+    {
+      char message[100];
+      sprintf(message, "Got EC value: %f", ecValue);
+      Monitor::instance()->writeDebugMessage(message);
+    }
+  }
+  if (controlFlag == 3) // thermistor readings
+  {
+    char valuesBuffer[35];
+    sprintf(valuesBuffer, "raw voltage: %i", analogRead(PB1));
+    Monitor::instance()->writeDebugMessage(valuesBuffer);
+  }
   //test code simplified calls to write and read eeprom
   /*
   int test = 1337;
@@ -607,6 +698,26 @@ void monitorConfiguration()
   Serial2.println(read);
   Serial2.flush();
   */
+}
+
+void processControlFlag(char *flag)
+{
+  if (strcmp(flag, "time") == 0)
+  {
+    controlFlag = 1;
+  }
+  else if(strcmp(flag, "conduct") == 0)
+  {
+    controlFlag = 2;
+  }
+  else if(strcmp(flag, "therm") == 0)
+  {
+    controlFlag = 3;
+  }
+  else
+  {
+    controlFlag = 0;
+  }
 }
 
 void monitorValues()

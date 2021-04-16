@@ -1,7 +1,7 @@
 #include "control.h"
 #include "clock.h"
 
-#define MAX_REQUEST_LENGTH 50
+#define MAX_REQUEST_LENGTH 70 // serial commands
 
 int WaterBear_Control::state = 0;
 void * lastCommandPayload;
@@ -157,10 +157,6 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
         lastCommandPayload = commandPayloadPointer;
       }
       return WT_SET_RTC;
-
-      // TODO: create and pass a data file writer class
-      // setNewDataFile();
-
     }
     else if(strncmp(request, ">WT_DEPLOY:", 11) == 0)
     {
@@ -175,11 +171,15 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       // TODO: create and pass a data file writer class
       // setNewDataFile();
     }
-    else if(strncmp(request, ">WT_CONFIG", 10) == 0)
-    {
+    else if(strncmp(request, ">WT_CONFIG:", 10) == 0)
+    { //flags:time, conduct, therm
       myStream->println(">CONFIG<");
+      char * commandPayloadPointer = (char *)malloc(8);
+      strncpy(commandPayloadPointer, &request[11],8);
+      commandPayloadPointer[8] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
       return WT_CONTROL_CONFIG;
-      // go into config mode
     }
     else if(strncmp(request, ">WT_DEBUG_VALUES", 16) == 0)
     {
@@ -241,12 +241,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       myStream->println(calibrationPointStringValue);
       int found = sscanf(&calibrationPointStringValue[0], "%f", &value);
       if(found == 1){
-        //Serial2.print("got Low float:");
-        //Serial2.println(value);
-        //Serial2.print(" =*100> ");
         value = value * 100;
-        //Serial2.println(value);
-        //Serial2.flush();
         unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
         *commandPayloadPointer = (unsigned short)value;
         lastCommandPayloadAllocated = true;
@@ -263,18 +258,43 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       myStream->println(calibrationPointStringValue);
       int found = sscanf(&calibrationPointStringValue[0], "%f", &value); // xxx.xx
       if(found == 1){
-        //Serial2.print("got High float:");
-        //Serial2.print(value);
-        //Serial2.print(" =*100> ");
         value = value * 100; // either here or at the case
-        //Serial2.println(value);
-        //Serial2.flush();
         unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
         *commandPayloadPointer = (unsigned short)value;
         lastCommandPayloadAllocated = true;
         lastCommandPayload = commandPayloadPointer;
       }
       return WT_TEMP_CAL_HIGH;
+    }
+    else if(strncmp(request, ">WT_USER_VALUE:", 15) == 0)
+    {
+      myStream->println("GOT WT_USER_VALUE<");
+      char * commandPayloadPointer = (char *) malloc(11);
+      strncpy(commandPayloadPointer, &request[15], 11);
+      commandPayloadPointer[11] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_VALUE;
+    }
+    else if(strncmp(request, ">WT_USER_NOTE:", 14) == 0)
+    {
+      myStream->println("GOT WT_USER_NOTE<");
+      char * commandPayloadPointer = (char *) malloc(31);
+      strncpy(commandPayloadPointer, &request[14], 31);
+      commandPayloadPointer[31] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_NOTE;
+    }
+    else if(strncmp(request, ">WT_USER_INPUT:", 15) == 0)
+    {
+      myStream->println("GOT WT_USER_INPUT<");
+      char * commandPayloadPointer = (char *) malloc(42);
+      strncpy(commandPayloadPointer, &request[15], 42);
+      commandPayloadPointer[42] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_INPUT;
     }
     else
     {
