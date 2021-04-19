@@ -7,6 +7,12 @@ void disableClockInterrupt();
 
 void enableClockInterrupt();
 
+void enableRTCAlarmInterrupt();
+
+void clearRTCAlarmInterrupt();
+
+void disableRTCAlarmInterrupt();
+
 void enableUserInterrupt();
 
 void clearUserInterrupt();
