@@ -3,8 +3,8 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 25; // how many readings in a burst
+short interval = 2;     // minutes between loggings when not in short sleep
+short burstLength = 10; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -76,7 +76,7 @@ void setupHardwarePins()
   Monitor::instance()->writeDebugMessage(F("setting up hardware pins"));
   //pinMode(BLE_COMMAND_MODE_PIN, OUTPUT); // Command Mode pin for BLE
   pinMode(INTERRUPT_LINE_7_PIN, INPUT_PULLUP); // This the interrupt line 7
-  //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
+
   pinMode(ANALOG_INPUT_1_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_2_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_3_PIN, INPUT_ANALOG);
@@ -329,9 +329,11 @@ void stopAndAwaitTrigger()
     Monitor::instance()->writeDebugMessage(F("Alarm 1"));
   }
 
-  setNextAlarm(interval); // If we are in this block, alawys set the next alarm
-  powerDownSwitchableComponents();
-  disableSwitchedPower();
+  //setNextAlarm(interval); // If we are in this block, alawys set the next alarm
+  // setNextAlarmInternalRTC(interval); // with interrupt
+  
+  // powerDownSwitchableComponents();
+  // disableSwitchedPower();
 
   printInterruptStatus(Serial2);
   Monitor::instance()->writeDebugMessage(F("Going to sleep"));
@@ -344,19 +346,35 @@ void stopAndAwaitTrigger()
   clearAllPendingInterrupts();
   clearUserInterrupt();
 
-  enableClockInterrupt();
-  enableUserInterrupt();
+  enableClockInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
+                            // Wake button and DS3231 can both access this interrupt on v0.2
+  // printInterruptStatus(Serial2);
+
+
+  // enableRTCAlarmInterrupt(); // The internal RTC Alarm interrupt, in the backup domain
+
+  // setNextAlarmInternalRTC(interval);
+  // enableRTCAlarmInterrupt();
+
+  // while(1){
+  //   Serial2.println("here in the loop");
+  //   delay(2000);
+  // }
+
+
+  //enableUserInterrupt(); // The button
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
   Serial2.end();
 
   enterStopMode();
-  //enterSleepMode()
+  //enterSleepMode();
 
   Serial2.begin(SERIAL_BAUD);
 
   reenableAllInterrupts(iser1, iser2, iser3);
   disableClockInterrupt();
+  disableRTCAlarmInterrupt();
   disableUserInterrupt();
 
   // We have woken from the interrupt

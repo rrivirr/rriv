@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "datalogger.h"
+#include <libmaple/pwr.h> // TODO: move this
 
 // Setup and Loop
 
@@ -15,6 +16,16 @@ void setup(void)
   digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
+
+
+  // Set up the internal RTC
+  RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
+  RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
+  PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
+  
+
+  // delay(20000);
+
 
   allocateMeasurementValuesMemory();
 

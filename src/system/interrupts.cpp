@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <RTClock.h>
 
 bool awakenedByUser = false; 
 void clearClockInterrupt()
@@ -17,6 +18,28 @@ void enableClockInterrupt()
   NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
 }
 
+void enableRTCAlarmInterrupt(){
+  Serial2.println("wait RTC finished");
+  Serial2.flush();
+  rtc_wait_finished();
+  
+  Serial2.println("setting up EXTI");
+  *bb_perip(&EXTI_BASE->IMR, EXTI_RTC_ALARM_BIT) = 1;
+	*bb_perip(&EXTI_BASE->RTSR, EXTI_RTC_ALARM_BIT) = 1;
+
+  Serial2.println("setting up NVIC");
+  nvic_irq_enable(NVIC_RTCALARM);  // ISER
+}
+
+void clearRTCAlarmInterrupt(){
+  *bb_perip(&EXTI_BASE->PR, EXTI_RTC_ALARM_BIT) = 1; // this clears the interrupt on exti line
+  *bb_perip(&NVIC_BASE->ICPR, EXTI_RTC_ALARM_BIT) = 1; 
+}
+
+void disableRTCAlarmInterrup(){
+  nvic_irq_disable(NVIC_RTCALARM); // ICER
+}
+
 void enableUserInterrupt()
 {
   NVIC_BASE->ISER[1] = 1 << (NVIC_EXTI_15_10 - 32);
@@ -24,7 +47,7 @@ void enableUserInterrupt()
 
 void clearUserInterrupt()
 {
-  EXTI_BASE->PR = 0x00000400; // this clear the interrupt on exti line
+  EXTI_BASE->PR = 0x00000400; // this clears the interrupt on exti line
   NVIC_BASE->ICPR[1] = 1 << (NVIC_EXTI_15_10 - 32);
 }
 
