@@ -15,10 +15,18 @@ void setup(void)
   enableSwitchedPower();
 
   setupHardwarePins();
+  digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
 
-  // Don't respond to interrupts during setup
+  allocateMeasurementValuesMemory();
+
+  setupWakeInterrupts();
+
+  powerUpSwitchableComponents();
+  delay(2000);
+
+   // Don't respond to interrupts during setup
   disableClockInterrupt();
   disableUserInterrupt();
 
@@ -42,11 +50,6 @@ void setup(void)
 
   readUniqueId(uuid);
 
-  allocateMeasurementValuesMemory();
-
-  setupWakeInterrupts();
-
-  powerUpSwitchableComponents();
 
   setNotBursting(); // prevents bursting during first loop
 
