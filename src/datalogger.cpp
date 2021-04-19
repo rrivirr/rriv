@@ -78,6 +78,8 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  pinMode(PA4, INPUT_PULLDOWN);
 }
 
 void blinkTest()
