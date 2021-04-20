@@ -8,46 +8,42 @@ DS3231 Clock;
 
 void handleInterrupt(){
   // just do nothing
-  Serial2.println("RTC interrupt!!");
+  // Serial2.println("RTC interrupt!!");
 }
 
 void setNextAlarmInternalRTC(short interval){
-    short minutes = Clock.getMinute();
-    Serial2.println("minutes");
-    Serial2.println(minutes);
-    short seconds = Clock.getSecond();
-    Serial2.println("seconds");
-    Serial2.println(seconds);
-    // short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
-    short nextMinutes = (minutes + interval - (minutes % interval));
-    Serial2.println("next minutes");
-    Serial2.println(nextMinutes);
-    short minutesDiff = nextMinutes - minutes;
-    short minutesDiffSeconds = minutesDiff * 60;
-    short secondsOffset = 60 - seconds;
-    short secondsUntilWake = minutesDiffSeconds - secondsOffset;
-    Serial2.println("seconds until wake");
-    Serial2.println(secondsUntilWake);
+  short minutes = Clock.getMinute();
+  Serial2.println("minutes");
+  Serial2.println(minutes);
+  short seconds = Clock.getSecond();
+  Serial2.println("seconds");
+  Serial2.println(seconds);
+  // // short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+  short nextMinutes = (minutes + interval - (minutes % interval));
+  // Serial2.println("next minutes");
+  // Serial2.println(nextMinutes);
+  short minutesDiff = nextMinutes - minutes;
+  short minutesDiffSeconds = minutesDiff * 60;
+  short secondsUntilWake = minutesDiffSeconds - seconds;
+  // Serial2.println("seconds until wake");
+  // Serial2.println(secondsUntilWake);
 
-    RTClock * clock = new RTClock(RTCSEL_LSE);
-    char message[100];
-    sprintf(message, "Got clock value (current): %i", clock->getTime());
-    Monitor::instance()->writeDebugMessage(message);
-    delay(2000);
-    sprintf(message, "Got clock value (current): %i", clock->getTime());
-    Monitor::instance()->writeDebugMessage(message);
+  RTClock * clock = new RTClock(RTCSEL_LSE);
+  char message[100];
+  // sprintf(message, "Got clock value (current): %i", clock->getTime());
+  // Monitor::instance()->writeDebugMessage(message);
     
-    clock->setTime(0);
-    sprintf(message, "Got clock value (reset): %i", clock->getTime());
-    Monitor::instance()->writeDebugMessage(message);
+  clock->setTime(0);
+  sprintf(message, "Got clock value (reset): %i", clock->getTime());
+  Monitor::instance()->writeDebugMessage(message);
 
-    // clock->setAlarmTime(secondsUntilWake);
-    clock->removeAlarm();
-    secondsUntilWake = 5;
-    clock->createAlarm(handleInterrupt, secondsUntilWake);
-    // clock->attachSecondsInterrupt(handleInterrupt);
-    Serial2.println("set alarm time to wake");
-    Serial2.println(secondsUntilWake);
+  clock->removeAlarm();
+  // secondsUntilWake = 10;
+  clock->setAlarmTime(secondsUntilWake);
+  clock->createAlarm(handleInterrupt, secondsUntilWake);
+
+  Serial2.println("set alarm time to wake");
+  Serial2.println(secondsUntilWake);
 }
 
 

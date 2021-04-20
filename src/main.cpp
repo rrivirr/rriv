@@ -36,10 +36,10 @@ void setup(void)
 
    // Don't respond to interrupts during setup
   disableClockInterrupt();
-  disableUserInterrupt();
+  // disableUserInterrupt();
 
   clearClockInterrupt();
-  clearUserInterrupt();
+  // clearUserInterrupt();
 
   //  Prepare I2C
   Wire.begin();
