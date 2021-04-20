@@ -342,19 +342,26 @@ void stopAndAwaitTrigger()
   int iser1, iser2, iser3;
   storeAllInterrupts(iser1, iser2, iser3);
 
-  clearAllInterrupts();
-  clearAllPendingInterrupts();
-  // clearUserInterrupt(); // no longer used
 
-  enableClockInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
+  clearClockInterrupt();
+
+  ///
+  /// Junk code
+  ///
+  // clearUserInterrupt(); // no longer used
+  // enableClockInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
                             // Wake button and DS3231 can both access this interrupt on v0.2
   // printInterruptStatus(Serial2);
+  // enableRTCAlarmInterrupt(); // The internal RTC Alarm interrupt, in the backup domain, wrong code though
 
+  setNextAlarmInternalRTC(interval); // close to the right code
+  Serial2.flush();
 
-  // enableRTCAlarmInterrupt(); // The internal RTC Alarm interrupt, in the backup domain
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
 
-  // setNextAlarmInternalRTC(interval);
-  // enableRTCAlarmInterrupt();
+  enableManualWakeInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
+  nvic_irq_enable(NVIC_RTCALARM);
 
   // while(1){
   //   Serial2.println("here in the loop");
@@ -362,7 +369,6 @@ void stopAndAwaitTrigger()
   // }
 
 
-  //enableUserInterrupt(); // The button
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
   Serial2.end();
@@ -373,8 +379,10 @@ void stopAndAwaitTrigger()
   Serial2.begin(SERIAL_BAUD);
 
   reenableAllInterrupts(iser1, iser2, iser3);
+  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
+
   disableClockInterrupt();
-  disableRTCAlarmInterrupt();
+  // disableRTCAlarmInterrupt(); // this code hangs
   disableUserInterrupt();
 
   // We have woken from the interrupt
