@@ -332,8 +332,7 @@ void stopAndAwaitTrigger()
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
 
   disableClockInterrupt();
-  // disableRTCAlarmInterrupt(); // this code hangs
-  disableUserInterrupt();
+  nvic_irq_disable(NVIC_RTCALARM);
 
   // We have woken from the interrupt
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
