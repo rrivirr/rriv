@@ -37,6 +37,8 @@ extern short burstCount;
 extern bool configurationMode;
 extern bool debugValuesMode;
 extern bool clearModes;
+extern bool tempCalMode;
+//extern bool thermistorCalibrated;
 
 void enableI2C2();
 
@@ -82,3 +84,14 @@ void trackBurst(bool bursting);
 
 void monitorValues();
 
+void calibrateThermistor();
+
+void monitorTemperature();
+
+bool checkThermistorCalibration();
+
+void clearThermistorCalibration();
+
+float calculateTemperature();
+
+void processControlFlag(char *flag);

@@ -23,6 +23,9 @@ void setup(void)
   clearUserInterrupt();
 
   //  Prepare I2C
+  i2c_bus_reset(I2C1); //try power down and up
+  //i2c_disable(I2C1);
+  //i2c_master_enable(I2C1, 0);
   Wire.begin();
   delay(1000);
   scanIC2(&Wire);
@@ -77,12 +80,6 @@ void loop(void)
     return;
   }
 
-  if (configurationMode)
-  {
-    monitorConfiguration();
-    return;
-  }
-
   if (WaterBear_Control::ready(getBLE()))
   {
     Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
@@ -101,8 +98,18 @@ void loop(void)
     }
   }
 
+  if (configurationMode)
+  {
+    monitorConfiguration();
+  }
+
   if (debugValuesMode)
   {
     monitorValues();
+  }
+
+  if (tempCalMode)
+  {
+    monitorTemperature();
   }
 }
