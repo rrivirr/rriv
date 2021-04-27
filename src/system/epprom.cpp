@@ -116,5 +116,3 @@ void readEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little
   }
   data[size] = '\0';
 }
-
-}

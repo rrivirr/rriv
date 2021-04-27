@@ -1,5 +1,5 @@
 #include "ble.h"
-#include "Configuration.h"
+#include "configuration.h"
 #include "monitor.h"
 
 //SPIClass SPI_2(2); //Create an SPI2 object.  This has been moved to a tweak on Adafruit_BluefruitLE_SPI
