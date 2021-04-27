@@ -14,6 +14,7 @@ void handleInterrupt(){
 void setNextAlarmInternalRTC(short interval){
   short minutes = Clock.getMinute();
   Serial2.println("minutes");
+  Serial2.println(Clock.getMinute(), DEC);
   Serial2.println(minutes);
   short seconds = Clock.getSecond();
   Serial2.println("seconds");
