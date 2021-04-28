@@ -9,33 +9,33 @@ bool lastCommandPayloadAllocated = false;
 
 bool WaterBear_Control::ready(HardwareSerial &port)
 {
-    Stream *myStream = &port;
-    return WaterBear_Control::ready(myStream);
+  Stream *myStream = &port;
+  return WaterBear_Control::ready(myStream);
 }
 
 bool WaterBear_Control::ready(Adafruit_BluefruitLE_UART &ble)
 {
-    Stream *myStream = &ble;
-    return WaterBear_Control::ready(myStream);
+  Stream *myStream = &ble;
+  return WaterBear_Control::ready(myStream);
 }
 
 bool WaterBear_Control::ready(Adafruit_BluefruitLE_SPI &ble)
 {
-    Stream *myStream = &ble;
-    return WaterBear_Control::ready(myStream);
+  Stream *myStream = &ble;
+  return WaterBear_Control::ready(myStream);
 }
 
 bool WaterBear_Control::ready(Stream * myStream)
 {
-    if( (myStream->peek() == '>' && WaterBear_Control::state == 0)
-        || WaterBear_Control::state == 1)
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+  if( (myStream->peek() == '>' && WaterBear_Control::state == 0)
+      || WaterBear_Control::state == 1)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 int WaterBear_Control::processControlCommands(HardwareSerial &port)
@@ -64,12 +64,10 @@ void * WaterBear_Control::getLastPayload()
 
 int WaterBear_Control::processControlCommands(Stream * myStream)
 {
-
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
 
   if(WaterBear_Control::state == 0)
   {
-
     if(lastCommandPayloadAllocated == true)
     {
       free(lastCommandPayload);
@@ -99,7 +97,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       char dateString[26];
       time_t timeNow = timestamp();
 
-      t_t2ts(timeNow, dateString); // change to 'yyyy-mm-dd hh:mm:ss'?
+      t_t2ts(timeNow, millis(), dateString); // change to 'yyyy-mm-dd hh:mm:ss.sss'?
       myStream->print(">Datalogger Time: ");
       myStream->print(dateString);
       myStream->print("<");
@@ -110,7 +108,6 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       myStream->print(F("NOTIMPLEMENTED"));
       for(int i=0; i<8; i++)
       {
-//        myStream->print((unsigned int) uuid[2*i], HEX);
       }
       myStream->write("<");
       myStream->flush();
@@ -157,6 +154,8 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
         lastCommandPayload = commandPayloadPointer;
       }
       return WT_SET_RTC;
+      // TODO: create and pass a data file writer class
+      // setNewDataFile();
     }
     else if(strncmp(request, ">WT_DEPLOY:", 11) == 0)
     {
@@ -180,6 +179,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       lastCommandPayloadAllocated = true;
       lastCommandPayload = commandPayloadPointer;
       return WT_CONTROL_CONFIG;
+      // go into config mode
     }
     else if(strncmp(request, ">WT_DEBUG_VALUES", 16) == 0)
     {
@@ -203,7 +203,8 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       strncpy(calibrationPointStringValue, &request[9], 9);
       int value;
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
-      if(found == 1){
+      if(found == 1)
+      {
         int * commandPayloadPointer = (int *) malloc(sizeof(int));
         *commandPayloadPointer = value;
         lastCommandPayloadAllocated = true;
@@ -219,7 +220,8 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       int value;
       myStream->println(calibrationPointStringValue); // what is this line for???
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
-      if(found == 1){
+      if(found == 1)
+      {
         int * commandPayloadPointer = (int *) malloc(sizeof(int));
         *commandPayloadPointer = value;
         lastCommandPayloadAllocated = true;
@@ -304,10 +306,10 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
   }
   else if(WaterBear_Control::state == 1)
   {
-
     char ack[7] = "";
     myStream->readBytesUntil('<', ack, 7);
-    if(strcmp(ack, ">WT_OK") != 0) {
+    if(strcmp(ack, ">WT_OK") != 0)
+    {
       char message[30] = "";
       sprintf(message, "ERROR #%s#", ack);
       myStream->print(message);
@@ -323,19 +325,20 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
 
     char lastFileNameSent[10];
     //bool success = WaterBear_FileSystem::dumpLoggedDataToStream(myStream, &lastFileNameSent); //also needs lastDownloadDate
-
-    if(true){
+    if(true)
+    {
       // Send last download date to phone for book keeeping
       char transferCompleteMessage[34] = ">WT_COMPLETE:0000000000<";
       strncpy(&transferCompleteMessage[22], lastFileNameSent, 10); // Send timestamp of last file sent
       myStream->write(transferCompleteMessage);
       // TODO: create and pass a data file writer class
       // setNewDataFile();
-    } else {
+    }
+    else
+    {
       // There was some kind of error
     }
     WaterBear_Control::state = 0;
   }
-
   return WT_CONTROL_NONE;
 }

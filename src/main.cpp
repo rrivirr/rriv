@@ -9,14 +9,23 @@ void setup(void)
 
   startSerial2();
 
+  // disable unused components and hardware pins //
+  componentsAlwaysOff();
+  //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
+
   setupSwitchedPower();
+
+  Serial2.println("hello");
   enableSwitchedPower();
 
   setupHardwarePins();
-  digitalWrite(PA4, LOW); // turn on the battery measurement
+    Serial2.println("hello");
+    Serial2.flush();
+
+  // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
-
+  
 
   // Set up the internal RTC
   RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
@@ -42,7 +51,7 @@ void setup(void)
   // clearUserInterrupt();
 
   //  Prepare I2C
-  i2c_bus_reset(I2C1); //try power down and up
+  i2c_bus_reset(I2C1);
   //i2c_disable(I2C1);
   //i2c_master_enable(I2C1, 0);
   Wire.begin();
@@ -59,14 +68,16 @@ void setup(void)
   readUniqueId(uuid);
 
 
-  setNotBursting();
+  setNotBursting(); // prevents bursting during first loop
+
+  //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
 
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 }
 
-
+/* main run loop order of operation: */
 void loop(void)
 {
   bool bursting = checkBursting();
@@ -119,6 +130,10 @@ void loop(void)
 
   if (debugValuesMode)
   {
+    if (burstCount == burstLength) // will cause loop() to continue until mode turned off
+    {
+      prepareForTriggeredMeasurement();
+    }
     monitorValues();
   }
 

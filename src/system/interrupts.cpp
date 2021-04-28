@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <RTClock.h>
 
-bool awakenedByUser = false; 
+bool awakenedByUser = false;
 void clearClockInterrupt()
 {
   EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
@@ -68,9 +68,7 @@ void handleClockInterrupt()
 
 void setupWakeInterrupts()
 {
-  //
   // Set up interrupts
-  //
   awakenedByUser = false;
 
   exti_attach_interrupt(EXTI7, EXTI_PC, handleClockInterrupt, EXTI_FALLING);
@@ -81,7 +79,6 @@ void setupWakeInterrupts()
 
 void userTriggeredInterrupt()
 {
-
   disableUserInterrupt();
   clearUserInterrupt();
   //Logger::instance()->writeDebugMessage("USER TRIGGERED INTERRUPT");
