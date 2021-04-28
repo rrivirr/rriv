@@ -386,13 +386,17 @@ void stopAndAwaitTrigger()
   powerDownSwitchableComponents();
   disableSwitchedPower();
 
+Serial2.println("hi1");
   Serial2.flush();
 
+
   //clearAllInterrupts();
-  //clearAllPendingInterrupts();
+  clearAllPendingInterrupts();
+Serial2.println("hi1");
 
   enableManualWakeInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
   nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+Serial2.println("hi1");
 
   // while(1){
   //   Serial2.println("here in the loop");
@@ -402,9 +406,11 @@ void stopAndAwaitTrigger()
 
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
-  Serial2.end();
+  //Serial2.end();
 
   /////WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard?
+Serial2.println("hi1");
+  Serial2.flush();
 
   enterStopMode();
   //enterSleepMode();

@@ -33,8 +33,15 @@ void enterStopMode()
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
+  Serial2.println("hi2");
+    Serial2.flush();
+
   componentsStopMode();
-  hardwarePinsStopMode(); // switch to input mode
+    Serial2.println("hi");
+
+  //hardwarePinsStopMode(); // switch to input mode
+  Serial2.println("hi");
+  Serial2.flush();
 
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
   rcc_turn_off_clk(RCC_CLK_PLL);
@@ -200,7 +207,7 @@ void componentsStopMode()
 {
   pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
   digitalWrite(PC8, LOW);
-  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+  //usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
