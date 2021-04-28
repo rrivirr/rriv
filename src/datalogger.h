@@ -40,6 +40,8 @@ extern bool clearModes;
 extern bool tempCalMode;
 //extern bool thermistorCalibrated;
 
+void enableI2C1();
+
 void enableI2C2();
 
 void powerUpSwitchableComponents();
