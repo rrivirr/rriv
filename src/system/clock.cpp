@@ -4,8 +4,8 @@
 
 DS3231 Clock;
 
-void setNextAlarm(short interval){
-
+void setNextAlarm(short interval)
+{
   Clock.turnOffAlarm(1); // Clear the Control Register
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
@@ -14,7 +14,8 @@ void setNextAlarm(short interval){
   //
   // Alarm every 10 seconds for debugging
   //
-  if(DEBUG_USING_SHORT_SLEEP == true) {
+  if(DEBUG_USING_SHORT_SLEEP == true)
+  {
     Monitor::instance()->writeDebugMessage(F("Using short sleep"));
     int AlarmBits = ALRM2_ONCE_PER_MIN;
     AlarmBits <<= 4;
@@ -27,11 +28,11 @@ void setNextAlarm(short interval){
     Monitor::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
   }
-
   //
   // Alarm every interval minutes for the real world
   //
-  else {
+  else
+  {
     int AlarmBits = ALRM2_ONCE_PER_MIN;
     AlarmBits <<= 4;
     AlarmBits |= ALRM1_MATCH_MIN_SEC;
@@ -42,7 +43,6 @@ void setNextAlarm(short interval){
     Monitor::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
   }
-
   // set both alarms to :00 and :30 seconds, every minute
       // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
       //                    |                                    |         |        |
@@ -51,12 +51,11 @@ void setNextAlarm(short interval){
       //                    |                                    +--> true if you're setting DoW, false for absolute date
       //                    +--> INTEGER representing day of the week, 1 to 7 (Monday to Sunday)
       //
-
-
   Clock.turnOnAlarm(1);
 }
 
-void dateTime(uint16_t* date, uint16_t* time) {
+void dateTime(uint16_t* date, uint16_t* time)
+{
   // Fetch time from DS3231 RTC
   bool century = false;
 	bool h24Flag;
@@ -68,7 +67,8 @@ void dateTime(uint16_t* date, uint16_t* time) {
   *time = FAT_TIME(Clock.getHour(h24Flag, pmFlag), Clock.getMinute(), Clock.getSecond());
 }
 
-void clearAllAlarms(){
+void clearAllAlarms()
+{
   Clock.turnOffAlarm(1);
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
@@ -76,7 +76,8 @@ void clearAllAlarms(){
 }
 
 
-time_t timestamp(){
+time_t timestamp()
+{
   struct tm ts;
   bool century = false;
 	bool h24Flag;
@@ -93,7 +94,8 @@ time_t timestamp(){
   return (mktime(&ts)); // turn tm struct into time_t value
 }
 
-void setTime(time_t toSet){
+void setTime(time_t toSet)
+{
   struct tm ts;
 
   ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
@@ -107,11 +109,19 @@ void setTime(time_t toSet){
   Clock.setSecond(ts.tm_sec);
 }
 
-void t_t2ts(time_t epochTS, char *humanTime){
+void t_t2ts(time_t epochTS, uint32 currentMillis, char *humanTime)
+{
   struct tm ts;
+  //uint32 currentMillis = millis();
+  char buf[21] ="0";
 
   ts = *gmtime(&epochTS); // convert unix to tm structure
   // Format time, "yyyy-mm-dd hh:mm:ss zzz" = "%Y/%m/%d %H:%M:%S %Z" (yyyy/mm/dd hh:mm:ss zzz) = 23
-  strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
+  //strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
+
+  // Format time, "yyyy-mm-dd hh:mm:ss.sss" = "%Y/%m/%d %H:%M:%S" (yyyy/mm/dd hh:mm:ss.sss) = 23
+  ts.tm_sec = ts.tm_sec + currentMillis/1000; // correct seconds
+  strftime(buf, 20, "%Y-%m-%d %H:%M:%S", &ts);
+  sprintf(humanTime, "%s.%i", buf, (int)currentMillis % 1000);
 }
 

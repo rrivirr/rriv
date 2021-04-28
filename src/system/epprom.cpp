@@ -22,9 +22,9 @@ byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress )
 
   wire->requestFrom(deviceaddress,1);
 
-  if (wire->available()) rdata = wire->read();
+  if(wire->available()) rdata = wire->read();
 
-  return rdata;
+  return(rdata);
 }
 
 void readDeploymentIdentifier(char * deploymentIdentifier)
@@ -60,8 +60,9 @@ void readUniqueId(unsigned char * uuid)
   // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
   char uuidString[2 * UUID_LENGTH + 1];
   uuidString[2 * UUID_LENGTH] = '\0';
-  for(short i=0; i < UUID_LENGTH; i++){
-      sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
+  for(short i=0; i < UUID_LENGTH; i++)
+  {
+    sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
   }
   Monitor::instance()->writeDebugMessage(uuidString);
 
@@ -77,14 +78,16 @@ void readUniqueId(unsigned char * uuid)
     uuidString[2 * UUID_LENGTH] = '\0';
     for(short i=0; i < UUID_LENGTH; i++)
     {
-        sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
+      sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
     Monitor::instance()->writeDebugMessage(uuidString);
+    
     for(int i=0; i < UUID_LENGTH; i++)
     {
       unsigned int address = EEPROM_UUID_ADDRESS_START + i;
       writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, uuid[i]);
     }
+
     for(int i=0; i < UUID_LENGTH; i++)
     {
       unsigned int address = EEPROM_UUID_ADDRESS_START + i;
@@ -98,6 +101,7 @@ void readUniqueId(unsigned char * uuid)
     }
     Monitor::instance()->writeDebugMessage(uuidString);
    }
+
 }
 
 void writeEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little Endian

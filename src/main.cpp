@@ -5,6 +5,9 @@
 
 void setup(void)
 {
+  // disable unused components and hardware pins //
+  componentsAlwaysOff();
+  hardwarePinsAlwaysOff();
 
   startSerial2();
 
@@ -23,7 +26,7 @@ void setup(void)
   clearUserInterrupt();
 
   //  Prepare I2C
-  i2c_bus_reset(I2C1); //try power down and up
+  i2c_bus_reset(I2C1);
   //i2c_disable(I2C1);
   //i2c_master_enable(I2C1, 0);
   Wire.begin();
@@ -45,14 +48,16 @@ void setup(void)
 
   powerUpSwitchableComponents();
 
-  setNotBursting();
+  setNotBursting(); // prevents bursting during first loop
+
+  //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
 
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 }
 
-
+/* main run loop order of operation: */
 void loop(void)
 {
   bool bursting = checkBursting();
@@ -105,6 +110,10 @@ void loop(void)
 
   if (debugValuesMode)
   {
+    if (burstCount == burstLength) // will cause loop() to continue until mode turned off
+    {
+      prepareForTriggeredMeasurement();
+    }
     monitorValues();
   }
 
