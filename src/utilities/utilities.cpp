@@ -90,7 +90,7 @@ void blink(int times, int duration)
 void printDS3231Time()
 {
   char testTime[11]; // timestamp responses
-  Serial2.print(F("configMode TS:"));
+  Serial2.print(F("TS:"));
   sprintf(testTime, "%lld", timestamp()); // convert time_t value into string
   Serial2.println(testTime);
   Serial2.flush();

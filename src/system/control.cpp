@@ -1,7 +1,7 @@
 #include "control.h"
 #include "clock.h"
 
-#define MAX_REQUEST_LENGTH 50
+#define MAX_REQUEST_LENGTH 70 // serial commands
 
 int WaterBear_Control::state = 0;
 void * lastCommandPayload;
@@ -108,7 +108,6 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       myStream->print(F("NOTIMPLEMENTED"));
       for(int i=0; i<8; i++)
       {
-        //myStream->print((unsigned int) uuid[2*i], HEX);
       }
       myStream->write("<");
       myStream->flush();
@@ -171,9 +170,14 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       // TODO: create and pass a data file writer class
       // setNewDataFile();
     }
-    else if(strncmp(request, ">WT_CONFIG", 10) == 0)
-    {
+    else if(strncmp(request, ">WT_CONFIG:", 10) == 0)
+    { //flags:time, conduct, therm
       myStream->println(">CONFIG<");
+      char * commandPayloadPointer = (char *)malloc(8);
+      strncpy(commandPayloadPointer, &request[11],8);
+      commandPayloadPointer[8] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
       return WT_CONTROL_CONFIG;
       // go into config mode
     }
@@ -214,7 +218,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
       char calibrationPointStringValue[10];
       strncpy(calibrationPointStringValue, &request[10], 9);
       int value;
-      myStream->println(calibrationPointStringValue);
+      myStream->println(calibrationPointStringValue); // what is this line for???
       int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
       if(found == 1)
       {
@@ -224,6 +228,75 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
         lastCommandPayload = commandPayloadPointer;
       }
       return WT_CONTROL_CAL_HIGH;
+    }
+    else if(strncmp(request, ">WT_CAL_TEMP", 12) == 0)
+    {
+      myStream->println(">CAL_TEMP<");
+      return WT_CAL_TEMP;
+    }
+    else if(strncmp(request, ">TEMP_CAL_LOW:", 14) == 0)
+    {
+      myStream->println(">GOT TEMP_CAL_LOW<");
+      char calibrationPointStringValue[8];
+      strncpy(calibrationPointStringValue, &request[14], 7);
+      float value;
+      myStream->println(calibrationPointStringValue);
+      int found = sscanf(&calibrationPointStringValue[0], "%f", &value);
+      if(found == 1){
+        value = value * 100;
+        unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
+        *commandPayloadPointer = (unsigned short)value;
+        lastCommandPayloadAllocated = true;
+        lastCommandPayload = commandPayloadPointer;
+      }
+      return WT_TEMP_CAL_LOW;
+    }
+    else if(strncmp(request, ">TEMP_CAL_HIGH:", 15) == 0)
+    {
+      myStream->println(">GOT TEMP_CAL_HIGH<");
+      char calibrationPointStringValue[8];
+      strncpy(calibrationPointStringValue, &request[15], 7);
+      float value;
+      myStream->println(calibrationPointStringValue);
+      int found = sscanf(&calibrationPointStringValue[0], "%f", &value); // xxx.xx
+      if(found == 1){
+        value = value * 100; // either here or at the case
+        unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
+        *commandPayloadPointer = (unsigned short)value;
+        lastCommandPayloadAllocated = true;
+        lastCommandPayload = commandPayloadPointer;
+      }
+      return WT_TEMP_CAL_HIGH;
+    }
+    else if(strncmp(request, ">WT_USER_VALUE:", 15) == 0)
+    {
+      myStream->println("GOT WT_USER_VALUE<");
+      char * commandPayloadPointer = (char *) malloc(11);
+      strncpy(commandPayloadPointer, &request[15], 11);
+      commandPayloadPointer[11] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_VALUE;
+    }
+    else if(strncmp(request, ">WT_USER_NOTE:", 14) == 0)
+    {
+      myStream->println("GOT WT_USER_NOTE<");
+      char * commandPayloadPointer = (char *) malloc(31);
+      strncpy(commandPayloadPointer, &request[14], 31);
+      commandPayloadPointer[31] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_NOTE;
+    }
+    else if(strncmp(request, ">WT_USER_INPUT:", 15) == 0)
+    {
+      myStream->println("GOT WT_USER_INPUT<");
+      char * commandPayloadPointer = (char *) malloc(42);
+      strncpy(commandPayloadPointer, &request[15], 42);
+      commandPayloadPointer[42] ='\0';
+      lastCommandPayloadAllocated = true;
+      lastCommandPayload = commandPayloadPointer;
+      return WT_USER_INPUT;
     }
     else
     {
