@@ -431,8 +431,8 @@ void stopAndAwaitTrigger()
   disableManualWakeInterrupt();
   nvic_irq_disable(NVIC_RTCALARM);
 
+  enableSerialLog(); 
   setupHardwarePins(); // used from setup steps in datalogger
-  enableSerialLog(); // TODO
   
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
 

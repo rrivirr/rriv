@@ -219,7 +219,7 @@ void componentsStopMode()
 
 void hardwarePinsStopMode()
 {
-  return;
+  return; // didn't make a big power difference
   // check pins again on new board //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
