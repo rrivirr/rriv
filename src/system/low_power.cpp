@@ -96,9 +96,6 @@ void componentsAlwaysOff()
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
 
-  //rtc - can disable?  this could be always be disabled
-  RCC_BASE->BDCR &= ~RCC_BDCR_RTCEN; // fix typo in rcc.h while version locked to 9.0.0
-  RCC_BASE->BDCR &= ~RCC_BDCR_LSEON;
 
   rcc_clk_disable( RCC_ADC1);
   rcc_clk_disable( RCC_ADC2);
