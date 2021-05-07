@@ -427,23 +427,25 @@ void stopAndAwaitTrigger()
   disableManualWakeInterrupt();
   nvic_irq_disable(NVIC_RTCALARM);  
 
-   if(awakenedByUser == true){
-    Monitor::instance()->writeDebugMessage("USER TRIGGERED INTERRUPT");
-    awakeTime = timestamp();
-   }
-
   enableSerialLog(); 
   setupHardwarePins(); // used from setup steps in datalogger
-  
+
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
 
-  /////turn stuff back on (components, hardware pins)
-  componentsBurstMode();
+  if(awakenedByUser == true){
+    Monitor::instance()->writeDebugMessage(F("USER TRIGGERED INTERRUPT"));
+  }
 
+  /////turn components back on
+  componentsBurstMode();
   // We have woken from the interrupt
   printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
+
+  if(awakenedByUser == true){
+    awakeTime = timestamp();
+  }
 
   // We need to check on which interrupt was triggered
   if (awakenedByUser)
