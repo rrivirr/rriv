@@ -3,7 +3,7 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 2;     // minutes between loggings when not in short sleep
+short interval = 5;     // minutes between loggings when not in short sleep
 short burstLength = 10; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
@@ -394,7 +394,6 @@ void stopAndAwaitTrigger()
   storeAllInterrupts(iser1, iser2, iser3);
 
   clearManualWakeInterrupt();
-  interval = 1;
   setNextAlarmInternalRTC(interval); // close to the right code
 
   powerDownSwitchableComponents();
@@ -405,9 +404,6 @@ void stopAndAwaitTrigger()
  // filesystem->closeFileSystem();
 //  WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard
 
-  Serial2.println("hi2");
-  Serial2.flush();
-
   componentsStopMode();
 
   disableSerialLog(); // TODO
@@ -416,10 +412,8 @@ void stopAndAwaitTrigger()
   clearAllInterrupts();
   clearAllPendingInterrupts();
 
-  enableManualWakeInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
+  enableManualWakeInterrupt(); // The button, which is not powered during stop mode on v0.2 hardware
   nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
-
-
 
   enterStopMode();
   //enterSleepMode();
@@ -429,7 +423,7 @@ void stopAndAwaitTrigger()
 
   reenableAllInterrupts(iser1, iser2, iser3);
   disableManualWakeInterrupt();
-  nvic_irq_disable(NVIC_RTCALARM);
+  nvic_irq_disable(NVIC_RTCALARM);  
 
   enableSerialLog(); 
   setupHardwarePins(); // used from setup steps in datalogger
