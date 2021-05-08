@@ -40,7 +40,7 @@ void enableI2C1()
 
   delay(1000);
   //i2c_bus_reset(I2C1); // hangs here if this is called
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
+  //Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
 
   Wire.begin();
   delay(1000);
@@ -56,7 +56,7 @@ void enableI2C2()
   i2c_master_enable(I2C2, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
 
-  i2c_bus_reset(I2C2);
+  //i2c_bus_reset(I2C2); // hang if this is called
   Wire2.begin();
   delay(1000);
 
