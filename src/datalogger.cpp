@@ -155,7 +155,7 @@ void initializeFilesystem()
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
   Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
-  filesystem->setNewDataFile(setupTime); // name file via epoch timestamp
+  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
 }
 
 void allocateMeasurementValuesMemory()
@@ -394,15 +394,15 @@ void stopAndAwaitTrigger()
   storeAllInterrupts(iser1, iser2, iser3);
 
   clearManualWakeInterrupt();
-  setNextAlarmInternalRTC(interval); // close to the right code
+  setNextAlarmInternalRTC(interval); 
+
 
   powerDownSwitchableComponents();
+  filesystem->closeFileSystem(); // close file, filesystem
   disableSwitchedPower();
 
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
- // filesystem->closeFileSystem();
-//  WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard
 
   componentsStopMode();
 
@@ -431,6 +431,7 @@ void stopAndAwaitTrigger()
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
 
   if(awakenedByUser == true){
+
     Monitor::instance()->writeDebugMessage(F("USER TRIGGERED INTERRUPT"));
   }
 
@@ -440,8 +441,11 @@ void stopAndAwaitTrigger()
   printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
+  filesystem->reopenFileSystem();
 
-  if(awakenedByUser == true){
+
+  if(awakenedByUser == true)
+  {
     awakeTime = timestamp();
   }
 

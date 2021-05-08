@@ -1,16 +1,26 @@
 #include "filesystem.h"
+#include "clock.h"
+#include "monitor.h"
 
 char dataDirectory[6] = "/Data";
+
 
 WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin)
 {
   strcpy(this->deploymentIdentifier, deploymentIdentifier);
+  this->chipSelectPin = chipSelectPin;
+  this->initializeSDCard();
+ 
+  this->setDeploymentIdentifier(deploymentIdentifier);
+  Serial2.println("Set deployment identifier");
+}
 
-  // initialize the SD card
+void WaterBear_FileSystem::initializeSDCard(){
+   // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
 
   // Make sure chip select pin is set to output
-  pinMode(chipSelectPin, OUTPUT);
+  pinMode(this->chipSelectPin, OUTPUT);
 
   // see if the card is present and can be initialized:
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
@@ -22,9 +32,8 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
   {
     Serial2.println(F("card initialized."));
   }
-  this->setDeploymentIdentifier(deploymentIdentifier);
-  Serial2.println("Set deployment identifier");
 }
+
 
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)
@@ -149,53 +158,8 @@ void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier
   strcpy(deploymentIdentifier, newDeploymentIdentifier);
 }
 
-void WaterBear_FileSystem::setNewDataFile(long unixtime)
-{
-  /*Serial2.println("oki");
-    Serial2.flush();
-
-    DateTime now = this->rtc->now();
-    Serial2.println("ok");
-    Serial2.flush();
-
-    Serial2.println(now.unixtime());
-    Serial2.flush();
-*/
-  Serial2.println("ok");
-  Serial2.flush();
-  char uniquename[11] = "NEWFILE";
-  sprintf(uniquename, "%lu", unixtime);
-  char suffix[5] = ".CSV";
-  char filename[15];
-  strncpy(filename, uniquename, 10);
-  strncpy(&filename[10], suffix, 5);
-
-  Serial2.println("cd");
-  Serial2.flush();
+bool WaterBear_FileSystem::openFile(char * filename){
   this->sd.chdir("/");
-  delay(10);
-
-  File columnsFile;
-  columnsFile = this->sd.open("/COLUMNS.TXT");
-
-  if(!columnsFile)
-  {
-    Serial2.println(F("COLUMNS.TXT did not open"));
-    while(1);
-  }
-
-  char header[100];
-  int n = columnsFile.fgets(header, sizeof(header));
-  if(header[n - 1] == '\n')
-  {
-    // remove '\n'
-    header[n - 1] = 0;
-  }
-
-  Serial2.print(F(">log:"));
-  Serial2.println(header);
-  columnsFile.close();
-
   printCurrentDirListing();
   Serial2.println("OK in root");
   if(!this->sd.exists(dataDirectory))
@@ -215,7 +179,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
     //Serial2.println(F("cd /Data."));
   }
 
-  if(!this->sd.exists(this->deploymentIdentifier))
+  if(!this->sd.exists(deploymentIdentifier))
   {
     // printCurrentDirListing();
     Serial2.write("mkdir:");
@@ -246,12 +210,40 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   if(!logfile)
   {
     Serial2.print(F(">not found<"));
-    while(1);
+    return false;
   }
 
-  //if (!sd.chdir("/")) {
-  //  Serial2.println("fail /");
-  //}
+  return true;
+
+}
+
+void WaterBear_FileSystem::setNewDataFile(long unixtime)
+{
+
+  char uniquename[11] = "NEWFILE";
+  sprintf(uniquename, "%lu", unixtime);
+  char suffix[5] = ".CSV";
+  strncpy(filename, uniquename, 10);
+  strncpy(&filename[10], suffix, 5);
+
+  Serial2.println("cd");
+  Serial2.flush();
+  this->sd.chdir("/");
+  delay(1);
+
+
+  char header[200] = "duuid,uuid,time.s,time.h,battery.V,temperature.V,data3,data4,data5,data6,conductivity.mS,time.TC,C1,V1,C2,V2,M,B,temperature.C,Burst,UserValue,UserNote";
+
+  Serial2.print(F(">log:"));
+  Serial2.println(header);
+  
+
+  bool success = this->openFile(filename);
+  if( !success )
+  {
+    Serial2.print(F("filesystem open failure"));
+    while(1);
+  }
 
   this->logfile.println(header); // write the headers to the new logfile
   this->logfile.flush();
@@ -261,6 +253,8 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
+  Serial2.println("printCurrentDirListing");
+
   this->sd.vwd()->rewind();
   SdFile dirFile;
   char sdFilename[30];
@@ -274,7 +268,29 @@ void WaterBear_FileSystem::printCurrentDirListing()
 
 void WaterBear_FileSystem::closeFileSystem()
 {
+  Serial2.print(F(">close filesystem<"));
   //this->logfile.sync();
   this->logfile.close(); // syncs then closes
   //this->sd.end // doesn't exist
+}
+
+void WaterBear_FileSystem::reopenFileSystem()
+{
+
+  initializeSDCard();
+  bool success = this->openFile(filename);
+  if( !success )
+  {
+    Monitor::instance()->writeDebugMessage(F("Could not reopen file"));
+    time_t setupTime = timestamp();
+    char setupTS[21];
+    sprintf(setupTS, "unixtime: %lld", setupTime);
+    Monitor::instance()->writeDebugMessage(setupTS);
+    setNewDataFile(setupTime); // open a new file via epoch timestamp
+  }
+  else 
+  {
+    Monitor::instance()->writeDebugMessage(F("Successfully reopened file"));
+  }
+
 }
