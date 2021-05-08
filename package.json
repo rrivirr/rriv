@@ -8,4 +8,7 @@
   },
   "author": "WaterBear Team",
   "license": "GPL",
+  "devDependencies" : {
+    "husky": "^4.3.5"
+  }
 }
