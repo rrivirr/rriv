@@ -7,3 +7,4 @@ out
 .pio/build/*
 .pio/
 .vscode/
+node_modules
