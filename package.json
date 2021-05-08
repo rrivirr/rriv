@@ -1,0 +1,11 @@
+{
+  "name": "waterbear-firmware",
+  "version": "0.2.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WaterBearSondes/waterbear-firmware.git"
+  },
+  "author": "WaterBear Team",
+  "license": "GPL",
+}
