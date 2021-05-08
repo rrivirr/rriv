@@ -3,6 +3,7 @@
   - Current columns.txt: duuid,uuid,time.s,time.h,battery.V,sensor.V,data3,data4,data5,data6,conductivity.mS
   - Deployment uuid, uuid, epoch time in seconds, time in yyyy-mm-dd hh:mm:ss GMT, battery voltage, sensor voltage, n/a, n/a, n/a, n/a, conductivity in microsiemens
 
+
 ### CONNECTING VIA SERIAL/PROGRAMMING:
 1. Use a severed development board to program STM32F103RB via usb:
 2. Remove both ST-LINK jumpers
