@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       !contains(github.event.head_commit.message, 'skip-ci') &&
-      github.repository_owner == "WaterBearSondes"
+      github.repository_owner == 'WaterBearSondes'
     steps:
       - uses: actions/checkout@v2
       
