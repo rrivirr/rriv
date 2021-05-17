@@ -1,5 +1,3 @@
-#ifndef WATERBEAR_DBGMCU
-#define WATERBEAR_DBGMCU
 
 #include <libmaple/libmaple.h>
 
@@ -60,4 +58,5 @@ typedef struct dbgmcu_reg_map {
 #define DBGMCU_CR_STOP                       (1U << DBGMCU_CR_STOP_BIT)
 #define DBGMCU_CR_SLEEP                      (1U << DBGMCU_CR_SLEEP_BIT)
 
-#endif
+
+void print_debug_status();
