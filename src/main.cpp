@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "datalogger.h"
 #include <libmaple/pwr.h> // TODO: move this
-
+#include "scratch/dbgmcu.h"
 // Setup and Loop
 
 void setup(void)
@@ -57,6 +57,9 @@ void setup(void)
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
+
+  print_debug_status();
+  
 }
 
 /* main run loop order of operation: */
