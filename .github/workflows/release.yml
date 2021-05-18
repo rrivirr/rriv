@@ -35,4 +35,12 @@ jobs:
         working-directory : "."
         run : "ls -la "
           
+      - name : machine 
+        working-directory : "."
+        run : "cat src/version.h "
+          
+      - name : machine 
+        working-directory : "."
+        run : "git status "
+          
         
