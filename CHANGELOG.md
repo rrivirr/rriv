@@ -1,3 +1,10 @@
+## [1.0.8](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.7...v1.0.8) (2021-05-18)
+
+
+### Bug Fixes
+
+* force release ([a4ef14e](https://github.com/WaterBearSondes/waterbear-firmware/commit/a4ef14eb6d1ef9954e8ae5a3a1fafbe717600ff1))
+
 ## [1.0.7](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.6...v1.0.7) (2021-05-18)
 
 
