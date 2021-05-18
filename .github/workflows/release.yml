@@ -27,7 +27,12 @@ jobs:
       - run: npm i -g semantic-release @semantic-release/{git,exec,changelog}
       
       - run: semantic-release
+        working-directory: ${{ env.project-directory }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name : machine ls 
+        working-directory : "."
+        run : "ls -la "
           
         
