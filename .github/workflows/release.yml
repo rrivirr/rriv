@@ -31,16 +31,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name : machine ls 
-        working-directory : "."
-        run : "ls -la "
-          
-      - name : machine 
-        working-directory : "."
-        run : "cat src/version.h "
-          
-      - name : machine 
-        working-directory : "."
-        run : "git status "
+
           
         
