@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.1...v1.0.2) (2021-05-18)
+
+
+### Bug Fixes
+
+* add version.h to git plugin config ([5db9001](https://github.com/WaterBearSondes/waterbear-firmware/commit/5db900112c60d8b3d02049124c8ee4300be10b15))
+
 ## [1.0.1](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.0...v1.0.1) (2021-05-18)
 
 
