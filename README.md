@@ -1,4 +1,5 @@
 # waterteam-embedded
+
 - Install the file COLUMNS.TXT into the root directory of your SD Card, and change field names 5-10 to reflect the sensors attached to analog inputs 0-5 (A0 - A5).
   - Current columns.txt: duuid,uuid,time.s,time.h,battery.V,sensor.V,data3,data4,data5,data6,conductivity.mS
   - Deployment uuid, uuid, epoch time in seconds, time in yyyy-mm-dd hh:mm:ss GMT, battery voltage, sensor voltage, n/a, n/a, n/a, n/a, conductivity in microsiemens
