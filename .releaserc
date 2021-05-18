@@ -5,6 +5,7 @@
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
       "@semantic-release/npm",
+      "version-plugin",
       ["@semantic-release/git", {
         "assets": ["docs", "package.json", "CHANGELOG.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]"
