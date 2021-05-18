@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.0...v1.0.1) (2021-05-18)
+
+
+### Bug Fixes
+
+* detect debugmode and alert on serial, some cleanup ([c32e72c](https://github.com/WaterBearSondes/waterbear-firmware/commit/c32e72c98e2f430cd15f2ce26257d193601cede3))
+* get automated versioning working ([834e546](https://github.com/WaterBearSondes/waterbear-firmware/commit/834e5465b24965c780cff527e5af4dffd65831bf))
+
 # 1.0.0 (2021-05-08)
 
 
