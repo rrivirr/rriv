@@ -1,3 +1,11 @@
+## [1.0.9](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.8...v1.0.9) (2021-05-19)
+
+
+### Bug Fixes
+
+* correct a memory allocation size bug ([17ed1bc](https://github.com/WaterBearSondes/waterbear-firmware/commit/17ed1bce9fdff9d37486b41ec123a9fedee1de4d))
+* increase time to show debug warning error warning message ([4479663](https://github.com/WaterBearSondes/waterbear-firmware/commit/4479663d77467ea62c8a631c71c7fc21d33fab5e))
+
 ## [1.0.8](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.7...v1.0.8) (2021-05-18)
 
 
