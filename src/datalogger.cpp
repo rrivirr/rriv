@@ -830,8 +830,8 @@ void monitorTemperature() // print out calibration information & current reading
   unsigned short c1, v1, c2, v2, m;
   unsigned int b;
   unsigned int calTime;
-  unsigned char data = 0;
-  unsigned char * dataPtr = &data;
+  unsigned char data[4];
+  unsigned char * dataPtr = data;
 
   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
   readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
