@@ -42,6 +42,7 @@ void setNextAlarmInternalRTC(short interval){
   // secondsUntilWake = 10;
   clock->setAlarmTime(secondsUntilWake);
   clock->createAlarm(handleInterrupt, secondsUntilWake);
+  delete clock;
 
   Serial2.println("set alarm time to wake");
   Serial2.println(secondsUntilWake);
