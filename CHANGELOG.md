@@ -1,3 +1,10 @@
+## [1.0.10](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.9...v1.0.10) (2021-05-21)
+
+
+### Bug Fixes
+
+* fix some potential memory leaks, report available ram, and reset if ram is getting low ([8350837](https://github.com/WaterBearSondes/waterbear-firmware/commit/83508376be0d0daa54aee8430f0d8782e2a527e0))
+
 ## [1.0.9](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.8...v1.0.9) (2021-05-19)
 
 
