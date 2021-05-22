@@ -4,8 +4,8 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 3; // how many readings in a burst
+short interval = 15;     // minutes between loggings when not in short sleep
+short burstLength = 10; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
