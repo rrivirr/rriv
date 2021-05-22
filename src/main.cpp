@@ -13,6 +13,8 @@ void setup(void)
 
   startSerial2();
 
+  startCustomWatchDog();
+
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
@@ -71,7 +73,6 @@ void setup(void)
 
   print_debug_status();
 
-  startCustomWatchDog();
  
 }
 
