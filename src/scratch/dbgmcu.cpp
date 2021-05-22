@@ -9,16 +9,16 @@ void print_debug_status(){
 
   if(DBGMCU_BASE->CR != 0){
       Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER REQUIRES POWER CYCLE *****");
+      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
       Serial2.println("**** WARNING *****");
       Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER REQUIRES POWER CYCLE *****");
+      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
       Serial2.println("**** WARNING *****");
       Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER REQUIRES POWER CYCLE *****");
+      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
       Serial2.println("**** WARNING *****");
       Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER REQUIRES POWER CYCLE *****");
+      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
       Serial2.println("**** WARNING *****");
       delay(10000);
   } else {

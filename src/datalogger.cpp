@@ -1,4 +1,5 @@
 #include "datalogger.h"
+#include "system/watchdog.h"
 
 // Settings
 char version[5] = "v2.0";
@@ -406,6 +407,9 @@ void stopAndAwaitTrigger()
 
   componentsStopMode();
 
+  disableCustomWatchDog();
+  Serial2.println("disabled watchdog");
+  Serial2.flush();
   disableSerialLog(); // TODO
   hardwarePinsStopMode(); // switch to input mode
   
@@ -429,6 +433,10 @@ void stopAndAwaitTrigger()
   setupHardwarePins(); // used from setup steps in datalogger
 
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
+
+  startCustomWatchDog(); // could go earlier once working reliably
+  // delay( (WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
+
 
   if(awakenedByUser == true){
 
