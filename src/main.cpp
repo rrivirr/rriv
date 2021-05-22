@@ -1,10 +1,12 @@
 #include <Arduino.h>
 #include "datalogger.h"
-#include <libmaple/pwr.h> // TODO: move this
+#include "system/watchdog.h"
 #include "scratch/dbgmcu.h"
 #include <libmaple/libmaple.h>
+#include <libmaple/pwr.h> // necessary?
 
 // Setup and Loop
+
 
 void setup(void)
 {
@@ -45,6 +47,7 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
+ 
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
 
@@ -64,8 +67,12 @@ void setup(void)
   Serial2.flush();
 
   print_debug_status();
-  
+
+  startCustomWatchDog();
+ 
 }
+
+
 
 extern "C" char* _sbrk(int incr);
 int freeMemory(){
@@ -86,6 +93,8 @@ void intentionalMemoryLeak(){
 void loop(void)
 {
 
+  startCustomWatchDog();
+  printWatchDogStatus();
 
   // calculate and print free memory
   // reset the system if we are running out of memory

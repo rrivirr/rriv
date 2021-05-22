@@ -116,7 +116,7 @@ return;
   // rcc_clk_disable( RCC_SPI2);
   rcc_clk_disable( RCC_SPI3);
   rcc_clk_disable( RCC_SRAM);
-  rcc_clk_disable( RCC_TIMER1);
+  // rcc_clk_disable( RCC_TIMER1); // this clock is needed
   rcc_clk_disable( RCC_TIMER2);
   rcc_clk_disable( RCC_TIMER3);
   rcc_clk_disable( RCC_TIMER4);
