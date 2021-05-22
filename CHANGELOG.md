@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.10...v1.1.0) (2021-05-22)
+
+
+### Bug Fixes
+
+* restore field settings ([52bfffe](https://github.com/WaterBearSondes/waterbear-firmware/commit/52bfffe2cf58addef4cbc500dc881a2c9d6bd73f))
+* start watchdog right away ([afd5c5f](https://github.com/WaterBearSondes/waterbear-firmware/commit/afd5c5f5cd5281325a7c19d1b75913002da45a43))
+
+
+### Features
+
+* implement a watchdog that can be disabled in stop mode using one of the MCU timers ([460aef1](https://github.com/WaterBearSondes/waterbear-firmware/commit/460aef160e2cd4f0606e222e9f3cee5d785dbbec))
+
 ## [1.0.10](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.9...v1.0.10) (2021-05-21)
 
 
