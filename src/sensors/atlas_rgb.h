@@ -4,6 +4,7 @@
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <EC_OEM.h>
 #include <string.h>
+#include <Arduino.h>
 #include <SoftwareSerial.h>
 
 class AtlasRGB
@@ -19,6 +20,7 @@ class AtlasRGB
   
   public:
     AtlasRGB(int recv, int trans);
+    void setupSerial();
     void serialEvent();
     void printRGBData();     
 }
