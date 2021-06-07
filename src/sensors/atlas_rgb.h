@@ -17,12 +17,22 @@ class AtlasRGB
     std::string sensorString;
     bool inputStringComplete;
     bool sensorStringComplete;
+
+    void setupSerial();
+    std::string printRGBData(); 
   
   public:
+    // Basic Functionality
     AtlasRGB(int recv, int trans);
-    void setupSerial();
-    void serialEvent();
-    void printRGBData();     
+  
+    void sendMessage();
+    std::string receiveResponse(); 
+    std::string run();
+
+    // Command generation
+    int setLEDBrightness(int value, bool powerSaving);
+    void setIndicatorLED(bool status, bool power);
+
 }
 
 #endif
