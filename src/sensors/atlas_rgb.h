@@ -29,6 +29,13 @@ class AtlasRGB
     // Command generation
     int setLEDBrightness(int value, bool powerSaving);
     void setIndicatorLED(bool status, bool power);
+    void findSensor();
+    void continuousMode(int value);
+    void singleMode();
+    void calibrateSensor();
+    void colorMatching(int value);
+    void deviceInformation();
+    void sleepSensor();
 
 };
 
