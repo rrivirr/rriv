@@ -22,6 +22,7 @@ void AtlasRGB::sendMessage() {
   Serial3.print(inputString);
   Serial3.print('\r'); // Appending a <CR>
   strcpy(inputString, "");
+  memset(inputString, 0, sizeof(inputString));
 }
 
 // Receiving a response
@@ -132,6 +133,58 @@ void AtlasRGB::setIndicatorLED(bool status, bool power) {
     }
   }
 }
+
+// Flashes LED to find sensor
+void AtlasRGB::findSensor() {
+  strcpy(inputString, "Find");
+}
+
+// Setting continuous mode
+void AtlasRGB::continuousMode(int value) {
+  if (value < 0) {
+    strcpy(inputString, "C,?");
+    return;
+  }
+  sprintf(inputString, "C,%d", value);
+}
+
+// Takes a single reading
+void AtlasRGB::singleMode() {
+  strcpy(inputString, "R");
+}
+
+// Calibrates sensor
+void AtlasRGB::calibrateSensor() {
+  strcpy(inputString, "Cal");
+}
+
+// Toggling color matching
+void AtlasRGB::colorMatching(int value) {
+  if (value < 0) {
+    strcpy(inputString, "M,?");
+    return;
+  }
+  if (value) {
+    strcpy(inputString, "M,1");
+  }
+  else {
+    strcpy(inputString, "M,0");
+  }
+  return;
+}
+
+// Returns device information 
+void AtlasRGB::deviceInformation() {
+  strcpy(inputString, "i");
+}
+
+// Enters sleep mode
+void AtlasRGB::sleepSensor() {
+  strcpy(inputString, "Sleep");
+}
+
+
+
 
 
 
