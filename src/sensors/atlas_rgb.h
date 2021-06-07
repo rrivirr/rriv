@@ -4,14 +4,23 @@
 #include <Wire.h> // Communicate with I2C/TWI devices
 #include <EC_OEM.h>
 #include <string.h>
+#include <SoftwareSerial.h>
 
-std::string inputString;
-std::string sensorString;
-bool inputStringComplete;
-bool sensorStringComplete;
-
-void setupRGB(int rx, int tx); // Receiving and transmitting pins
-void serialEvent();
-void printRGBData();     
+class AtlasRGB
+{
+  private:
+    int rx;
+    int tx;
+    SoftwareSerial rgbSerial;
+    std::string inputString;
+    std::string sensorString;
+    bool inputStringComplete;
+    bool sensorStringComplete;
+  
+  public:
+    AtlasRGB(int recv, int trans);
+    void serialEvent();
+    void printRGBData();     
+}
 
 #endif
