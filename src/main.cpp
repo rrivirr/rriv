@@ -4,9 +4,15 @@
 #include "scratch/dbgmcu.h"
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h> // necessary?
+#include <string.h>
+
+#include "atlas_rgb.h"
+
+#define rx 2 
+#define tx 3
 
 // Setup and Loop
-
+AtlasRGB rgbSensor(rx, tx);
 
 void setup(void)
 {
@@ -99,6 +105,12 @@ void loop(void)
 
   startCustomWatchDog();
   printWatchDogStatus();
+  
+  // RGB Sensor Output
+  std::string rgbRes = rgbSensor.run();
+  if (rgbRes.compare("")) {
+    Monitor::instance()->Monitor::instance->writeSerialMessage(rgbRes);
+  }
 
   // calculate and print free memory
   // reset the system if we are running out of memory
