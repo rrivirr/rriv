@@ -6,13 +6,17 @@
 #include <libmaple/pwr.h> // necessary?
 #include <string.h>
 
-#include "atlas_rgb.h"
+#include "sensors/atlas_rgb.h"
 
 #define rx 2 
 #define tx 3
 
+#if SOFTWARE_SERIAL_AVAILABLE
+  printf("BUBEFIUF");
+#endif
+
 // Setup and Loop
-AtlasRGB rgbSensor(rx, tx);
+AtlasRGB rgbSensor;
 
 void setup(void)
 {
@@ -107,10 +111,13 @@ void loop(void)
   printWatchDogStatus();
   
   // RGB Sensor Output
-  std::string rgbRes = rgbSensor.run();
-  if (rgbRes.compare("")) {
-    Monitor::instance()->Monitor::instance->writeSerialMessage(rgbRes);
+  char * rgbRes = rgbSensor.run();
+  Serial2.println("efiefoi");
+  if (strcmp(rgbRes, "")) {
+    //Monitor::instance()->Monitor::instance()->writeSerialMessage(rgbRes);
+    Serial2.println(rgbRes);
   }
+
 
   // calculate and print free memory
   // reset the system if we are running out of memory

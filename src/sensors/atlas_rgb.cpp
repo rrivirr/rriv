@@ -1,35 +1,35 @@
 #include "atlas_rgb.h"
 
 // Constructor for RGB
-AtlasRGB::AtlasRGB(int recv, int trans) {
-  rx = recv;
-  tx = trans;
+AtlasRGB::AtlasRGB() {
+  // rx = recv;
+  // tx = trans;
   setupSerial();
-  inputString = "";
-  sensorString = "";
+  strcpy(inputString, "");
+  strcpy(sensorString, "");
   inputStringComplete = false;
   sensorStringComplete = false;
 }
 
 // Setting up serial
-AtlasRGB::setupSerial() {
-  rgbSerial = SoftwareSerial(this->rx, this->tx);
-  rgbSerial.begin(9600);
+void AtlasRGB::setupSerial() {
+  //SoftwareSerial rgbSerial(this->rx, this->tx);
+  Serial3.begin(9600);
 }
 
 // Communicating with sensor
-AtlasRGB::sendMessage() {
-  rgbSerial.print(inputString);
-  rgbSerial.print('\r'); // Appending a <CR>
-  inputString = "";
+void AtlasRGB::sendMessage() {
+  Serial3.print(inputString);
+  Serial3.print('\r'); // Appending a <CR>
+  strcpy(inputString, "");
 }
 
 // Receiving a response
-AtlasRBG::receiveResponse() {
+char * AtlasRGB::receiveResponse() {
   // Getting string from sensor
-  if (rgbSerial.available > 0) {
-    char inputChar = (char)rgbSerial.read(); // Get the char
-    sensorString += inputChar;
+  if (Serial3.available() > 0) {
+    char inputChar = (char)Serial3.read(); // Get the char
+    strcat(sensorString, &inputChar);
     if (inputChar == '\r') {
       sensorStringComplete = true;
     }
@@ -40,45 +40,43 @@ AtlasRBG::receiveResponse() {
     if (isdigit(sensorString[0])) {
       return printRGBData();
     }
-    sensorString = "";
+    strcpy(sensorString, "");
     sensorStringComplete = false;
   }
 
-  return "";
+  return (char *) "";
 }
 
 // Print RGB Data
-AtlasRGB::printRGBData() {
-  std::string response = "";
-  char sensorArray[30];                        
+char * AtlasRGB::printRGBData() {                       
   char *red;                                          
   char *grn;                                          
-  char *blu;                                          
-  int intRed;                                        
-  int intGrn;                                       
-  int intBlu;                                        
+  char *blu;                                                                                
 
-  for (int i = 0; i < arrayLength; i++) {
-      sensorArray[i] = sensorString[i];
-  }
-
-  red = strtok(sensorArray, ",");              
+  red = strtok(sensorString, ",");              
   grn = strtok(NULL, ",");                            
-  blu = strtok(NULL, ",");                            
+  blu = strtok(NULL, ","); 
+
+  int int_red= atoi(red);                                 
+  int int_grn= atoi(grn);                                 
+  int int_blu= atoi(blu);
+
+  char response[50];                         
   
-  repsonse += "RED:"; response += red;
-  response += "\nGREEN:"; response += grn;
-  response += "\nBLUE:"; response += blu;
+  sprintf(response, "RED: %d", int_red);
+  sprintf(response, "GREEN: %d", int_grn);
+  sprintf(response, "BLUE: %d", int_blu);
 
   return response;
 }
 
-AtlasRGB::run() {
-  if (inputString.compare("")) {
+char * AtlasRGB::run() {
+  if (strcmp(inputString, "")) {
     sendMessage();
   }
   
-  std::string res = receiveResponse();
+  char * res = (char *) malloc(50);
+  res = receiveResponse();
   
   return res;
 }
@@ -90,16 +88,29 @@ AtlasRGB::run() {
 */
 
 // Setting LED Brightness
-AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
-  inputString = "L,";
+
+char * toArray(int number)
+{
+    int n = log10(number) + 1;
+    int i;
+    char *numberArray = (char *) calloc(n, sizeof(char));
+    for (i = n-1; i >= 0; --i, number /= 10)
+    {
+        numberArray[i] = (number % 10) + '0';
+    }
+    return numberArray;
+} 
+
+int AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
+  strcpy(inputString, "L,");
   if (value < 0) {
-    inputString += "?";
+    strcat(inputString, "?");
     return 0;
   }
   if (value >= 0 && value <= 100) {
-    repsonseString += std::to_string(value);
+    strcat(inputString, toArray(value));
     if (powerSaving) {
-      inputString += ",T";
+      strcat(inputString, ",T");
       return 0;
     }
   }
@@ -107,17 +118,17 @@ AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
 }
 
 // Setting Indicator LED on/off
-AtlasRGB::setIndicatorLED(bool status, bool power) {
-  inputString = "iL,";
+void AtlasRGB::setIndicatorLED(bool status, bool power) {
+  strcpy(inputString, "iL,");
   if (!status) {
-    inputString += "?";
+    strcat(inputString, "?");
   }
   else {
     if (power) {
-      inputString += "1";
+      strcat(inputString, "1");
     }
     else {
-      inputString += "0";
+      strcat(inputString, "0");
     }
   }
 }
