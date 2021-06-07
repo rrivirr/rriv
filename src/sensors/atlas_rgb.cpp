@@ -1,13 +1,29 @@
 #include "atlas_rgb.h"
-#include <SoftwareSerial.h>
 
-void setupRGB(int rx, int tx) {
-  rgbSerial = SoftwareSerial(rx, tx);
+// Constructor for RGB
+AtlasRGB::AtlasRGB(int recv, int trans) {
+  rx = recv;
+  tx = trans;
+  setupSerial();
   inputString = "";
   sensorString = "";
   inputStringComplete = false;
+  sensorStringComplete = false;
   
 }
+
+// Setting up serial
+AtlasRGB::setupSerial() {
+  rgbSerial = SoftwareSerial(this->rx, this->tx);
+  rgbSerial.begin(9600);  
+}
+
+
+
+
+
+
+
 
 
 
