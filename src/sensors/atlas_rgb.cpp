@@ -87,7 +87,6 @@ char * AtlasRGB::run() {
  Return 0 on success, -1 on failure
 */
 
-// Setting LED Brightness
 
 char * toArray(int number)
 {
@@ -101,18 +100,19 @@ char * toArray(int number)
     return numberArray;
 } 
 
+// Setting LED Brightness
 int AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
-  strcpy(inputString, "L,");
   if (value < 0) {
+    strcpy(inputString, "L,");
     strcat(inputString, "?");
     return 0;
   }
   if (value >= 0 && value <= 100) {
-    strcat(inputString, toArray(value));
     if (powerSaving) {
-      strcat(inputString, ",T");
+      sprintf(inputString, "L,%d,T", value);
       return 0;
     }
+    sprintf(inputString, "L,%d", value);
   }
   return -1;
 }
