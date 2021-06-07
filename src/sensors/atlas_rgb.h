@@ -1,38 +1,35 @@
 #ifndef WATERBEAR_ATLAS_RGB
 #define WATERBEAR_ATLAS_RGB
 
-#include <Wire.h> // Communicate with I2C/TWI devices
-#include <EC_OEM.h>
 #include <string.h>
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 
 class AtlasRGB
 {
   private:
-    int rx;
-    int tx;
-    SoftwareSerial rgbSerial;
-    std::string inputString;
-    std::string sensorString;
+    // int rx;
+    // int tx;
+    //HardwareSerial rgbSerial;
+    char inputString[30];
+    char sensorString[30];
     bool inputStringComplete;
     bool sensorStringComplete;
 
     void setupSerial();
-    std::string printRGBData(); 
+    char * printRGBData(); 
   
   public:
     // Basic Functionality
-    AtlasRGB(int recv, int trans);
+    AtlasRGB();
   
     void sendMessage();
-    std::string receiveResponse(); 
-    std::string run();
+    char * receiveResponse(); 
+    char * run();
 
     // Command generation
     int setLEDBrightness(int value, bool powerSaving);
     void setIndicatorLED(bool status, bool power);
 
-}
+};
 
 #endif
