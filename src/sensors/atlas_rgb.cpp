@@ -24,7 +24,6 @@ void AtlasRGB::start() {
 
 // Setting up serial
 void AtlasRGB::setupSerial() {
-  //SoftwareSerial rgbSerial(this->rx, this->tx);
   Serial1.begin(9600);
   Serial2.println("Setup Serial1");
 }
@@ -42,61 +41,43 @@ void AtlasRGB::sendMessage() {
 // Receiving a response
 char * AtlasRGB::receiveResponse() {
   // Getting string from sensor
-  int i = 0;
-  while (Serial1.available() > 0) {
+  static int i = 0;
+  if (Serial1.available() > 0) {
     char inputChar = (char)Serial1.read(); // Get the char
-    Serial2.print(inputChar);
     this->sensorString[i++] = inputChar;
     if (inputChar == '\r') {
       this->sensorStringComplete = true;
-      break;
+      i = 0;
     }
   }
 
   // Printing string if complete
   if (this->sensorStringComplete) {
-    if (isdigit(this->sensorString[0])) {
-      Serial2.println(this->sensorString);
-      strcpy(this->sensorString, "");
-      this->sensorStringComplete = false;
-      memset(this->sensorString, 0, sizeof(this->sensorString));
-      return this->sensorString;
+    char * copy = (char *) malloc(strlen(this->sensorString) + 1);
+    strcpy(copy, this->sensorString);
+    strcpy(this->sensorString, "");
+    this->sensorStringComplete = false;
+    memset(this->sensorString, 0, sizeof(this->sensorString));
+    if (isdigit(copy[0])) {
+      Serial2.println(printRGBData(copy));
+      return copy;
     }
     else {
-      Serial2.println(this->sensorString);
-      strcpy(this->sensorString, "");
-      this->sensorStringComplete = false;
-      memset(this->sensorString, 0, sizeof(this->sensorString));
-      return this->sensorString;
+      Serial2.println(copy);
+      return copy;
     }
   }
-
-  return (char *) "";
 }
 
-// Print Sensor output in RGB format
-char * AtlasRGB::printRGBData() {                       
-  char *red;                                          
-  char *grn;                                          
-  char *blu;                                                                                
+// Print input string in RGB format
+char * AtlasRGB::printRGBData(char * input) {                       
+  int red= atoi(strtok(input, ","));                                 
+  int grn= atoi(strtok(NULL, ","));                                 
+  int blu= atoi(strtok(NULL, ","));
 
-  red = strtok(this->sensorString, ",");              
-  grn = strtok(NULL, ",");                            
-  blu = strtok(NULL, ","); 
-
-  Serial2.println(red);
-  Serial2.println(grn);
-  Serial2.println(blu);
-
-  int int_red= atoi(red);                                 
-  int int_grn= atoi(grn);                                 
-  int int_blu= atoi(blu);
-
-  char response[50];                         
+  char * response = (char *) malloc(50);                         
   
-  sprintf(response, "RED: %d", int_red);
-  sprintf(response, "GREEN: %d", int_grn);
-  sprintf(response, "BLUE: %d", int_blu);
+  sprintf(response, "RED: %d GREEN: %d BLUE: %d", red, grn, blu);
 
   return response;
 }
@@ -106,11 +87,7 @@ char * AtlasRGB::run() {
   if (strcmp(this->inputString, "")) {
     sendMessage();
   }
-  
-  char * res = (char *) malloc(50);
-  res = receiveResponse();
-  
-  return res;
+  return receiveResponse();
 }
 
 /* 

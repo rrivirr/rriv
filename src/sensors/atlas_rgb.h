@@ -14,7 +14,7 @@ class AtlasRGB {
     
     // Private Functions
     void setupSerial();
-    char * printRGBData(); 
+    char * printRGBData(char * input); 
 
   public: 
     // Instance
@@ -23,7 +23,7 @@ class AtlasRGB {
     // Constructor
     AtlasRGB();
 
-    // Basic Functionality
+    // Functionality
     void start();
     void sendMessage();
     char * receiveResponse(); 
