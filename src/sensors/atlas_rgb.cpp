@@ -140,11 +140,6 @@ void AtlasRGB::setIndicatorLED(bool status, bool power) {
   }
 }
 
-// Flashes LED to find sensor
-void AtlasRGB::findSensor() {
-  strcpy(this->inputString, "Find");
-}
-
 // Setting continuous mode
 void AtlasRGB::continuousMode(int value) {
   if (value < 0) {
@@ -191,4 +186,9 @@ void AtlasRGB::singleMode() {
 // Calibrates sensor
 void AtlasRGB::calibrateSensor() {
   strcpy(this->inputString, "Cal");
+}
+
+// Flashes LED to find sensor
+void AtlasRGB::findSensor() {
+  strcpy(this->inputString, "Find");
 }
