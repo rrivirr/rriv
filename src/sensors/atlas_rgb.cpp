@@ -1,5 +1,6 @@
 #include "atlas_rgb.h"
 
+// Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
 
 
@@ -8,6 +9,7 @@ AtlasRGB * AtlasRGB::instance() {
   return rgbSensor;
 }
 
+// Dummy constructor
 AtlasRGB::AtlasRGB(){}
 
 // Constructor/Starter
@@ -72,7 +74,7 @@ char * AtlasRGB::receiveResponse() {
   return (char *) "";
 }
 
-// Print RGB Data
+// Print Sensor output in RGB format
 char * AtlasRGB::printRGBData() {                       
   char *red;                                          
   char *grn;                                          
@@ -99,6 +101,7 @@ char * AtlasRGB::printRGBData() {
   return response;
 }
 
+// Sends most recent command and receives latest response from sensor
 char * AtlasRGB::run() {
   if (strcmp(this->inputString, "")) {
     sendMessage();

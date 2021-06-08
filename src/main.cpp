@@ -26,10 +26,11 @@ void setup(void)
   // Sets up RGB Sensor
   AtlasRGB::instance()->start();
 
-
   // Sets brightness of LED and power saving mode
   AtlasRGB::instance()->setLEDBrightness(100, true);
   AtlasRGB::instance()->sendMessage();
+
+  Serial2.println("RGB Sensor setup successfully");
 
 
   Serial2.println("hello");
@@ -109,7 +110,10 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
+  // Prints sensor information (check)
   AtlasRGB::instance()->deviceInformation();
+
+  // Prints sensor output for RGB values
   while (true) {
     Serial2.print(AtlasRGB::instance()->run()); 
   }  
