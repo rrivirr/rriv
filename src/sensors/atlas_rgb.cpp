@@ -1,66 +1,71 @@
 #include "atlas_rgb.h"
 
-// Constructor for RGB
-char inputString[30];
-char sensorString[30];
-bool inputStringComplete;
-bool sensorStringComplete;
+AtlasRGB * rgbSensor = new AtlasRGB();
 
-void start() {
+
+// Returns instance
+AtlasRGB * AtlasRGB::instance() {
+  return rgbSensor;
+}
+
+AtlasRGB::AtlasRGB(){}
+
+// Constructor/Starter
+void AtlasRGB::start() {
   setupSerial();
-  strcpy(inputString, "");
-  strcpy(sensorString, "");
-  inputStringComplete = false;
-  sensorStringComplete = false;
+  strcpy(this->inputString, "");
+  strcpy(this->sensorString, "");
+  this->inputStringComplete = false;
+  this->sensorStringComplete = false;
   Serial2.println("RGB Constructor");
 }
 
 // Setting up serial
-void setupSerial() {
+void AtlasRGB::setupSerial() {
   //SoftwareSerial rgbSerial(this->rx, this->tx);
   Serial1.begin(9600);
   Serial2.println("Setup Serial1");
 }
 
 // Communicating with sensor
-void sendMessage() {
-  Serial1.print(inputString);
+void AtlasRGB::sendMessage() {
+  Serial1.print(this->inputString);
   Serial1.print('\r'); // Appending a <CR>
   Serial2.print("Input command: ");
-  Serial2.println(inputString);
-  strcpy(inputString, "");
-  memset(inputString, 0, sizeof(inputString));
+  Serial2.println(this->inputString);
+  strcpy(this->inputString, "");
+  memset(this->inputString, 0, sizeof(this->inputString));
 }
 
 // Receiving a response
-char * receiveResponse() {
+char * AtlasRGB::receiveResponse() {
   // Getting string from sensor
   int i = 0;
   while (Serial1.available() > 0) {
     char inputChar = (char)Serial1.read(); // Get the char
     Serial2.print(inputChar);
-    sensorString[i++] = inputChar;
+    this->sensorString[i++] = inputChar;
     if (inputChar == '\r') {
-      sensorStringComplete = true;
+      this->sensorStringComplete = true;
       break;
     }
   }
 
   // Printing string if complete
-  if (sensorStringComplete) {
-    if (isdigit(sensorString[0])) {
-      Serial2.println(sensorString);
-      strcpy(sensorString, "");
-      sensorStringComplete = false;
-      memset(sensorString, 0, sizeof(sensorString));
-      return sensorString;
+  if (this->sensorStringComplete) {
+    if (isdigit(this->sensorString[0])) {
+      Serial2.println(this->sensorString);
+      strcpy(this->sensorString, "");
+      this->sensorStringComplete = false;
+      memset(this->sensorString, 0, sizeof(this->sensorString));
+      return this->sensorString;
     }
     else {
-      Serial2.println(sensorString);
-      strcpy(sensorString, "");
-      sensorStringComplete = false;
-      memset(sensorString, 0, sizeof(sensorString));
-      return sensorString;
+      Serial2.println(this->sensorString);
+      strcpy(this->sensorString, "");
+      this->sensorStringComplete = false;
+      memset(this->sensorString, 0, sizeof(this->sensorString));
+      return this->sensorString;
     }
   }
 
@@ -68,12 +73,12 @@ char * receiveResponse() {
 }
 
 // Print RGB Data
-char * printRGBData() {                       
+char * AtlasRGB::printRGBData() {                       
   char *red;                                          
   char *grn;                                          
   char *blu;                                                                                
 
-  red = strtok(sensorString, ",");              
+  red = strtok(this->sensorString, ",");              
   grn = strtok(NULL, ",");                            
   blu = strtok(NULL, ","); 
 
@@ -94,8 +99,8 @@ char * printRGBData() {
   return response;
 }
 
-char * run() {
-  if (strcmp(inputString, "")) {
+char * AtlasRGB::run() {
+  if (strcmp(this->inputString, "")) {
     sendMessage();
   }
   
@@ -111,103 +116,90 @@ char * run() {
  Return 0 on success, -1 on failure
 */
 
-
-char * toArray(int number)
-{
-    int n = log10(number) + 1;
-    int i;
-    char *numberArray = (char *) calloc(n, sizeof(char));
-    for (i = n-1; i >= 0; --i, number /= 10)
-    {
-        numberArray[i] = (number % 10) + '0';
-    }
-    return numberArray;
-} 
-
 // Setting LED Brightness
-int setLEDBrightness(int value, bool powerSaving) {
+int AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
   if (value < 0) {
-    strcpy(inputString, "L,");
-    strcat(inputString, "?");
+    strcpy(this->inputString, "L,");
+    strcat(this->inputString, "?");
     return 0;
   }
   if (value >= 0 && value <= 100) {
     if (powerSaving) {
-      sprintf(inputString, "L,%d,T", value);
+      sprintf(this->inputString, "L,%d,T", value);
       return 0;
     }
-    sprintf(inputString, "L,%d", value);
+    sprintf(this->inputString, "L,%d", value);
     return 0;
   }
   return -1;
 }
 
 // Setting Indicator LED on/off
-void setIndicatorLED(bool status, bool power) {
-  strcpy(inputString, "iL,");
+void AtlasRGB::setIndicatorLED(bool status, bool power) {
+  strcpy(this->inputString, "iL,");
   if (status) {
-    strcat(inputString, "?");
+    strcat(this->inputString, "?");
   }
   else {
     if (power) {
-      strcat(inputString, "1");
+      strcat(this->inputString, "1");
     }
     else {
-      strcat(inputString, "0");
+      strcat(this->inputString, "0");
     }
   }
 }
 
 // Flashes LED to find sensor
-void findSensor() {
-  strcpy(inputString, "Find");
+void AtlasRGB::findSensor() {
+  strcpy(this->inputString, "Find");
 }
 
 // Setting continuous mode
-void continuousMode(int value) {
+void AtlasRGB::continuousMode(int value) {
   if (value < 0) {
-    strcpy(inputString, "C,?");
+    strcpy(this->inputString, "C,?");
     return;
   }
-  sprintf(inputString, "C,%d", value);
+  sprintf(this->inputString, "C,%d", value);
 }
 
 // Takes a single reading
-void singleMode() {
-  strcpy(inputString, "R");
+void AtlasRGB::singleMode() {
+  strcpy(this->inputString, "R");
 }
 
 // Calibrates sensor
-void calibrateSensor() {
-  strcpy(inputString, "Cal");
+void AtlasRGB::calibrateSensor() {
+  strcpy(this->inputString, "Cal");
 }
 
 // Toggling color matching
-void colorMatching(int value) {
+void AtlasRGB::colorMatching(int value) {
   if (value < 0) {
-    strcpy(inputString, "M,?");
+    strcpy(this->inputString, "M,?");
     return;
   }
   if (value) {
-    strcpy(inputString, "M,1");
+    strcpy(this->inputString, "M,1");
   }
   else {
-    strcpy(inputString, "M,0");
+    strcpy(this->inputString, "M,0");
   }
   return;
 }
 
 // Returns device information 
-void deviceInformation() {
-  strcpy(inputString, "i");
+void AtlasRGB::deviceInformation() {
+  strcpy(this->inputString, "i");
 }
 
 // Enters sleep mode
-void sleepSensor() {
-  strcpy(inputString, "Sleep");
+void AtlasRGB::sleepSensor() {
+  strcpy(this->inputString, "Sleep");
 }
 
 // Performs a factory reset
-void factoryReset() {
-  strcpy(inputString, "Factory");
+void AtlasRGB::factoryReset() {
+  strcpy(this->inputString, "Factory");
 }
