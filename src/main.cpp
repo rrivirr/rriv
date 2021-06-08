@@ -30,7 +30,7 @@ void setup(void)
   AtlasRGB::instance()->setLEDBrightness(100, true);
   AtlasRGB::instance()->sendMessage();
 
-  Serial2.println("RGB Sensor setup successfully");
+  Serial2.println("RGB Sensor setup successfully!");
 
 
   Serial2.println("hello");
@@ -115,7 +115,7 @@ void loop(void)
 
   // Prints sensor output for RGB values
   while (true) {
-    Serial2.print(AtlasRGB::instance()->run()); 
+    AtlasRGB::instance()->run();
   }  
 
   // calculate and print free memory
