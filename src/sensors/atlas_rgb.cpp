@@ -160,6 +160,82 @@ void AtlasRGB::colorMatching(int value) {
   }
   else {
     strcpy(this->inputString, "M,0");
+  }   
+}
+
+// Sets baud rate: 300, 1200, 2400, 9600, 19200, 38400, 57600, 115200
+int AtlasRGB::setBaudRate(int value) {
+  if (value < 0) {
+    strcpy(this->inputString, "Baud,?");
+    return 0;
+  }
+  else {
+    switch(value) {
+      case 300: case 1200: case 2400: case 9600: case 19200: case 38400: case 57600: case 115200: 
+        sprintf(this->inputString, "Baud,%", value);
+        return 0;
+      default:
+        return -1;
+    }
+  }
+}
+
+// Setting proximity detection: 3 methods
+
+// Sets custom distance: 250 - 1023
+int AtlasRGB::proximityDetection(int value) {
+  if (value < 0) {
+    strcpy(this->inputString, "P,?");
+    return 0;
+  }
+  if (value >= 250 && value <= 1023) {
+    sprintf(this->inputString, "P,%d", value);
+    return 0;
+  }
+  return -1;
+}
+
+// Sets predefined value: high (H), medium (M), low (L)
+int AtlasRGB::proximityDetection(char value) {
+  switch(value) {
+    case 'H': case 'M': case 'L': 
+      sprintf(this->inputString, "P,%c", value);
+      return 0;
+    default: 
+      return -1;
+  }
+}
+
+// Toggles proximity detection
+void AtlasRGB::proximityDetection(bool power) {
+  if (power) {
+    strcpy(this->inputString, "P,1");
+  }
+  else {
+    strcpy(this->inputString, "P,0");
+  }
+}
+
+// Sets gamma correction: 0.01 - 4.99
+int AtlasRGB::gammaCorrection(float value) {
+  if (value < 0) {
+    strcpy(this->inputString, "G,?");
+    return 0;
+  }
+  if (value >= 0.01 && value <= 4.99) {
+    sprintf(this->inputString, "P,%f", value);
+    return 0;
+  }
+  return -1;
+}
+
+// Sets custom name for sensor
+void AtlasRGB::nameDevice(char * value) {
+  if (!strcmp(value, "")) {
+    strcpy(this->inputString, "Name,?");
+  }
+  else {
+    sprintf(this->inputString, "Name,%s", value);
   }
 }
 
@@ -191,4 +267,9 @@ void AtlasRGB::calibrateSensor() {
 // Flashes LED to find sensor
 void AtlasRGB::findSensor() {
   strcpy(this->inputString, "Find");
+}
+
+// Returns device status
+void AtlasRGB::getStatus() {
+  strcpy(this->inputString, "Status");
 }
