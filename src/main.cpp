@@ -23,20 +23,13 @@ void setup(void)
 
   startSerial2();
 
-  // rgbSensor.start();
-
-  // //rgbSensor.findSensor();
-  // rgbSensor.setLEDBrightness(100, false);
-  // rgbSensor.sendMessage();
-  
-  // rgbSensor.setIndicatorLED(false, true);
-  // rgbSensor.sendMessage();
+  // Sets up RGB Sensor
+  AtlasRGB::instance()->start();
 
 
-  start();
-
-  setLEDBrightness(100, true);
-  sendMessage();
+  // Sets brightness of LED and power saving mode
+  AtlasRGB::instance()->setLEDBrightness(100, true);
+  AtlasRGB::instance()->sendMessage();
 
 
   Serial2.println("hello");
@@ -116,9 +109,9 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-  deviceInformation();
+  AtlasRGB::instance()->deviceInformation();
   while (true) {
-    Serial2.print(run()); 
+    Serial2.print(AtlasRGB::instance()->run()); 
   }  
 
   // calculate and print free memory
