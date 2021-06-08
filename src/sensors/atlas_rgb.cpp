@@ -77,6 +77,8 @@ char * AtlasRGB::receiveResponse() {
       return copy;
     }
   }
+
+  return (char *) "";
 }
 
 // Print input string in RGB format
@@ -172,7 +174,7 @@ int AtlasRGB::setBaudRate(int value) {
   else {
     switch(value) {
       case 300: case 1200: case 2400: case 9600: case 19200: case 38400: case 57600: case 115200: 
-        sprintf(this->inputString, "Baud,%", value);
+        sprintf(this->inputString, "Baud,%d", value);
         return 0;
       default:
         return -1;
