@@ -30,6 +30,7 @@ bool clearModes = false;
 bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
+// AtlasRGB rgbSensor;
 
 
 void enableI2C1()
@@ -40,8 +41,8 @@ void enableI2C1()
   Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
 
   delay(1000);
-  //i2c_bus_reset(I2C1); // hangs here if this is called
-  //Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
+  // i2c_bus_reset(I2C1); // hangs here if this is called
+  // Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
 
   Wire.begin();
   delay(1000);
@@ -865,3 +866,4 @@ void monitorTemperature() // print out calibration information & current reading
   sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 }
+
