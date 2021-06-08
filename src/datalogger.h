@@ -17,6 +17,7 @@
 #include "system/switched_power.h"
 
 #include "sensors/atlas_oem.h"
+#include "sensors/atlas_rgb.h"
 
 // Settings
 
@@ -38,6 +39,7 @@ extern bool configurationMode;
 extern bool debugValuesMode;
 extern bool clearModes;
 extern bool tempCalMode;
+// extern AtlasRGB rgbSensor;
 //extern bool thermistorCalibrated;
 
 void enableI2C1();
