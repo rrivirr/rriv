@@ -8,28 +8,36 @@
 
 #include "sensors/atlas_rgb.h"
 
-#define rx 2 
-#define tx 3
-
-#if SOFTWARE_SERIAL_AVAILABLE
-  printf("BUBEFIUF");
-#endif
-
 // Setup and Loop
-AtlasRGB rgbSensor;
+
 
 void setup(void)
 {
-
   startSerial2();
 
   startCustomWatchDog();
-
+  
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
 
   setupSwitchedPower();
+
+  // rgbSensor.start();
+
+  // //rgbSensor.findSensor();
+  // rgbSensor.setLEDBrightness(100, false);
+  // rgbSensor.sendMessage();
+  
+  // rgbSensor.setIndicatorLED(false, true);
+  // rgbSensor.sendMessage();
+
+
+  start();
+
+  setLEDBrightness(100, true);
+  sendMessage();
+
 
   Serial2.println("hello");
   enableSwitchedPower();
@@ -81,9 +89,7 @@ void setup(void)
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 
-  print_debug_status();
-
- 
+  print_debug_status(); 
 }
 
 
@@ -102,22 +108,18 @@ void intentionalMemoryLeak(){
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
   Serial2.println(mem); // use it so compiler doesn't remove the leak
 }
-
+//AtlasRGB rgbSensor;
 /* main run loop order of operation: */
 void loop(void)
 {
 
   startCustomWatchDog();
   printWatchDogStatus();
-  
-  // RGB Sensor Output
-  char * rgbRes = rgbSensor.run();
-  Serial2.println("efiefoi");
-  if (strcmp(rgbRes, "")) {
-    //Monitor::instance()->Monitor::instance()->writeSerialMessage(rgbRes);
-    Serial2.println(rgbRes);
-  }
 
+  deviceInformation();
+  while (true) {
+    Serial2.print(run()); 
+  }  
 
   // calculate and print free memory
   // reset the system if we are running out of memory
