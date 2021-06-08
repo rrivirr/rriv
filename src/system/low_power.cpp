@@ -62,7 +62,7 @@ void componentsAlwaysOff()
 
   usart_disable(Serial1.c_dev());
 
-  //usart_disable(Serial3.c_dev());
+  usart_disable(Serial3.c_dev());
 
   spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
