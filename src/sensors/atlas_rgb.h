@@ -11,6 +11,11 @@ class AtlasRGB {
     char sensorString[30];
     bool inputStringComplete;
     bool sensorStringComplete;
+
+    // Sensor Data
+    int red;
+    int green;
+    int blue;
     
     // Private Functions
     void setupSerial();
@@ -28,8 +33,7 @@ class AtlasRGB {
     void sendMessage();
     char * receiveResponse(); 
     char * run();
-
-
+  
     // Command generation
     int setLEDBrightness(int value, bool powerSaving);
     void setIndicatorLED(bool status, bool power);

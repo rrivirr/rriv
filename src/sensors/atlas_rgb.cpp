@@ -19,13 +19,16 @@ void AtlasRGB::start() {
   strcpy(this->sensorString, "");
   this->inputStringComplete = false;
   this->sensorStringComplete = false;
+  this->red = 0;
+  this->green = 0;
+  this->blue = 0;
   Serial2.println("RGB Constructor");
 }
 
 // Setting up serial
 void AtlasRGB::setupSerial() {
   Serial1.begin(9600);
-  Serial2.println("Setup Serial1");
+  Serial2.println("Serial1 setup complete");
 }
 
 // Communicating with sensor
@@ -34,6 +37,7 @@ void AtlasRGB::sendMessage() {
   Serial1.print('\r'); // Appending a <CR>
   Serial2.print("Input command: ");
   Serial2.println(this->inputString);
+
   strcpy(this->inputString, "");
   memset(this->inputString, 0, sizeof(this->inputString));
 }
@@ -53,16 +57,22 @@ char * AtlasRGB::receiveResponse() {
 
   // Printing string if complete
   if (this->sensorStringComplete) {
+    // Deep copy of sensor response
     char * copy = (char *) malloc(strlen(this->sensorString) + 1);
     strcpy(copy, this->sensorString);
+    
+    // Clearing sensorString for next response
     strcpy(this->sensorString, "");
     this->sensorStringComplete = false;
     memset(this->sensorString, 0, sizeof(this->sensorString));
+    
     if (isdigit(copy[0])) {
+      // Prints RGB format output to Serial
       Serial2.println(printRGBData(copy));
       return copy;
     }
     else {
+      // Prints commmand outputs to Serial
       Serial2.println(copy);
       return copy;
     }
@@ -71,13 +81,13 @@ char * AtlasRGB::receiveResponse() {
 
 // Print input string in RGB format
 char * AtlasRGB::printRGBData(char * input) {                       
-  int red= atoi(strtok(input, ","));                                 
-  int grn= atoi(strtok(NULL, ","));                                 
-  int blu= atoi(strtok(NULL, ","));
+  this->red= atoi(strtok(input, ","));                                 
+  this->green= atoi(strtok(NULL, ","));                                 
+  this->blue= atoi(strtok(NULL, ","));
 
   char * response = (char *) malloc(50);                         
   
-  sprintf(response, "RED: %d GREEN: %d BLUE: %d", red, grn, blu);
+  sprintf(response, "RED: %d GREEN: %d BLUE: %d", this->red, this->green, this->blue);
 
   return response;
 }
@@ -90,11 +100,11 @@ char * AtlasRGB::run() {
   return receiveResponse();
 }
 
-/* 
+/**************************************************************************************** 
  Add individual sensor commands below
  Negative or false first argument - status query
  Return 0 on success, -1 on failure
-*/
+*****************************************************************************************/
 
 // Setting LED Brightness
 int AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
@@ -139,34 +149,23 @@ void AtlasRGB::findSensor() {
 void AtlasRGB::continuousMode(int value) {
   if (value < 0) {
     strcpy(this->inputString, "C,?");
-    return;
   }
-  sprintf(this->inputString, "C,%d", value);
-}
-
-// Takes a single reading
-void AtlasRGB::singleMode() {
-  strcpy(this->inputString, "R");
-}
-
-// Calibrates sensor
-void AtlasRGB::calibrateSensor() {
-  strcpy(this->inputString, "Cal");
+  else {
+    sprintf(this->inputString, "C,%d", value);
+  }
 }
 
 // Toggling color matching
 void AtlasRGB::colorMatching(int value) {
   if (value < 0) {
     strcpy(this->inputString, "M,?");
-    return;
   }
-  if (value) {
+  else if (value) {
     strcpy(this->inputString, "M,1");
   }
   else {
     strcpy(this->inputString, "M,0");
   }
-  return;
 }
 
 // Returns device information 
@@ -182,4 +181,14 @@ void AtlasRGB::sleepSensor() {
 // Performs a factory reset
 void AtlasRGB::factoryReset() {
   strcpy(this->inputString, "Factory");
+}
+
+// Takes a single reading
+void AtlasRGB::singleMode() {
+  strcpy(this->inputString, "R");
+}
+
+// Calibrates sensor
+void AtlasRGB::calibrateSensor() {
+  strcpy(this->inputString, "Cal");
 }
