@@ -33,14 +33,17 @@ class AtlasCO2 {
   
     // Command generation
     void setIndicatorLED(bool status, bool power);
+    int setAlarm(char * msg, int value);
+    int calibrateSensor(bool clear, int value);
     void continuousMode(int value);
     int setBaudRate(int value);
+    int enableTemperature(int value);
     void nameDevice(char * value);
+    void exportCalibration(bool status);
     void deviceInformation();
     void sleepSensor();
     void factoryReset();
     void singleMode();
-    void calibrateSensor();
     void findSensor();
     void getStatus();
 };
