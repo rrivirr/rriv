@@ -86,27 +86,9 @@ char * AtlasCO2::run() {
  Return 0 on success, -1 on failure
 *****************************************************************************************/
 
-// Setting LED Brightness
-int AtlasCO2::setLEDBrightness(int value, bool powerSaving) {
-  if (value < 0) {
-    strcpy(this->inputString, "L,");
-    strcat(this->inputString, "?");
-    return 0;
-  }
-  if (value >= 0 && value <= 100) {
-    if (powerSaving) {
-      sprintf(this->inputString, "L,%d,T", value);
-      return 0;
-    }
-    sprintf(this->inputString, "L,%d", value);
-    return 0;
-  }
-  return -1;
-}
-
 // Setting Indicator LED on/off
 void AtlasCO2::setIndicatorLED(bool status, bool power) {
-  strcpy(this->inputString, "iL,");
+  strcpy(this->inputString, "L,");
   if (status) {
     strcat(this->inputString, "?");
   }
@@ -130,19 +112,6 @@ void AtlasCO2::continuousMode(int value) {
   }
 }
 
-// Toggling color matching
-void AtlasCO2::colorMatching(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "M,?");
-  }
-  else if (value) {
-    strcpy(this->inputString, "M,1");
-  }
-  else {
-    strcpy(this->inputString, "M,0");
-  }   
-}
-
 // Sets baud rate: 300, 1200, 2400, 9600, 19200, 38400, 57600, 115200
 int AtlasCO2::setBaudRate(int value) {
   if (value < 0) {
@@ -158,55 +127,6 @@ int AtlasCO2::setBaudRate(int value) {
         return -1;
     }
   }
-}
-
-// Setting proximity detection: 3 methods
-
-// Sets custom distance: 250 - 1023
-int AtlasCO2::proximityDetection(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "P,?");
-    return 0;
-  }
-  if (value >= 250 && value <= 1023) {
-    sprintf(this->inputString, "P,%d", value);
-    return 0;
-  }
-  return -1;
-}
-
-// Sets predefined value: high (H), medium (M), low (L)
-int AtlasCO2::proximityDetection(char value) {
-  switch(value) {
-    case 'H': case 'M': case 'L': 
-      sprintf(this->inputString, "P,%c", value);
-      return 0;
-    default: 
-      return -1;
-  }
-}
-
-// Toggles proximity detection
-void AtlasCO2::proximityDetection(bool power) {
-  if (power) {
-    strcpy(this->inputString, "P,1");
-  }
-  else {
-    strcpy(this->inputString, "P,0");
-  }
-}
-
-// Sets gamma correction: 0.01 - 4.99
-int AtlasCO2::gammaCorrection(float value) {
-  if (value < 0) {
-    strcpy(this->inputString, "G,?");
-    return 0;
-  }
-  if (value >= 0.01 && value <= 4.99) {
-    sprintf(this->inputString, "P,%f", value);
-    return 0;
-  }
-  return -1;
 }
 
 // Sets custom name for sensor
