@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "sensors/atlas_rgb.h"
+#include "sensors/atlas_co2.h"
 
 // Setup and Loop
 
@@ -29,6 +30,14 @@ void setup(void)
   // Sets brightness of LED and power saving mode
   AtlasRGB::instance()->setLEDBrightness(100, true);
   AtlasRGB::instance()->sendMessage();
+
+
+  // Sets up CO2 Sensor
+  AtlasCO2::instance()->start();
+
+  // Sets brightness of LED and power saving mode
+  //AtlasCO2::instance()->setLEDBrightness(100, true);
+  //AtlasCO2::instance()->sendMessage();
 
   Serial2.println("RGB Sensor setup successfully!");
 
@@ -110,12 +119,20 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-  // Prints sensor information (check)
+  // Prints RGB sensor information (check)
   AtlasRGB::instance()->deviceInformation();
 
   // Prints sensor output for RGB values
   while (true) {
     AtlasRGB::instance()->run();
+  }  
+
+  // Prints CO2 sensor information (check)
+  AtlasCO2::instance()->deviceInformation();
+
+  // Prints sensor output for RGB values
+  while (true) {
+    AtlasCO2::instance()->run();
   }  
 
   // calculate and print free memory
