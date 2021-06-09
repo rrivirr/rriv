@@ -1,12 +1,12 @@
 #include "atlas_co2.h"
 
 // Reference object
-AtlasCO2 * rgbSensor = new AtlasCO2();
+AtlasCO2 * co2Sensor = new AtlasCO2();
 
 
 // Returns instance
 AtlasCO2 * AtlasCO2::instance() {
-  return rgbSensor;
+  return co2Sensor;
 }
 
 // Dummy constructor
@@ -20,7 +20,7 @@ void AtlasCO2::start() {
   this->inputStringComplete = false;
   this->sensorStringComplete = false;
   this->data = 0;
-  Serial2.println("RGB Constructor");
+  Serial2.println("CO2 Constructor");
 }
 
 // Setting up serial
@@ -102,6 +102,50 @@ void AtlasCO2::setIndicatorLED(bool status, bool power) {
   }
 }
 
+// Setting alarm
+int AtlasCO2::setAlarm(char * msg, int value) {
+    if (value < 0) {
+        strcpy(this->inputString, "Alarm,?");
+    }
+    else if (!strcmp(msg, "")) {
+        sprintf(this->inputString, "Alarm,%d", value);
+    }
+    else if (!strcmp(msg, "en") && (value == 0 || value == 1)) {
+        sprintf(this->inputString, "Alarm,%s,%d", msg, value);
+    }
+    else if (!strcmp(msg, "tol") && (value >= 0 && value <= 500)) {
+        sprintf(this->inputString, "Alarm,%s,%d", msg, value);
+    }
+    else {
+        return -1;
+    }
+    return 0;
+}
+
+// Calibrates sensor
+int AtlasCO2::calibrateSensor(bool clear, int value) {
+  if (clear) {
+    // Resets calibration to factory settings
+    strcpy(this->inputString, "Cal,clear");
+  }
+  else if (value < 0) {
+    // Status check
+    strcpy(this->inputString, "Cal,?");
+  }
+  else if (value == 0) {
+    // Low point calibration
+    sprintf(this->inputString, "Cal,%d", value);
+  }
+  else if (value <=  5000 && value >= 3000) {
+    // High point calibration
+    sprintf(this->inputString, "Cal,%d", value);
+  }
+  else {
+      return -1;
+  }
+  return 0;
+}
+
 // Setting continuous mode
 void AtlasCO2::continuousMode(int value) {
   if (value < 0) {
@@ -129,6 +173,20 @@ int AtlasCO2::setBaudRate(int value) {
   }
 }
 
+// Toggles internal temperature from output string
+int AtlasCO2::enableTemperature(int value) {
+    if (value < 0) {
+        strcpy(this->inputString, "O,?");
+    }
+    else if (value == 0 || value == 1) {
+        sprintf(this->inputString, "O,t,%d", value);
+    }
+    else {
+        return -1;
+    }
+    return 0;
+}
+
 // Sets custom name for sensor
 void AtlasCO2::nameDevice(char * value) {
   if (!strcmp(value, "")) {
@@ -137,6 +195,16 @@ void AtlasCO2::nameDevice(char * value) {
   else {
     sprintf(this->inputString, "Name,%s", value);
   }
+}
+
+// Exports calibration
+void AtlasCO2::exportCalibration(bool status) {
+    if (status) {
+        strcpy(this->inputString, "Export,?");
+    }
+    else {
+        strcpy(this->inputString, "Export");
+    }
 }
 
 // Returns device information 
@@ -159,10 +227,6 @@ void AtlasCO2::singleMode() {
   strcpy(this->inputString, "R");
 }
 
-// Calibrates sensor
-void AtlasCO2::calibrateSensor() {
-  strcpy(this->inputString, "Cal");
-}
 
 // Flashes LED to find sensor
 void AtlasCO2::findSensor() {
