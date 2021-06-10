@@ -58,7 +58,6 @@ char * AtlasCO2::receiveResponse() {
     // Deep copy of sensor response
     char * copy = (char *) malloc(strlen(this->sensorString) + 1);
     strcpy(copy, this->sensorString);
-    
     // Clearing sensorString for next response
     strcpy(this->sensorString, "");
     this->sensorStringComplete = false;
