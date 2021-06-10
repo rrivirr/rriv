@@ -25,11 +25,11 @@ void setup(void)
   startSerial2();
 
   // Sets up RGB Sensor
-  AtlasRGB::instance()->start();
+  //AtlasRGB::instance()->start();
 
   // Sets brightness of LED and power saving mode
-  AtlasRGB::instance()->setLEDBrightness(100, true);
-  AtlasRGB::instance()->sendMessage();
+  //AtlasRGB::instance()->setLEDBrightness(100, true);
+  //AtlasRGB::instance()->sendMessage();
 
 
   // Sets up CO2 Sensor
@@ -39,7 +39,7 @@ void setup(void)
   //AtlasCO2::instance()->setLEDBrightness(100, true);
   //AtlasCO2::instance()->sendMessage();
 
-  Serial2.println("RGB Sensor setup successfully!");
+  Serial2.println("CO2 Sensor setup successfully!");
 
 
   Serial2.println("hello");
@@ -111,7 +111,7 @@ void intentionalMemoryLeak(){
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
   Serial2.println(mem); // use it so compiler doesn't remove the leak
 }
-//AtlasRGB rgbSensor;
+
 /* main run loop order of operation: */
 void loop(void)
 {
@@ -120,12 +120,12 @@ void loop(void)
   printWatchDogStatus();
 
   // Prints RGB sensor information (check)
-  AtlasRGB::instance()->deviceInformation();
+  //AtlasRGB::instance()->deviceInformation();
 
   // Prints sensor output for RGB values
-  while (true) {
-    AtlasRGB::instance()->run();
-  }  
+  // while (true) {
+  //   //AtlasRGB::instance()->run();
+  // }  
 
   // Prints CO2 sensor information (check)
   AtlasCO2::instance()->deviceInformation();

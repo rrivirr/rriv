@@ -30,7 +30,6 @@ bool clearModes = false;
 bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
-// AtlasRGB rgbSensor;
 
 
 void enableI2C1()
