@@ -120,3 +120,11 @@ void readEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little
   }
   data[size] = '\0';
 }
+
+void clearEEPROMAddress(byte address, uint8_t length)
+{
+  for (uint8_t i = 0; i < length; i++)
+  {
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, EEPROM_RESET_VALUE);
+  }
+}
