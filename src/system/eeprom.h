@@ -4,8 +4,29 @@
 #include <Arduino.h>
 #include <Wire.h> // Communicate with I2C/TWI devices
 
+/*
+ * Partition scheme (24LC01B 1Kbit)
+ * 000-099 Waterbear Device Info
+ * 100-199
+ * 200-249
+ * 250-299 Waterbear Device Calibration / Significant Values
+ * 300-399
+ * 400-499
+ * 500-549 Sensor 1 Calibration
+ * 550-599 Sensor 2 Calibration
+ * 600-649 Sensor 3 Calibration
+ * 650-699 Sensor 4 Calibration
+ * 700-749 Sensor 5 Calibration
+ * 750-799 Sensor 6 Calibration
+ * 800-849 Sensor 7 Calibration
+ * 850-899 Sensor 8 Calibration
+ * 900-949 Sensor 9 Calibration
+ * 950-999 Sensor 10 Calibration
+*/
 
-#define EEPROM_I2C_ADDRESS 0x50
+#define EEPROM_I2C_ADDRESS 0x50 // this is weird
+
+#define EEPROM_RESET_VALUE 255 // max value of a byte
 
 #define EEPROM_UUID_ADDRESS_START 0
 #define EEPROM_UUID_ADDRESS_END 15
@@ -18,6 +39,60 @@
 #define DEVICE_SERIAL_NUMBER_ADDRESS_START 44
 #define DEVICE_SERIAL_NUMBER_ADDRESS_END 63
 #define DEVICE_SERIAL_NUMBER_LENGTH 16 // out of 20
+
+// Waterbear Device Calibration / Significant Values
+#define BURST_INTERVAL_ADDRESS 250
+#define BURST_LENGTH_ADDRESS 251
+#define USER_WAKE_TIMEOUT_ADDRESS 252 // timeout after wakeup from user interaction, seconds->min?
+#define SD_FIELDCOUNT_ADDRESS 253
+
+// Debug settings bit register map {outdated with various serial command modes?}
+/*
+ * 0 measurements: enable log messages related to measurements & bursts
+ * 1 loop: don't sleep
+ * 2 short sleep: sleep for a hard coded short amount of time
+ * 3 to file: also send debug messages to the output file
+ * 4 to serial: send debug messages to the serial interface
+*/
+
+#define DEBUG_SETTINGS_ADDRESS 404 // 8 booleans {measurements, loop, short sleep, to file, to serial}
+
+/*
+ * Sensor General Register Map:
+ * 0 sensor type
+ * 1 calibrated boolean (1 yes, 0 no)
+ * 2-29 calibration variables
+*/
+#define SENSOR_ADDRESS_LENGTH 50
+#define SENSOR_1_ADDRESS_START 500
+#define SENSOR_2_ADDRESS_START 550
+#define SENSOR_3_ADDRESS_START 600
+#define SENSOR_4_ADDRESS_START 650
+#define SENSOR_5_ADDRESS_START 700
+#define SENSOR_6_ADDRESS_START 750
+#define SENSOR_7_ADDRESS_START 800
+#define SENSOR_8_ADDRESS_START 850
+#define SENSOR_9_ADDRESS_START 900
+#define SENSOR_10_ADDRESS_START 950
+
+// Sensor Types
+#define SENSOR_TYPE_THERMISTOR 0
+
+#define SENSOR_CALIBRATED 1
+
+/*
+ * Thermistor Register Map
+ * 0 sensor pin
+ * 1 sensor type = 0
+ * 2 calibrated boolean (1 yes, 0 no)
+ * 3-4 c1
+ * 5-6 v1
+ * 7-8 c2
+ * 9-10 v2
+ * 11-12 m
+ * 13-16 b
+ * 17-20 calibration timestamp
+*/
 
 //Thermistor Calibration Block
 #define TEMPERATURE_C1_ADDRESS_START 64
@@ -61,5 +136,7 @@ void readUniqueId(unsigned char * uuid); // uuid must point to char[UUID_LENGTH]
 
 void writeEEPROMBytes(byte address, unsigned char * data, uint8_t size);
 void readEEPROMBytes(byte address, unsigned char * data, uint8_t size);
+
+void clearEEPROMAddress(byte address, uint8_t length);
 
 #endif
