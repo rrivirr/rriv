@@ -24,6 +24,9 @@ void setup(void)
 
   startSerial2();
 
+
+  // ******* Atlas Sensors
+  
   // Sets up RGB Sensor
   //AtlasRGB::instance()->start();
 
@@ -32,14 +35,16 @@ void setup(void)
   //AtlasRGB::instance()->sendMessage();
 
 
-  // Sets up CO2 Sensor
-  AtlasCO2::instance()->start();
+  // // Sets up CO2 Sensor
+  // AtlasCO2::instance()->start();
 
-  // Sets brightness of LED and power saving mode
-  //AtlasCO2::instance()->setLEDBrightness(100, true);
-  //AtlasCO2::instance()->sendMessage();
+  // // Sets brightness of LED and power saving mode
+  // //AtlasCO2::instance()->setLEDBrightness(100, true);
+  // //AtlasCO2::instance()->sendMessage();
 
-  Serial2.println("CO2 Sensor setup successfully!");
+  // Serial2.println("CO2 Sensor setup successfully!");
+
+  // ******* Atlas Sensors
 
 
   Serial2.println("hello");
@@ -119,6 +124,8 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
+  // ******* Atlas Sensors
+
   // Prints RGB sensor information (check)
   //AtlasRGB::instance()->deviceInformation();
 
@@ -128,12 +135,14 @@ void loop(void)
   // }  
 
   // Prints CO2 sensor information (check)
-  AtlasCO2::instance()->deviceInformation();
+  // AtlasCO2::instance()->deviceInformation();
 
-  // Prints sensor output for RGB values
-  while (true) {
-    AtlasCO2::instance()->run();
-  }  
+  // // Prints sensor output for RGB values
+  // while (true) {
+  //   AtlasCO2::instance()->run();
+  // }  
+
+  // ******* Atlas Sensors
 
   // calculate and print free memory
   // reset the system if we are running out of memory
