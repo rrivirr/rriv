@@ -1,16 +1,17 @@
 #include <Arduino.h>
-#include "datalogger.h"
-#include "system/watchdog.h"
-#include "scratch/dbgmcu.h"
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h> // necessary?
 #include <string.h>
+#include <Ezo_i2c.h>
 
+#include "datalogger.h"
+#include "scratch/dbgmcu.h"
+#include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
 #include "sensors/atlas_co2.h"
 
 // Setup and Loop
-
+Ezo_board atlasRGBSensor(&Wire2, 112, "AtlasRGB");
 
 void setup(void)
 {
@@ -54,6 +55,7 @@ void setup(void)
   Serial2.println("hello");
   Serial2.flush();
 
+  Serial2.println(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
@@ -143,7 +145,21 @@ void loop(void)
   // }  
 
   // ******* Atlas Sensors
-
+  //char buffer[52];
+  int res = 9;
+  Serial2.println("Sending command: ");
+  while (true) {
+    atlasRGBSensor.send_cmd("i");
+    atlasRGBSensor.send_read_cmd();
+    Serial2.println(atlasRGBSensor.receive_read_cmd(&res));
+    Serial2.print("Error: ");
+    Serial2.println(res);
+  }
+  Serial2.println(atlasRGBSensor.receive_read_cmd(&res));
+  Serial2.print("Error: ");
+  Serial2.println(res);
+  Serial2.println("Received command");
+  //Serial2.println(buffer);
   // calculate and print free memory
   // reset the system if we are running out of memory
   char freeMemoryMessage[21];
