@@ -60,8 +60,11 @@
 /*
  * Sensor General Register Map:
  * 0 sensor type
- * 1 calibrated boolean (1 yes, 0 no)
- * 2-29 calibration variables
+ * 1 ADC/Digital sensor type
+ * 2 calibrated boolean (1 yes, 0 no) could be a bit?
+ * 3-29 calibration variables:
+ * Pin if ADC
+ * i2c address?
 */
 #define SENSOR_ADDRESS_LENGTH 50
 #define SENSOR_1_ADDRESS_START 500
@@ -76,22 +79,25 @@
 #define SENSOR_10_ADDRESS_START 950
 
 // Sensor Types
-#define SENSOR_TYPE_THERMISTOR 0
+#define NO_SENSOR 0; // or 255?
+#define SENSOR_TYPE_THERMISTOR 1
+
 
 #define SENSOR_CALIBRATED 1
 
 /*
  * Thermistor Register Map
- * 0 sensor pin
- * 1 sensor type = 0
+ * 0 sensor type = 1
+ * 1 ADC
  * 2 calibrated boolean (1 yes, 0 no)
- * 3-4 c1
- * 5-6 v1
- * 7-8 c2
- * 9-10 v2
- * 11-12 m
- * 13-16 b
- * 17-20 calibration timestamp
+ * 3 sensor pin
+ * 4-5 c1
+ * 6-7 v1
+ * 8-9 c2
+ * 10-11 v2
+ * 12-13 m
+ * 14-17 b
+ * 18-21 calibration timestamp
 */
 
 //Thermistor Calibration Block

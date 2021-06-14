@@ -2,7 +2,7 @@
 #define WATERBEAR_CONFIGURATION
 
 #define SERIAL_BAUD 115200
-#define USER_WAKE_TIMEOUT           60 * 5 // Timeout after wakeup from user interaction, seconds
+#define USER_WAKE_TIMEOUT           60 * 15 // Timeout after wakeup from user interaction, seconds
 
 // DEBUG behaviors
 #define DEBUG_MEASUREMENTS true // enable log messages related to measurement & bursts

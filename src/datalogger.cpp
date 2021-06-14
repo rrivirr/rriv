@@ -4,8 +4,8 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 15;     // minutes between loggings when not in short sleep
-short burstLength = 10; // how many readings in a burst
+short interval = 1;     // minutes between loggings when not in short sleep
+short burstLength = 100; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -820,10 +820,10 @@ void monitorValues()
 {
   // print content being logged each second
   blink(1, 500);
-  char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
+  char valuesBuffer[300]; // 51+25+11+24+(7*5)+33
+  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
       values[0], values[1], values[2], values[3], values[4], values[5],
-      values[6],values[7], values[8], values[9], values[10]);
+      values[6],values[7], values[8], values[9], values[10], values[20], values[21]);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 
   //sprintf(valuesBuffer, "burstcount = %i current millis = %i\n", burstCount, (int)millis());
