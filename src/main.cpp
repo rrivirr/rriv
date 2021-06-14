@@ -24,22 +24,22 @@ void setup(void)
 
   setupSwitchedPower();
 
-  // Sets up RGB Sensor
-  //AtlasRGB::instance()->start();
+  //Sets up RGB Sensor
+  AtlasRGB::instance()->start();
 
-  // Sets brightness of LED and power saving mode
-  //AtlasRGB::instance()->setLEDBrightness(100, true);
-  //AtlasRGB::instance()->sendMessage();
+  //Sets brightness of LED and power saving mode
+  AtlasRGB::instance()->setLEDBrightness(100, true);
+  AtlasRGB::instance()->sendMessage();
 
 
   // Sets up CO2 Sensor
-  AtlasCO2::instance()->start();
+  // AtlasCO2::instance()->start();
 
-  // Sets brightness of LED and power saving mode
-  //AtlasCO2::instance()->setLEDBrightness(100, true);
-  //AtlasCO2::instance()->sendMessage();
+  // // Sets brightness of LED and power saving mode
+  // //AtlasCO2::instance()->setLEDBrightness(100, true);
+  // //AtlasCO2::instance()->sendMessage();
 
-  Serial2.println("CO2 Sensor setup successfully!");
+  // Serial2.println("CO2 Sensor setup successfully!");
 
 
   Serial2.println("hello");
@@ -120,20 +120,24 @@ void loop(void)
   printWatchDogStatus();
 
   // Prints RGB sensor information (check)
-  //AtlasRGB::instance()->deviceInformation();
+  // AtlasRGB::instance()->deviceInformation();
+  
 
-  // Prints sensor output for RGB values
-  // while (true) {
-  //   //AtlasRGB::instance()->run();
-  // }  
-
-  // Prints CO2 sensor information (check)
-  AtlasCO2::instance()->deviceInformation();
+  // Switch to I2C mode on default address
+  //AtlasRGB::instance()->setI2C(112);
 
   // Prints sensor output for RGB values
   while (true) {
-    AtlasCO2::instance()->run();
+    AtlasRGB::instance()->run();
   }  
+
+  // // Prints CO2 sensor information (check)
+  // AtlasCO2::instance()->deviceInformation();
+
+  // // Prints sensor output for RGB values
+  // while (true) {
+  //   AtlasCO2::instance()->run();
+  // }  
 
   // calculate and print free memory
   // reset the system if we are running out of memory
