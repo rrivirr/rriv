@@ -197,6 +197,11 @@ int AtlasRGB::proximityDetection(int value) {
   return -1;
 }
 
+// Sets I2C address and reboots into I2C mode
+void AtlasRGB::setI2C(int value)  {
+  sprintf(this->inputString, "I2C,%d", value);
+}
+
 // Sets predefined value: high (H), medium (M), low (L)
 int AtlasRGB::proximityDetection(char value) {
   switch(value) {
