@@ -1,25 +1,20 @@
-#ifndef WATERBEAR_ATLAS_RGB
-#define WATERBEAR_ATLAS_RGB
+#ifndef WATERBEAR_EZO_RGB
+#define WATERBEAR_EZO_RGB
 
-#include <string.h>
 #include <Arduino.h>
+#include <Wire.h>
 
 class AtlasRGB {
   private:
-    // Variables
-    char inputString[30];
-    char sensorString[30];
-    bool inputStringComplete;
-    bool sensorStringComplete;
-
-    // Sensor Data
+    TwoWire * wire;
+    char inputString[30]; // Stores the next command to be sent to the device
+    int code; // Stores the response code from the sensor
+    char sensorString[53]; // Stores the response from the sensor
+    int time; // Stores the delay time to receive the response from the sensor
+    uint8_t address; 
     int red;
     int green;
     int blue;
-    
-    // Private Functions
-    void setupSerial();
-    char * printRGBData(char * input); 
 
   public: 
     // Instance
@@ -29,8 +24,8 @@ class AtlasRGB {
     AtlasRGB();
 
     // Functionality
-    void start();
-    void sendMessage();
+    void start(TwoWire * wire);
+    void sendCommand();
     char * receiveResponse(); 
     char * run();
   
@@ -40,9 +35,6 @@ class AtlasRGB {
     void continuousMode(int value);
     void colorMatching(int value);
     int setBaudRate(int value);
-    int proximityDetection(int value);
-    int proximityDetection(char value);
-    void proximityDetection(bool power);
     int gammaCorrection(float value);
     void nameDevice(char * value);
     void deviceInformation();
