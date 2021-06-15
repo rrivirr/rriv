@@ -105,41 +105,7 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-  // ******* Atlas Sensors
-
-  // Prints RGB sensor information (check)
-  //AtlasRGB::instance()->deviceInformation();
-
-  // Prints sensor output for RGB values
-  // while (true) {
-  //   //AtlasRGB::instance()->run();
-  // }  
-
-  // Prints CO2 sensor information (check)
-  // AtlasCO2::instance()->deviceInformation();
-
-  // // Prints sensor output for RGB values
-  // while (true) {
-  //   AtlasCO2::instance()->run();
-  // }  
-
-  // ******* Atlas Sensors
-  //char buffer[52];
-  /*
-  int res = 9;
-  Serial2.println("Sending command: ");
-  while (true) {
-    atlasRGBSensor.send_cmd("i");
-    atlasRGBSensor.send_read_cmd();
-    Serial2.println(atlasRGBSensor.receive_read_cmd(&res));
-    Serial2.print("Error: ");
-    Serial2.println(res);
-  }
-  Serial2.println(atlasRGBSensor.receive_read_cmd(&res));
-  Serial2.print("Error: ");
-  Serial2.println(res);
-  Serial2.println("Received command");
-  //Serial2.println(buffer);
+/*
   // calculate and print free memory
   // reset the system if we are running out of memory
   char freeMemoryMessage[21];
