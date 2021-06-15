@@ -7,11 +7,9 @@
 #include "datalogger.h"
 #include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
-#include "sensors/atlas_rgb.h"
-#include "sensors/atlas_co2.h"
+#include "sensors/ezo_rgb.h"
 
 // Setup and Loop
-Ezo_board atlasRGBSensor(&Wire2, 112, "AtlasRGB");
 
 void setup(void)
 {
@@ -25,29 +23,6 @@ void setup(void)
 
   setupSwitchedPower();
 
-
-  // ******* Atlas Sensors
-  
-  // Sets up RGB Sensor
-  //AtlasRGB::instance()->start();
-
-  // Sets brightness of LED and power saving mode
-  //AtlasRGB::instance()->setLEDBrightness(100, true);
-  //AtlasRGB::instance()->sendMessage();
-
-
-  // // Sets up CO2 Sensor
-  // AtlasCO2::instance()->start();
-
-  // // Sets brightness of LED and power saving mode
-  // //AtlasCO2::instance()->setLEDBrightness(100, true);
-  // //AtlasCO2::instance()->sendMessage();
-
-  // Serial2.println("CO2 Sensor setup successfully!");
-
-  // ******* Atlas Sensors
-
-
   Serial2.println("hello");
   enableSwitchedPower();
 
@@ -55,7 +30,7 @@ void setup(void)
   Serial2.println("hello");
   Serial2.flush();
 
-  Serial2.println(atlasRGBSensor.get_name());
+  //Serial2.println(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
@@ -80,6 +55,10 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
+  AtlasRGB::instance()->start(&Wire2);
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
  
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
@@ -146,6 +125,7 @@ void loop(void)
 
   // ******* Atlas Sensors
   //char buffer[52];
+  /*
   int res = 9;
   Serial2.println("Sending command: ");
   while (true) {
@@ -170,7 +150,7 @@ void loop(void)
     Monitor::instance()->Monitor::instance()->writeSerialMessage(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
-
+*/
 
   // allocate and free the ram to test if there is enough?
   //nvic_sys_reset - what does this do?

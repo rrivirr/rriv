@@ -1,4 +1,5 @@
-#include "atlas_rgb.h"
+#include "ezo_rgb.h"
+#include <Wire.h>
 
 // Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
@@ -13,91 +14,72 @@ AtlasRGB * AtlasRGB::instance() {
 AtlasRGB::AtlasRGB(){}
 
 // Constructor/Starter
-void AtlasRGB::start() {
-  setupSerial();
+void AtlasRGB::start(TwoWire * wire) {
+  Serial2.println("In RGB constructor");
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
-  this->inputStringComplete = false;
-  this->sensorStringComplete = false;
+  this->wire = wire;
+  this->code = 0;
   this->red = 0;
   this->green = 0;
   this->blue = 0;
+  this->address = 112; // Default address for RGB sensor 0x70
+  this->time = 300; // Response delay time in ms
   Serial2.println("RGB Constructor");
 }
 
-// Setting up serial
-void AtlasRGB::setupSerial() {
-  Serial1.begin(9600);
-  Serial2.println("Serial1 setup complete");
-}
-
-// Communicating with sensor
-void AtlasRGB::sendMessage() {
-  Serial1.print(this->inputString);
-  Serial1.print('\r'); // Appending a <CR>
-  Serial2.print("Input command: ");
+void AtlasRGB::sendCommand() {
+  Serial2.print("In send command: ");
   Serial2.println(this->inputString);
-
-  strcpy(this->inputString, "");
-  memset(this->inputString, 0, sizeof(this->inputString));
+  this->wire->beginTransmission(this->address);
+  this->wire->write(this->inputString);
+  this->wire->endTransmission();
 }
 
-// Receiving a response
 char * AtlasRGB::receiveResponse() {
-  // Getting string from sensor
   static int i = 0;
-  if (Serial1.available() > 0) {
-    char inputChar = (char)Serial1.read(); // Get the char
-    this->sensorString[i++] = inputChar;
-    if (inputChar == '\r') {
-      this->sensorStringComplete = true;
-      i = 0;
-    }
-  }
-
-  // Printing string if complete
-  if (this->sensorStringComplete) {
-    // Deep copy of sensor response
-    char * copy = (char *) malloc(strlen(this->sensorString) + 1);
-    strcpy(copy, this->sensorString);
+  if (strcmp(this->inputString, "sleep") != 0) {
     
-    // Clearing sensorString for next response
-    strcpy(this->sensorString, "");
-    this->sensorStringComplete = false;
-    memset(this->sensorString, 0, sizeof(this->sensorString));
+    // Delay for response
+    delay(this->time); 
+
+    // Request for 52 bytes from the circuit
+    this->wire->requestFrom(this->address, 52);
     
-    if (isdigit(copy[0])) {
-      // Prints RGB format output to Serial
-      Serial2.println(printRGBData(copy));
-      return copy;
+    // Get response code           
+    this->code = this->wire->read();                 
+    
+    switch (this->code) {                  
+      case 1:              
+        Serial2.println("Success");
+        break;                         
+      case 2:              
+        Serial2.println("Failed");             
+        break;                         
+      case 254:              
+        Serial2.println("Pending");            
+        break;                         
+      case 255:              
+        Serial2.println("No Data");
+        break;                         
     }
-    else {
-      // Prints commmand outputs to Serial
-      Serial2.println(copy);
-      return copy;
+
+    // Constructing response array
+    while (this->wire->available()) {
+      sensorString[i] = this->wire->read();   
+      if (sensorString[i++] == 0) {                
+        i = 0;            
+        break;       
+      }
     }
+    return sensorString;
   }
-
-  return (char *) "";
-}
-
-// Print input string in RGB format
-char * AtlasRGB::printRGBData(char * input) {                       
-  this->red= atoi(strtok(input, ","));                                 
-  this->green= atoi(strtok(NULL, ","));                                 
-  this->blue= atoi(strtok(NULL, ","));
-
-  char * response = (char *) malloc(50);                         
-  
-  sprintf(response, "RED: %d GREEN: %d BLUE: %d", this->red, this->green, this->blue);
-
-  return response;
 }
 
 // Sends most recent command and receives latest response from sensor
 char * AtlasRGB::run() {
   if (strcmp(this->inputString, "")) {
-    sendMessage();
+    sendCommand();
   }
   return receiveResponse();
 }
@@ -142,29 +124,7 @@ void AtlasRGB::setIndicatorLED(bool status, bool power) {
   }
 }
 
-// Setting continuous mode
-void AtlasRGB::continuousMode(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "C,?");
-  }
-  else {
-    sprintf(this->inputString, "C,%d", value);
-  }
-}
-
-// Toggling color matching
-void AtlasRGB::colorMatching(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "M,?");
-  }
-  else if (value) {
-    strcpy(this->inputString, "M,1");
-  }
-  else {
-    strcpy(this->inputString, "M,0");
-  }   
-}
-
+// Switches back to UART Mode
 // Sets baud rate: 300, 1200, 2400, 9600, 19200, 38400, 57600, 115200
 int AtlasRGB::setBaudRate(int value) {
   if (value < 0) {
@@ -182,42 +142,6 @@ int AtlasRGB::setBaudRate(int value) {
   }
 }
 
-// Setting proximity detection: 3 methods
-
-// Sets custom distance: 250 - 1023
-int AtlasRGB::proximityDetection(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "P,?");
-    return 0;
-  }
-  if (value >= 250 && value <= 1023) {
-    sprintf(this->inputString, "P,%d", value);
-    return 0;
-  }
-  return -1;
-}
-
-// Sets predefined value: high (H), medium (M), low (L)
-int AtlasRGB::proximityDetection(char value) {
-  switch(value) {
-    case 'H': case 'M': case 'L': 
-      sprintf(this->inputString, "P,%c", value);
-      return 0;
-    default: 
-      return -1;
-  }
-}
-
-// Toggles proximity detection
-void AtlasRGB::proximityDetection(bool power) {
-  if (power) {
-    strcpy(this->inputString, "P,1");
-  }
-  else {
-    strcpy(this->inputString, "P,0");
-  }
-}
-
 // Sets gamma correction: 0.01 - 4.99
 int AtlasRGB::gammaCorrection(float value) {
   if (value < 0) {
@@ -225,7 +149,7 @@ int AtlasRGB::gammaCorrection(float value) {
     return 0;
   }
   if (value >= 0.01 && value <= 4.99) {
-    sprintf(this->inputString, "P,%f", value);
+    sprintf(this->inputString, "G,%f", value);
     return 0;
   }
   return -1;
