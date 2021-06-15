@@ -16,8 +16,7 @@
 #include "system/monitor.h"
 #include "system/switched_power.h"
 
-#include "sensors/atlas_oem.h"
-#include "sensors/atlas_rgb.h"
+#include <sensors/atlas_oem.h>
 
 // Settings
 
