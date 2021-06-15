@@ -1,6 +1,7 @@
 #include "datalogger.h"
 #include "system/watchdog.h"
 
+
 // Settings
 char version[5] = "v2.0";
 
