@@ -7,7 +7,7 @@
 #include "datalogger.h"
 #include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
-#include "sensors/ezo_rgb.h"
+#include "sensors/atlas_rgb.h"
 
 // Setup and Loop
 
@@ -55,6 +55,8 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
+
+  // Setup RGB Sensor
   AtlasRGB::instance()->start(&Wire2);
   AtlasRGB::instance()->singleMode();
   AtlasRGB::instance()->sendCommand();
@@ -81,8 +83,6 @@ void setup(void)
   print_debug_status(); 
 }
 
-
-
 extern "C" char* _sbrk(int incr);
 int freeMemory(){
   char top;
@@ -93,7 +93,7 @@ int freeMemory(){
 }
 
 void intentionalMemoryLeak(){
-  // case a memory leak
+  // cause a memory leak
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
   Serial2.println(mem); // use it so compiler doesn't remove the leak
 }
@@ -104,6 +104,14 @@ void loop(void)
 
   startCustomWatchDog();
   printWatchDogStatus();
+
+// Setup RGB Sensor
+  AtlasRGB::instance()->start(&Wire2);
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
+
+ 
 
 /*
   // calculate and print free memory

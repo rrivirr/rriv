@@ -1,4 +1,4 @@
-#include "ezo_rgb.h"
+#include "atlas_rgb.h"
 #include <Wire.h>
 
 // Reference object
@@ -34,6 +34,7 @@ void AtlasRGB::sendCommand() {
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
+  strcpy(this->inputString, "");
 }
 
 char * AtlasRGB::receiveResponse() {
@@ -66,13 +67,15 @@ char * AtlasRGB::receiveResponse() {
 
     // Constructing response array
     while (this->wire->available()) {
-      sensorString[i] = this->wire->read();   
-      if (sensorString[i++] == 0) {                
+      char res = this->wire->read();
+      Serial2.println(res);
+      this->sensorString[i++] = res;   
+      if (res == 0) {                
         i = 0;            
         break;       
       }
     }
-    return sensorString;
+    return this->sensorString;
   }
 }
 
@@ -81,7 +84,8 @@ char * AtlasRGB::run() {
   if (strcmp(this->inputString, "")) {
     sendCommand();
   }
-  return receiveResponse();
+  receiveResponse();
+  return this->sensorString;
 }
 
 /**************************************************************************************** 
