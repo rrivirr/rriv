@@ -1,7 +1,7 @@
 #ifndef WATERBEAR_ATLAS_OEM
 #define WATERBEAR_ATLAS_OEM
 
-#include <Wire.h> // Communicate with I2C/TWI devices
+#include <Wire_slave.h> // Communicate with I2C/TWI devices
 #include <EC_OEM.h>
 
 void setupEC_OEM(TwoWire * wire);
