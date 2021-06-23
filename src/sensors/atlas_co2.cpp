@@ -1,5 +1,5 @@
 #include "atlas_co2.h"
-#include <Wire.h>
+#include <Wire_slave.h>
 
 // Reference object
 AtlasCO2 * co2Sensor = new AtlasCO2();
@@ -20,9 +20,7 @@ void AtlasCO2::start(TwoWire * wire) {
   strcpy(this->sensorString, "");
   this->wire = wire;
   this->code = 0;
-  this->red = 0;
-  this->green = 0;
-  this->blue = 0;
+  this->data = 0;
   this->address = 105; // Default address for CO2 sensor 0x69
   this->time = 300; // Response delay time in ms
   Serial2.println("CO2 Constructor");
@@ -77,6 +75,7 @@ char * AtlasCO2::receiveResponse() {
     }
     return this->sensorString;
   }
+  return (char *) "";
 }
 
 // Sends most recent command and receives latest response from sensor

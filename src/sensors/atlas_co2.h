@@ -2,7 +2,7 @@
 #define WATERBEAR_EZO_CO2
 
 #include <Arduino.h>
-#include <Wire.h>
+#include <Wire_slave.h>
 
 class AtlasCO2 {
   private:
