@@ -1,4 +1,4 @@
 #include "hardware.h"
 
-TwoWire Wire1 (1);
-TwoWire Wire2 (2);
+TwoWire WireOne (I2C1);
+TwoWire Wire2 (I2C2);
