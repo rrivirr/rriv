@@ -2,7 +2,7 @@
 #define WATERBEAR_EZO_RGB
 
 #include <Arduino.h>
-#include <Wire.h>
+#include <Wire_slave.h>
 
 class AtlasRGB {
   private:

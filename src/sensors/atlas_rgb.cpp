@@ -1,5 +1,5 @@
 #include "atlas_rgb.h"
-#include <Wire.h>
+#include <Wire_slave.h>
 // Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
 
