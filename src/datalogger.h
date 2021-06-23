@@ -1,4 +1,4 @@
-#include <Wire.h> // Communicate with I2C/TWI devices
+#include <Wire_slave.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 #include "SdFat.h"
 

@@ -1,11 +1,11 @@
 #include <Arduino.h>
-#include <Wire.h> // Communicate with I2C/TWI devices
+#include <Wire_slave.h> // Communicate with I2C/TWI devices
 
 // For F103RB
 #define Serial Serial2
 
-extern TwoWire Wire1;
-#define Wire Wire1
+extern TwoWire WireOne;
+#define Wire WireOne
 
 extern TwoWire Wire2;
 
