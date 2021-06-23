@@ -1,6 +1,5 @@
 #include "atlas_rgb.h"
 #include <Wire.h>
-
 // Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
 
@@ -24,7 +23,7 @@ void AtlasRGB::start(TwoWire * wire) {
   this->green = 0;
   this->blue = 0;
   this->address = 112; // Default address for RGB sensor 0x70
-  this->time = 300; // Response delay time in ms
+  this->time = 3000; // Response delay time in ms
   Serial2.println("RGB Constructor");
 }
 
@@ -68,7 +67,6 @@ char * AtlasRGB::receiveResponse() {
     // Constructing response array
     while (this->wire->available()) {
       char res = this->wire->read();
-      Serial2.println(res);
       this->sensorString[i++] = res;   
       if (res == 0) {                
         i = 0;            
@@ -77,6 +75,7 @@ char * AtlasRGB::receiveResponse() {
     }
     return this->sensorString;
   }
+  return (char *) "";
 }
 
 // Sends most recent command and receives latest response from sensor

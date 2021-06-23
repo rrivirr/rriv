@@ -55,13 +55,13 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
-
-  // Setup RGB Sensor
   AtlasRGB::instance()->start(&Wire2);
-  AtlasRGB::instance()->singleMode();
+  
+  // Setup RGB Sensor
+  AtlasRGB::instance()->deviceInformation();
   AtlasRGB::instance()->sendCommand();
   Serial2.println(AtlasRGB::instance()->receiveResponse());
- 
+
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
 
@@ -70,7 +70,6 @@ void setup(void)
   //initBLE();
 
   readUniqueId(uuid);
-
 
   setNotBursting(); // prevents bursting during first loop
 
@@ -105,15 +104,11 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-// Setup RGB Sensor
-  AtlasRGB::instance()->start(&Wire2);
+  // Get reading from RGB Sensor
   AtlasRGB::instance()->singleMode();
   AtlasRGB::instance()->sendCommand();
   Serial2.println(AtlasRGB::instance()->receiveResponse());
 
- 
-
-/*
   // calculate and print free memory
   // reset the system if we are running out of memory
   char freeMemoryMessage[21];
@@ -124,7 +119,6 @@ void loop(void)
     Monitor::instance()->Monitor::instance()->writeSerialMessage(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
-*/
 
   // allocate and free the ram to test if there is enough?
   //nvic_sys_reset - what does this do?
