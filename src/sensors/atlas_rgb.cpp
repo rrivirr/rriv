@@ -23,7 +23,7 @@ void AtlasRGB::start(TwoWire * wire) {
   this->green = 0;
   this->blue = 0;
   this->address = 112; // Default address for RGB sensor 0x70
-  this->time = 3000; // Response delay time in ms
+  this->time = 300; // Response delay time in ms
   Serial2.println("RGB Constructor");
 }
 
