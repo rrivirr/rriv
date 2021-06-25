@@ -243,8 +243,8 @@ void componentsBurstMode()
   rcc_clk_enable( RCC_I2C2);
   // i2c_master_enable(I2C1, I2C_BUS_RESET);
   // i2c_master_enable(I2C2, I2C_BUS_RESET);
-  i2c_master_enable(I2C1, 0);
-  i2c_master_enable(I2C2, 0);
+  i2c_master_enable(I2C1, 0, 0);
+  i2c_master_enable(I2C2, 0, 0);
   
   spi_peripheral_enable(SPI1);
   adc_enable(ADC1);
