@@ -4,8 +4,8 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 15;     // minutes between loggings when not in short sleep
-short burstLength = 10; // how many readings in a burst
+short interval = 1;     // minutes between loggings when not in short sleep
+short burstLength = 100; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -36,12 +36,12 @@ void enableI2C1()
 {
   
   i2c_disable(I2C1);
-  i2c_master_enable(I2C1, 0);
+  i2c_master_enable(I2C1, 0, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
 
   delay(1000);
-  //i2c_bus_reset(I2C1); // hangs here if this is called
-  //Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
+  // i2c_bus_reset(I2C1); // hangs here if this is called
+  // Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
 
   Wire.begin();
   delay(1000);
@@ -54,7 +54,7 @@ void enableI2C1()
 void enableI2C2()
 {
   i2c_disable(I2C2);
-  i2c_master_enable(I2C2, 0);
+  i2c_master_enable(I2C2, 0, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
 
   //i2c_bus_reset(I2C2); // hang if this is called
@@ -820,10 +820,10 @@ void monitorValues()
 {
   // print content being logged each second
   blink(1, 500);
-  char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
+  char valuesBuffer[300]; // 51+25+11+24+(7*5)+33
+  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
       values[0], values[1], values[2], values[3], values[4], values[5],
-      values[6],values[7], values[8], values[9], values[10]);
+      values[6],values[7], values[8], values[9], values[10], values[20], values[21]);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 
   //sprintf(valuesBuffer, "burstcount = %i current millis = %i\n", burstCount, (int)millis());
@@ -863,3 +863,4 @@ void monitorTemperature() // print out calibration information & current reading
   sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 }
+

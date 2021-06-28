@@ -231,8 +231,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   this->sd.chdir("/");
   delay(1);
 
-
-  char header[200] = "duuid,uuid,time.s,time.h,battery.V,temperature.V,data3,data4,data5,data6,conductivity.mS,time.TC,C1,V1,C2,V2,M,B,temperature.C,Burst,UserValue,UserNote";
+  char header[200] = "duuid,uuid,time.s,time.h,battery.V,A2-PB1.V,A3-PC0.V,A4-PC1.V,A5-PC2.V,A6-PC3.V,conductivity.mS,time.TC,C1,V1,C2,V2,M,B,temperature.C,Burst,UserValue,UserNote";
 
   Serial2.print(F(">log:"));
   Serial2.println(header);

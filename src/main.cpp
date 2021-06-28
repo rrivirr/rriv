@@ -1,20 +1,22 @@
 #include <Arduino.h>
-#include "datalogger.h"
-#include "system/watchdog.h"
-#include "scratch/dbgmcu.h"
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h> // necessary?
+#include <string.h>
+#include <Ezo_i2c.h>
+
+#include "datalogger.h"
+#include "scratch/dbgmcu.h"
+#include "system/watchdog.h"
+#include "sensors/atlas_rgb.h"
 
 // Setup and Loop
 
-
 void setup(void)
 {
-
   startSerial2();
 
   startCustomWatchDog();
-
+  
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
@@ -28,6 +30,7 @@ void setup(void)
   Serial2.println("hello");
   Serial2.flush();
 
+  //Serial2.println(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
@@ -52,7 +55,13 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
- 
+  AtlasRGB::instance()->start(&Wire2);
+  
+  // Setup RGB Sensor
+  AtlasRGB::instance()->deviceInformation();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
+
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
 
@@ -62,7 +71,6 @@ void setup(void)
 
   readUniqueId(uuid);
 
-
   setNotBursting(); // prevents bursting during first loop
 
   //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
@@ -71,12 +79,8 @@ void setup(void)
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 
-  print_debug_status();
-
- 
+  print_debug_status(); 
 }
-
-
 
 extern "C" char* _sbrk(int incr);
 int freeMemory(){
@@ -88,7 +92,7 @@ int freeMemory(){
 }
 
 void intentionalMemoryLeak(){
-  // case a memory leak
+  // cause a memory leak
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
   Serial2.println(mem); // use it so compiler doesn't remove the leak
 }
@@ -100,6 +104,11 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
+  // Get reading from RGB Sensor
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
+
   // calculate and print free memory
   // reset the system if we are running out of memory
   char freeMemoryMessage[21];
@@ -110,7 +119,6 @@ void loop(void)
     Monitor::instance()->Monitor::instance()->writeSerialMessage(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
-
 
   // allocate and free the ram to test if there is enough?
   //nvic_sys_reset - what does this do?

@@ -1,4 +1,4 @@
-#include <Wire.h> // Communicate with I2C/TWI devices
+#include <Wire_slave.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 #include "SdFat.h"
 
@@ -16,7 +16,7 @@
 #include "system/monitor.h"
 #include "system/switched_power.h"
 
-#include "sensors/atlas_oem.h"
+#include <sensors/atlas_oem.h>
 
 // Settings
 
@@ -38,6 +38,7 @@ extern bool configurationMode;
 extern bool debugValuesMode;
 extern bool clearModes;
 extern bool tempCalMode;
+// extern AtlasRGB rgbSensor;
 //extern bool thermistorCalibrated;
 
 void enableI2C1();

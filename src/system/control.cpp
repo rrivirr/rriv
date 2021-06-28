@@ -302,6 +302,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
     {
       char lastDownloadDateEmpty[11] = "0000000000";
       strcpy(lastDownloadDate, lastDownloadDateEmpty);
+      myStream->flush();
     }
   }
   else if(WaterBear_Control::state == 1)
