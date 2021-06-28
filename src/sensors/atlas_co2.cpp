@@ -1,3 +1,10 @@
+/**
+ * @file   atlas_co2.cpp
+ * @author Shayne Marques marques.shayne24@gmail.com
+ * @brief  Class declaration to interface with AtlasScientific EZO-CO2 Embedded NDIR Carbon Dioxide Sensor in i2C mode
+ * https://atlas-scientific.com/probes/co2-sensor/
+ */
+
 #include "atlas_co2.h"
 #include <Wire_slave.h>
 
