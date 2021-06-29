@@ -1,4 +1,5 @@
 #include "datalogger.h"
+#include "sensors/sensor_map.h"
 #include "system/monitor.h"
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
@@ -122,6 +123,31 @@ void Datalogger::loop()
 
 void Datalogger::loadSensorConfigurations(){
   // load sensor configurations from EEPROM and count them
+  sensorCount = 1;
+  sensorTypes = (short *) malloc(sizeof(short) * sensorCount);
+  sensorTypes[0] = GENERIC_ANALOG_SENSOR;
+
+  // load the full configurations from EEPROM
+
+  // construct the drivers
+  drivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+  for(int i=0; i<sensorCount; i++){
+    SensorDriver * driver = driverForSensorType(sensorTypes[i]);
+    drivers[i] = driver;
+    switch(driver->getProtocol()){
+      case analog:
+        ((AnalogSensorDriver*) driver)->setup();
+        break;
+      case i2c:
+        ((I2CSensorDriver*) driver)->setup(&WireTwo);
+        break;
+      default:
+        break;
+    }
+  }
+
+
+  // set up bookkeeping for dirty configurations
   if(dirtyConfigurations != NULL)
   {
     free(dirtyConfigurations);
@@ -162,7 +188,7 @@ bool Datalogger::writeMeasurementToLogFile()
 
 void Datalogger::processCLI()
 {
-  if (WaterBear_Control::ready(Serial2))
+  if(WaterBear_Control::ready(Serial2))
   {
     handleControlCommand();
   }
