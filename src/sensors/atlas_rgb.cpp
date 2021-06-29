@@ -19,8 +19,33 @@ AtlasRGB * AtlasRGB::instance() {
 // Dummy constructor
 AtlasRGB::AtlasRGB(){}
 
+void AtlasRGB::setup(TwoWire * wire)
+{
+  AtlasRGB::instance()->start(wire);
+  AtlasRGB::instance()->deviceInformation();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
+}
+
+void AtlasRGB::stop(){
+  // hibernate
+}
+
+char * AtlasRGB::mallocDataMemory(){
+  malloc(sizeof(char) * this->dataMemorySize);
+}
+
+
+void AtlasRGB::takeMeasurement(char * data)
+{
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
+}
+
 // Constructor/Starter
-void AtlasRGB::start(TwoWire * wire) {
+void AtlasRGB::start(TwoWire * wire)
+{
   Serial2.println("In RGB constructor");
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");

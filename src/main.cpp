@@ -12,6 +12,19 @@
 
 // Setup and Loop
 
+void setupSensors(){
+
+  // read sensors types from EEPROM
+  // malloc configuration structs
+  // read configuration structs from EEPROM for each sensor type
+  // run setup for each sensor
+
+  
+  // Setup RGB Sensor
+  AtlasRGB::instance()->setup(&WireTwo);
+
+}
+
 void setup(void)
 {
   startSerial2();
@@ -56,13 +69,6 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
-  AtlasRGB::instance()->start(&WireTwo);
-  
-  // Setup RGB Sensor
-  AtlasRGB::instance()->deviceInformation();
-  AtlasRGB::instance()->sendCommand();
-  Serial2.println(AtlasRGB::instance()->receiveResponse());
-
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
 
@@ -74,29 +80,19 @@ void setup(void)
 
   setNotBursting(); // prevents bursting during first loop
 
-  //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
-
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
+  Serial2.flush();
+
+  setupSensors();
+  Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
   Serial2.flush();
 
   print_debug_status(); 
 }
 
-// extern "C" char* _sbrk(int incr);
-// int freeMemory(){
-//   char top;
-//   Serial2.println( (int) &top );
-//   Serial2.println( (int) reinterpret_cast<char*>(_sbrk(0)) );
 
-//   return &top - reinterpret_cast<char*>(_sbrk(0));
-// }
 
-// void intentionalMemoryLeak(){
-//   // cause a memory leak
-//   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
-//   Serial2.println(mem); // use it so compiler doesn't remove the leak
-// }
 
 /* main run loop order of operation: */
 void loop(void)
@@ -106,9 +102,10 @@ void loop(void)
   printWatchDogStatus();
 
   // Get reading from RGB Sensor
-  AtlasRGB::instance()->singleMode();
-  AtlasRGB::instance()->sendCommand();
-  Serial2.println(AtlasRGB::instance()->receiveResponse());
+  char * data = AtlasRGB::instance()->mallocDataMemory();
+  AtlasRGB::instance()->takeMeasurement(data);
+  free(data);
+ 
 
   checkMemory();
 
