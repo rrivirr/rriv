@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.2.0...v1.3.0) (2021-06-29)
+
+
+### Features
+
+* fix Wire defines and organize qos code ([154c0a9](https://github.com/WaterBearSondes/waterbear-firmware/commit/154c0a9d77464099e9ac6d8f3c52d6aaea1d7151))
+
 # [1.2.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.1.0...v1.2.0) (2021-06-28)
 
 
