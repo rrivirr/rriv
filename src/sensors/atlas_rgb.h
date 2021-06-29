@@ -24,6 +24,9 @@ class AtlasRGB {
     int green;
     int blue;
 
+    // interface
+    int dataMemorySize = 20;
+
   public: 
     // Instance
     static AtlasRGB * instance();
@@ -31,8 +34,16 @@ class AtlasRGB {
     // Constructor
     AtlasRGB();
 
+    // Interface
+    void setup(TwoWire * wire);
+    void stop();
+    char * mallocDataMemory();
+    void takeMeasurement(char * data);
+
+
     // Functionality
     void start(TwoWire * wire);
+
     void sendCommand();
     char * receiveResponse(); 
     char * run();
