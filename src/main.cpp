@@ -7,23 +7,9 @@
 #include "datalogger.h"
 #include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
-#include "sensors/atlas_rgb.h"
 #include "utilities/qos.h"
 
 // Setup and Loop
-
-void setupSensors(){
-
-  // read sensors types from EEPROM
-  // malloc configuration structs
-  // read configuration structs from EEPROM for each sensor type
-  // run setup for each sensor
-
-  
-  // Setup RGB Sensor
-  AtlasRGB::instance()->setup(&WireTwo);
-
-}
 
 void setup(void)
 {
@@ -119,12 +105,6 @@ void loop(void)
 
   startCustomWatchDog();
   printWatchDogStatus();
-
-  // Get reading from RGB Sensor
-  char * data = AtlasRGB::instance()->mallocDataMemory();
-  AtlasRGB::instance()->takeMeasurement(data);
-  free(data);
- 
 
   checkMemory();
 
