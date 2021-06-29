@@ -1,7 +1,7 @@
 #ifndef WATERBEAR_CONTROL
 #define WATERBEAR_CONTROL
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Adafruit_BluefruitLE_UART.h"
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "DS3231.h"
