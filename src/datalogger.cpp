@@ -1,12 +1,11 @@
 #include "datalogger.h"
+#include "system/monitor.h"
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
 
 // Settings
-char version[5] = "v2.0";
-
 short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 100; // how many readings in a burst
+short burstLength = 100; // how many readings in a burst - this is a per slot settings
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -32,6 +31,179 @@ bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
 
+Datalogger::Datalogger(datalogger_settings * settings)
+{
+  powerCycle = true;
+
+  if(settings->interval != 0)
+  {
+    this->interval = settings->interval;
+  }
+  if(settings->mode == 0){
+    mode = 'i';
+  } else {
+    mode = settings->mode;
+  }
+
+}
+
+
+void Datalogger::setup()
+{
+  loadSensorConfigurations();
+
+  
+}
+
+void Datalogger::loop()
+{
+
+  if(inMode(deploy_on_trigger)){
+    deploy();
+    return;
+  }
+
+  if(inMode(logging))
+  {
+    if(powerCycle)
+    {
+      deploy();
+    }
+
+    if(shouldExitLoggingMode())
+    {
+      mode = 'i';
+      return;
+    }
+
+    if(shouldContinueBursting())
+    {
+      measureSensorValues();
+      writeMeasurementToLogFile();
+    } 
+    else 
+    {
+      // go to sleep
+      stopAndAwaitTrigger();
+      return;
+    }
+    return;
+  }
+
+  processCLI();
+  if (configurationIsDirty())
+  {
+    storeConfiguration();
+    stopLogging();
+  }
+
+  if (inMode(interactive))
+  {
+    if(interactiveModeLogging){
+      measureSensorValues();
+      writeMeasurementToLogFile();
+    }
+  }
+  else if (inMode(debug))
+  {
+    measureSensorValues();
+    writeMeasurementToLogFile();
+  }
+  else
+  {
+    // invalid mode!
+    Monitor::instance()->writeDebugMessage(F("Invalid Mode!"));
+    mode = 'i';
+  }
+
+  powerCycle = false;
+}
+
+
+void Datalogger::loadSensorConfigurations(){
+  // load sensor configurations from EEPROM and count them
+  if(dirtyConfigurations != NULL)
+  {
+    free(dirtyConfigurations);
+  }
+  dirtyConfigurations = (bool *) malloc(sizeof(bool) * (sensorCount + 1));
+}
+
+void Datalogger::startLogging(){
+  interactiveModeLogging = true;
+}
+
+void Datalogger::stopLogging(){
+  interactiveModeLogging = false;
+}
+
+
+void Datalogger::deploy()
+{
+
+}
+
+bool Datalogger::shouldExitLoggingMode()
+{
+  
+}
+
+bool Datalogger::measureSensorValues()
+{
+  for(int i=0; i<sensorCount; i++){
+    // get values from the sensor
+  }
+}
+
+bool Datalogger::writeMeasurementToLogFile()
+{
+
+}
+
+void Datalogger::processCLI()
+{
+  if (WaterBear_Control::ready(Serial2))
+  {
+    handleControlCommand();
+  }
+}
+
+bool Datalogger::configurationIsDirty(){
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    if(dirtyConfigurations[i])
+    {
+      return true;
+    }
+  } 
+
+  return false;
+}
+
+void Datalogger::storeConfiguration()
+{
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    if(dirtyConfigurations[i]){
+      //store this config block to EEPROM
+    }
+  }
+}
+
+bool Datalogger::inMode(mode_type mode){
+  switch(mode){
+    case interactive:
+      return mode == 'i';
+    case debug:
+      return mode == 'd';
+    case logging:
+      return mode == 'l';
+    case deploy_on_trigger:
+      return mode == 't';
+    default:
+      return false;
+  }
+}
 
 void enableI2C1()
 {
@@ -307,7 +479,7 @@ void measureSensorValues()
   sprintf(values[18], "%.2f", calculateTemperature());
 }
 
-bool checkBursting()
+bool shouldContinueBursting()
 {
   bool bursting = false;
   if (burstCount < burstLength)
