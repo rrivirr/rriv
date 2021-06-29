@@ -1,3 +1,6 @@
+#ifndef WATERBEAR_DATALOGGER
+#define WATERBEAR_DATALOGGER
+
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
 #include <SPI.h>
 #include "SdFat.h"
@@ -18,9 +21,55 @@
 
 #include <sensors/atlas_oem.h>
 
+typedef struct datalogger_settings {
+    short interval;  // 2 bytes
+    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger)
+    char padding[61];        // padded  
+} datalogger_settings_type;
+
+typedef enum mode { interactive, debug, logging, deploy_on_trigger } mode_type;
+
+class Datalogger
+{
+
+public:
+    // configuration
+    short interval = 15;
+
+    // sensors
+    int sensorCount = 0;
+    bool * dirtyConfigurations = NULL;      // configuration change tracking
+    char ** sensorTypes = NULL;
+    void ** sensorConfigurations = NULL;
+    char ** sensorMeasurementValues = NULL;
+
+    Datalogger(datalogger_settings_type * settings);
+
+    void setup();
+    void loop();
+
+    bool inMode(mode_type mode);
+    void deploy();
+
+private:
+    // state
+    char mode = 'i';
+    bool powerCycle = true;
+    bool interactiveModeLogging = false;
+
+    void loadSensorConfigurations();
+    bool shouldExitLoggingMode();
+    bool measureSensorValues();
+    bool writeMeasurementToLogFile();
+    void processCLI();
+    bool configurationIsDirty();
+    void storeConfiguration();
+    void stopLogging();
+    void startLogging();
+};
+
 // Settings
 
-extern short interval;     // minutes between loggings when not in short sleep
 extern short burstLength; // how many readings in a burst
 
 extern short fieldCount; // number of fields to be logged to SDcard file
@@ -38,7 +87,7 @@ extern bool configurationMode;
 extern bool debugValuesMode;
 extern bool clearModes;
 extern bool tempCalMode;
-// extern AtlasRGB rgbSensor;
+// extern AtlasRGB rgbSensor;   
 //extern bool thermistorCalibrated;
 
 void enableI2C1();
@@ -69,7 +118,7 @@ void setNotBursting();
 
 void measureSensorValues();
 
-bool checkBursting();
+bool shouldContinueBursting();
 
 bool checkDebugLoop();
 
@@ -100,3 +149,5 @@ void clearThermistorCalibration();
 float calculateTemperature();
 
 void processControlFlag(char *flag);
+
+#endif
