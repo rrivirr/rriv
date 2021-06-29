@@ -89,40 +89,51 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
 
     }
     else if (!regcomp(&regex, "^set-config .*\\.json\r$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * fileName = strchr(request, ' ') + 1;
     }
     else if (!regcomp(&regex, "^get-config [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * find = strchr(request, ' ') + 1;
+      unsigned short slot = atoi(find);
     }
     else if (!strncmp(request, "list", 4)) {
 
     }
     else if (!regcomp(&regex, "^calibrate [0-9] init$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+      char * find = (strchr(request, ' ')) + 1;
+      char * slotString;
+      strncpy(slotString, find, 1);
+      unsigned short slot = atoi(find);
 
     }
     else if (!regcomp(&regex, "^calibrate [0-9] .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * find = (strchr(request, ' ')) + 1;
+      char * slotString;
+      strncpy(slotString, find, 1);
+      unsigned short slot = atoi(find);
     }
     else if (!regcomp(&regex, "^set-rtc .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * time = strchr(request, ' ') + 1;
     }
     else if (!strncmp(request, "get-rtc", 7)) {
 
     }
     else if (!regcomp(&regex, "^user-note .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * note = strchr(request, ' ') + 1;
     }
     else if (!regcomp(&regex, "^user-value [0-9]*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * find = strchr(request, ' ') + 1;
+      unsigned short slot = atoi(find);
     }
     else if (!strncmp(request, "delete-config", 13)) {
 
     }
     else if (!regcomp(&regex, "^reset-slot [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * find = strchr(request, ' ') + 1;
+      unsigned short slot = atoi(find);
     }
     else if (!regcomp(&regex, "^delete-slot [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * find = strchr(request, ' ') + 1;
+      unsigned short slot = atoi(find);
     }
     else if (!strncmp(request, "deploy-now", 10)) {
 
@@ -143,7 +154,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
 
     }
     else if (!regcomp(&regex, "^set-site-name .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
-
+      char * siteName = strchr(request, ' ') + 1;
     }
     else if (!strncmp(request, "show-copyright", 14)) {
 
