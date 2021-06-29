@@ -1,8 +1,15 @@
+/**
+ * @file   atlas_co2.h
+ * @author Shayne Marques marques.shayne24@gmail.com
+ * @brief  Class definition to interface with AtlasScientific EZO-CO2 Embedded NDIR Carbon Dioxide Sensor in i2C mode
+ * https://atlas-scientific.com/probes/co2-sensor/
+ */
+
 #ifndef WATERBEAR_EZO_CO2
 #define WATERBEAR_EZO_CO2
 
 #include <Arduino.h>
-#include <Wire.h>
+#include <Wire_slave.h>
 
 class AtlasCO2 {
   private:

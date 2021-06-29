@@ -1,5 +1,12 @@
+/**
+ * @file   atlas_rgb.cpp
+ * @author Shayne Marques marques.shayne24@gmail.com
+ * @brief  Class declaration to interface with AtlasScientific EZO-RGB Color Sensor in i2C mode
+ * https://atlas-scientific.com/probes/color-sensor/
+ */
+
 #include "atlas_rgb.h"
-#include <Wire.h>
+#include <Wire_slave.h>
 // Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
 
@@ -23,7 +30,7 @@ void AtlasRGB::start(TwoWire * wire) {
   this->green = 0;
   this->blue = 0;
   this->address = 112; // Default address for RGB sensor 0x70
-  this->time = 3000; // Response delay time in ms
+  this->time = 300; // Response delay time in ms
   Serial2.println("RGB Constructor");
 }
 

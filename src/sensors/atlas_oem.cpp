@@ -69,4 +69,5 @@ bool readECDataIfAvailable(float *ecValue)
     *ecValue = oem_ec->getConductivity();
     oem_ec->clearNewDataRegister();
   }
+  return true;
 }

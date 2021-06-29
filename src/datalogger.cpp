@@ -1,7 +1,6 @@
 #include "datalogger.h"
 #include "system/watchdog.h"
 
-
 // Settings
 char version[5] = "v2.0";
 
@@ -37,7 +36,7 @@ void enableI2C1()
 {
   
   i2c_disable(I2C1);
-  i2c_master_enable(I2C1, 0);
+  i2c_master_enable(I2C1, 0, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
 
   delay(1000);
@@ -55,18 +54,18 @@ void enableI2C1()
 void enableI2C2()
 {
   i2c_disable(I2C2);
-  i2c_master_enable(I2C2, 0);
+  i2c_master_enable(I2C2, 0, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
 
   //i2c_bus_reset(I2C2); // hang if this is called
-  Wire2.begin();
+  WireTwo.begin();
   delay(1000);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
 
   Monitor::instance()->writeDebugMessage(F("Scanning"));
 
-  scanIC2(&Wire2);
+  scanIC2(&WireTwo);
 }
 
 void powerUpSwitchableComponents()  
@@ -75,7 +74,7 @@ void powerUpSwitchableComponents()
   enableI2C1();
   if(USE_EC_OEM){
     enableI2C2();
-    setupEC_OEM(&Wire2);
+    setupEC_OEM(&WireTwo);
   }
   Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
 

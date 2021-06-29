@@ -1,8 +1,16 @@
+/**
+ * @file   atlas_rgb.h
+ * @author Shayne Marques marques.shayne24@gmail.com
+ * @brief  Class declaration to interface with AtlasScientific EZO-RGB Color Sensor in i2C mode
+ * https://atlas-scientific.com/probes/color-sensor/
+ */
+
+
 #ifndef WATERBEAR_EZO_RGB
 #define WATERBEAR_EZO_RGB
 
 #include <Arduino.h>
-#include <Wire.h>
+#include <Wire_slave.h>
 
 class AtlasRGB {
   private:

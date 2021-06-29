@@ -2,7 +2,7 @@
 #define WATERBEAR_EEPROM
 
 #include <Arduino.h>
-#include <Wire.h> // Communicate with I2C/TWI devices
+#include <Wire_slave.h> // Communicate with I2C/TWI devices
 
 /*
  * Partition scheme (24LC01B 1Kbit)
