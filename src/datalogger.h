@@ -20,6 +20,9 @@
 #include "system/switched_power.h"
 
 #include <sensors/atlas_oem.h>
+#include "sensors/sensor.h"
+
+
 
 typedef struct datalogger_settings {
     short interval;  // 2 bytes
@@ -39,9 +42,9 @@ public:
     // sensors
     int sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
-    char ** sensorTypes = NULL;
+    short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
-    char ** sensorMeasurementValues = NULL;
+    SensorDriver ** drivers = NULL;
 
     Datalogger(datalogger_settings_type * settings);
 
