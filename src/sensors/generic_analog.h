@@ -9,7 +9,7 @@ class GenericAnalog : public AnalogSensorDriver
 
     // Interface
     void stop();
-    void takeMeasurement();
+    bool takeMeasurement();
     char * getDataString();
     char * getCSVColumns();
     protocol_type getProtocol();

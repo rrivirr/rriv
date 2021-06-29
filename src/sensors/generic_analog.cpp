@@ -4,8 +4,10 @@ GenericAnalog::GenericAnalog(){}
 
 void GenericAnalog::stop(){}
 
-void GenericAnalog::takeMeasurement(){
+bool GenericAnalog::takeMeasurement(){
   // take measurement and write to dataString member variable
+
+  return true;
 }
 
 char * GenericAnalog::getDataString(){
