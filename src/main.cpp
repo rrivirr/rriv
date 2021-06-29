@@ -8,6 +8,7 @@
 #include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
+#include "utilities/qos.h"
 
 // Setup and Loop
 
@@ -74,7 +75,7 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
-  AtlasRGB::instance()->start(&Wire2);
+  AtlasRGB::instance()->start(&WireTwo);
   
   // Setup RGB Sensor
   AtlasRGB::instance()->deviceInformation();
@@ -101,20 +102,20 @@ void setup(void)
   print_debug_status(); 
 }
 
-extern "C" char* _sbrk(int incr);
-int freeMemory(){
-  char top;
-  Serial2.println( (int) &top );
-  Serial2.println( (int) reinterpret_cast<char*>(_sbrk(0)) );
+// extern "C" char* _sbrk(int incr);
+// int freeMemory(){
+//   char top;
+//   Serial2.println( (int) &top );
+//   Serial2.println( (int) reinterpret_cast<char*>(_sbrk(0)) );
 
-  return &top - reinterpret_cast<char*>(_sbrk(0));
-}
+//   return &top - reinterpret_cast<char*>(_sbrk(0));
+// }
 
-void intentionalMemoryLeak(){
-  // cause a memory leak
-  char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
-  Serial2.println(mem); // use it so compiler doesn't remove the leak
-}
+// void intentionalMemoryLeak(){
+//   // cause a memory leak
+//   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
+//   Serial2.println(mem); // use it so compiler doesn't remove the leak
+// }
 
 /* main run loop order of operation: */
 void loop(void)
@@ -128,16 +129,7 @@ void loop(void)
   AtlasRGB::instance()->sendCommand();
   Serial2.println(AtlasRGB::instance()->receiveResponse());
 
-  // calculate and print free memory
-  // reset the system if we are running out of memory
-  char freeMemoryMessage[21];
-  int freeMemoryAmount = freeMemory();
-  sprintf(freeMemoryMessage, "Free Memory: %d", freeMemoryAmount);
-  Monitor::instance()->Monitor::instance()->writeSerialMessage(freeMemoryMessage);
-  if(freeMemoryAmount < 500){
-    Monitor::instance()->Monitor::instance()->writeSerialMessage(F("Low memory, resetting!"));
-    nvic_sys_reset(); // software reset, takes us back to init
-  }
+  checkMemory();
 
   // allocate and free the ram to test if there is enough?
   //nvic_sys_reset - what does this do?

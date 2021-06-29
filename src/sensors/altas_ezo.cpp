@@ -65,7 +65,7 @@ void stopEZOSerial(){
     */
 
 
-    //ezo_ec = new Ezo_board(&Wire2, 0x64);
+    //ezo_ec = new Ezo_board(&WireTwo, 0x64);
 
     // inputstring.reserve(20);
 

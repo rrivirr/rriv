@@ -4,10 +4,11 @@
 // For F103RB
 #define Serial Serial2
 
-extern TwoWire WireOne;
-#define Wire WireOne
+// extern TwoWire Wire;
+#define WireOne Wire 
 
-extern TwoWire Wire2;
+// extern TwoWire WireTwo;
+#define WireTwo Wire1
 
 #define SWITCHED_POWER_ENABLE PC6
 #define SD_ENABLE_PIN PC8
