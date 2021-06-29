@@ -57,6 +57,8 @@ void blinkTest();
 
 void initializeFilesystem();
 
+void setupSensors();
+
 void allocateMeasurementValuesMemory();
 
 void prepareForTriggeredMeasurement();

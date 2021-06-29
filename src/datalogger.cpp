@@ -1,5 +1,6 @@
 #include "datalogger.h"
 #include "system/watchdog.h"
+#include "sensors/atlas_rgb.h"
 
 // Settings
 char version[5] = "v2.0";
@@ -191,6 +192,19 @@ void allocateMeasurementValuesMemory()
   sprintf(values[20], "%10d", 0);
   values[21] = (char *)malloc(sizeof(char) * 31); // user serial notes input
   sprintf(values[21], "%30d", 0);
+}
+
+void setupSensors(){
+
+  // read sensors types from EEPROM
+  // malloc configuration structs
+  // read configuration structs from EEPROM for each sensor type
+  // run setup for each sensor
+
+  
+  // Setup RGB Sensor
+  AtlasRGB::instance()->setup(&WireTwo);
+
 }
 
 void prepareForTriggeredMeasurement()
@@ -725,6 +739,12 @@ void takeNewMeasurement()
       Monitor::instance()->writeDebugMessage(F("New EC data not available"));
     }
   }
+
+  // Get reading from RGB Sensor
+  char * data = AtlasRGB::instance()->mallocDataMemory();
+  AtlasRGB::instance()->takeMeasurement(data);
+  free(data);
+ 
 
   //Serial2.print(F("Got EC value: "));
   //Serial2.print(ecValue);
