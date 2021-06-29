@@ -62,7 +62,7 @@ private:
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
-    bool measureSensorValues();
+    void measureSensorValues();
     bool writeMeasurementToLogFile();
     void processCLI();
     bool configurationIsDirty();

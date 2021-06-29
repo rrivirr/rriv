@@ -34,6 +34,17 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
+void WaterBear_FileSystem::writeString(char * dataString)
+{
+  this->logfile.print(dataString);
+}
+
+void WaterBear_FileSystem::endOfLine()
+{
+  this->logfile.println();
+  this->logfile.flush();
+}
+
 
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)

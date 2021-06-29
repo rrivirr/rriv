@@ -174,16 +174,25 @@ bool Datalogger::shouldExitLoggingMode()
   
 }
 
-bool Datalogger::measureSensorValues()
+void Datalogger::measureSensorValues()
 {
   for(int i=0; i<sensorCount; i++){
     // get values from the sensor
+    if(drivers[i]->takeMeasurement()){
+      // burst bookkeeping
+    }
   }
 }
 
 bool Datalogger::writeMeasurementToLogFile()
 {
-
+  for(int i=0; i<sensorCount; i++){
+    // get values from the sensor
+    char * dataString = drivers[i]->getDataString();
+    filesystem->writeString(dataString);
+    filesystem->writeString(",");
+  }
+  filesystem->endOfLine();
 }
 
 void Datalogger::processCLI()
@@ -403,7 +412,10 @@ void setupSensors(){
 
 void prepareForTriggeredMeasurement()
 {
-  burstCount = 0;
+  //initialize burst count
+
+
+  burstCount = 0; // deprecated
 }
 
 void prepareForUserInteraction()

@@ -14,10 +14,17 @@ class SensorDriver {
 
     // Interface
     virtual void stop();
-    virtual void takeMeasurement();
+    virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
     virtual char * getCSVColumnNames();
     virtual protocol_type getProtocol();
+    
+    virtual void initializeBurst();
+    virtual void incrementBurst();
+    virtual bool burstCompleted();
+
+  private:
+    short burstCount = 0;
 };
 
 class AnalogSensorDriver : public SensorDriver {

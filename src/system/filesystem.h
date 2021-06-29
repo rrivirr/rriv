@@ -23,13 +23,18 @@ private:
 public:
   WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin);
   void initializeSDCard();
-  void writeLog(char** values, short fieldCount);
   void writeDebugMessage(const char* message);
   void setDeploymentIdentifier(char * deploymentIdentifier);
   void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
   void reopenFileSystem(); // reopen filesystem after wakeup
+  void writeString(char * dataString);
+  void endOfLine();
+
+  // deprecated
+  void writeLog(char** values, short fieldCount);
+
 };
 
 #endif
