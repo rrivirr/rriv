@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.3.0...v1.3.1) (2021-06-29)
+
+
+### Bug Fixes
+
+* organize code and add qos files ([1157313](https://github.com/WaterBearSondes/waterbear-firmware/commit/1157313be7467c1d7daa825b628a6785de14ef9f))
+
 # [1.3.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.2.0...v1.3.0) (2021-06-29)
 
 
