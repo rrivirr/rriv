@@ -1,11 +1,12 @@
 #include "datalogger.h"
+#include "sensors/sensor_map.h"
+#include "system/monitor.h"
 #include "system/watchdog.h"
+#include "sensors/atlas_rgb.h"
 
 // Settings
-char version[5] = "v2.0";
-
 short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 100; // how many readings in a burst
+short burstLength = 100; // how many readings in a burst - this is a per slot settings
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -31,42 +32,322 @@ bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
 
+Datalogger::Datalogger(datalogger_settings * settings)
+{
+  powerCycle = true;
 
-void enableI2C1()
+  if(settings->interval != 0)
+  {
+    this->interval = settings->interval;
+  }
+  if(settings->mode == 0){
+    mode = 'i';
+  } else {
+    mode = settings->mode;
+  }
+
+}
+
+
+void Datalogger::setup()
+{
+  loadSensorConfigurations();
+  initializeFilesystem();
+  
+}
+
+void Datalogger::loop()
+{
+
+  if(inMode(deploy_on_trigger)){
+    deploy();
+    return;
+  }
+
+  if(inMode(logging))
+  {
+    if(powerCycle)
+    {
+      deploy();
+    }
+
+    if(shouldExitLoggingMode())
+    {
+      mode = 'i';
+      return;
+    }
+
+    if(shouldContinueBursting())
+    {
+      measureSensorValues();
+      writeMeasurementToLogFile();
+    } 
+    else 
+    {
+      // go to sleep
+      stopAndAwaitTrigger();
+      initializeBurst();
+      return;
+    }
+    return;
+  }
+
+  processCLI();
+  if (configurationIsDirty())
+  {
+    storeConfiguration();
+    stopLogging();
+  }
+
+  if (inMode(interactive))
+  {
+    if(interactiveModeLogging){
+      measureSensorValues(false);
+      writeMeasurementToLogFile();
+    }
+  }
+  else if (inMode(debug))
+  {
+    measureSensorValues(false);
+    writeMeasurementToLogFile();
+  }
+  else
+  {
+    // invalid mode!
+    Monitor::instance()->writeDebugMessage(F("Invalid Mode!"));
+    mode = 'i';
+  }
+
+  powerCycle = false;
+}
+
+
+void Datalogger::loadSensorConfigurations(){
+  // load sensor configurations from EEPROM and count them
+  sensorCount = 1;
+  sensorTypes = (short *) malloc(sizeof(short) * sensorCount);
+  sensorTypes[0] = GENERIC_ANALOG_SENSOR;
+
+  // load the full configurations from EEPROM
+
+  // construct the drivers
+  drivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+  for(int i=0; i<sensorCount; i++){
+    SensorDriver * driver = driverForSensorType(sensorTypes[i]);
+    drivers[i] = driver;
+    switch(driver->getProtocol()){
+      case analog:
+        ((AnalogSensorDriver*) driver)->setup();
+        break;
+      case i2c:
+        ((I2CSensorDriver*) driver)->setup(&WireTwo);
+        break;
+      default:
+        break;
+    }
+    //driver->configure(struct *);  //pass configuration struct to the driver
+  }
+
+  AtlasRGB::instance()->setup(&WireTwo); // legacy 
+
+
+  // set up bookkeeping for dirty configurations
+  if(dirtyConfigurations != NULL)
+  {
+    free(dirtyConfigurations);
+  }
+  dirtyConfigurations = (bool *) malloc(sizeof(bool) * (sensorCount + 1));
+}
+
+void Datalogger::startLogging(){
+  interactiveModeLogging = true;
+}
+
+void Datalogger::stopLogging(){
+  interactiveModeLogging = false;
+}
+
+
+bool Datalogger::shouldExitLoggingMode()
 {
   
-  i2c_disable(I2C1);
-  i2c_master_enable(I2C1, 0, 0);
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
-
-  delay(1000);
-  // i2c_bus_reset(I2C1); // hangs here if this is called
-  // Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
-
-  Wire.begin();
-  delay(1000);
-
-  Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
-
-  scanIC2(&Wire);
 }
 
-void enableI2C2()
+bool Datalogger::shouldContinueBursting()
 {
-  i2c_disable(I2C2);
-  i2c_master_enable(I2C2, 0, 0);
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
-
-  //i2c_bus_reset(I2C2); // hang if this is called
-  WireTwo.begin();
-  delay(1000);
-
-  Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
-
-  Monitor::instance()->writeDebugMessage(F("Scanning"));
-
-  scanIC2(&WireTwo);
+  for(int i=0; i<sensorCount; i++)
+  {
+    if(!drivers[i]->burstCompleted())
+    {
+      return true;
+    }
+  }
+  return false;
 }
+
+void Datalogger::initializeBurst(){
+  Monitor::instance()->writeDebugMessage(F("setting base time"));
+  currentEpoch = timestamp();
+  offsetMillis = millis();
+
+  for(int i=0; i<sensorCount; i++){
+    drivers[i]->initializeBurst();
+  }
+  
+}
+
+void Datalogger::measureSensorValues(bool performingBurst)
+{
+  for(int i=0; i<sensorCount; i++){
+    // get values from the sensor
+    // if(performingBurst && drivers[i]->burstCompleted()
+    // {
+    //   continue;
+    // }
+    if(drivers[i]->takeMeasurement())
+    {
+      if(performingBurst) 
+      {
+        drivers[i]->incrementBurst();  // burst bookkeeping
+      }
+    }
+  }
+}
+
+void Datalogger::writeStatusFieldsToLogFile(){
+
+  // TODO: do we need to do this every time ??
+  char uuidString[2 * UUID_LENGTH + 1];
+  uuidString[2 * UUID_LENGTH] = '\0';
+  for (short i = 0; i < UUID_LENGTH; i++)
+  {
+    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
+  }
+
+  // Get the deployment identifier
+  // TODO: do we need to do this every time ??
+  char deploymentIdentifier[26];
+  readDeploymentIdentifier(deploymentIdentifier);
+  char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
+  memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
+  memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
+  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
+
+  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
+  uint32 currentMillis = millis();
+  double currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
+
+  //debug timestamp calculations
+  char valuesBuffer[190];
+  sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
+  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+
+  char currentTimeString[20];
+  char humanTimeString[20];
+  sprintf(currentTimeString, "%10.3f", currentTime); // convert double value into string
+  t_t2ts(currentTime, currentMillis-offsetMillis, humanTimeString);        // convert time_t value to human readable timestamp
+
+  filesystem->writeString(uuidString);
+  filesystem->writeString(",");
+  filesystem->writeString(deploymentUUID);
+  filesystem->writeString(",");
+  filesystem->writeString(currentTimeString);
+  filesystem->writeString(",");
+  filesystem->writeString(humanTimeString);
+  filesystem->writeString(",");
+  
+}
+
+void Datalogger::writeDebugFieldsToLogFile(){
+  // notes and burst count, etc.
+}
+
+bool Datalogger::writeMeasurementToLogFile()
+{
+
+  writeStatusFieldsToLogFile();
+
+  // and write out the sensor data
+  for(int i=0; i<sensorCount; i++)
+  {
+    // get values from the sensor
+    char * dataString = drivers[i]->getDataString();
+    filesystem->writeString(dataString);
+    filesystem->writeString(",");
+  }
+  filesystem->endOfLine();
+}
+
+void Datalogger::processCLI()
+{
+  if(WaterBear_Control::ready(Serial2))
+  {
+    handleControlCommand();
+  }
+}
+
+bool Datalogger::configurationIsDirty(){
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    if(dirtyConfigurations[i])
+    {
+      return true;
+    }
+  } 
+
+  return false;
+}
+
+void Datalogger::storeConfiguration()
+{
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    if(dirtyConfigurations[i]){
+      //store this config block to EEPROM
+    }
+  }
+}
+
+bool Datalogger::inMode(mode_type mode){
+  switch(mode){
+    case interactive:
+      return mode == 'i';
+    case debug:
+      return mode == 'd';
+    case logging:
+      return mode == 'l';
+    case deploy_on_trigger:
+      return mode == 't';
+    default:
+      return false;
+  }
+}
+
+
+void Datalogger::deploy(){
+  char defaultDeployment[25] = "SITENAME_00000000000000";
+  memcpy(defaultDeployment, deploymentIdentifier, 25); 
+  writeDeploymentIdentifier(defaultDeployment);
+}
+
+
+void Datalogger::initializeFilesystem()
+{
+  SdFile::dateTimeCallback(dateTime);
+
+  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
+  Monitor::instance()->filesystem = filesystem;
+  Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
+
+  time_t setupTime = timestamp();
+  char setupTS[21];
+  sprintf(setupTS, "unixtime: %lld", setupTime);
+  Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
+  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
+}
+
+
 
 void powerUpSwitchableComponents()  
 {
@@ -128,6 +409,9 @@ void blinkTest()
   //Logger::instance()->writeDebugMessage(F("blink test:"));
   //blink(10,250);
 }
+
+
+
 
 void initializeFilesystem()
 {
@@ -193,9 +477,13 @@ void allocateMeasurementValuesMemory()
   sprintf(values[21], "%30d", 0);
 }
 
+
 void prepareForTriggeredMeasurement()
 {
-  burstCount = 0;
+  //initialize burst count
+
+
+  burstCount = 0; // deprecated
 }
 
 void prepareForUserInteraction()
@@ -297,7 +585,7 @@ void measureSensorValues()
   sprintf(values[18], "%.2f", calculateTemperature());
 }
 
-bool checkBursting()
+bool shouldContinueBursting()
 {
   bool bursting = false;
   if (burstCount < burstLength)
@@ -725,6 +1013,12 @@ void takeNewMeasurement()
       Monitor::instance()->writeDebugMessage(F("New EC data not available"));
     }
   }
+
+  // Get reading from RGB Sensor
+  char * data = AtlasRGB::instance()->mallocDataMemory();
+  AtlasRGB::instance()->takeMeasurement(data);
+  free(data);
+ 
 
   //Serial2.print(F("Got EC value: "));
   //Serial2.print(ecValue);

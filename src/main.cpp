@@ -7,29 +7,22 @@
 #include "datalogger.h"
 #include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
-#include "sensors/atlas_rgb.h"
 #include "utilities/qos.h"
 
 // Setup and Loop
-
-void setupSensors(){
-
-  // read sensors types from EEPROM
-  // malloc configuration structs
-  // read configuration structs from EEPROM for each sensor type
-  // run setup for each sensor
-
-  
-  // Setup RGB Sensor
-  AtlasRGB::instance()->setup(&WireTwo);
-
-}
+Datalogger * datalogger;
 
 void setup(void)
 {
   startSerial2();
 
   startCustomWatchDog();
+
+  // TODO: read datalogger settings struct from EEPROM
+  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
+  dataloggerSettings->interval = 15;
+  datalogger = new Datalogger(dataloggerSettings);
+  datalogger->setup();
   
   // disable unused components and hardware pins //
   componentsAlwaysOff();
@@ -101,18 +94,12 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-  // Get reading from RGB Sensor
-  char * data = AtlasRGB::instance()->mallocDataMemory();
-  AtlasRGB::instance()->takeMeasurement(data);
-  free(data);
- 
-
   checkMemory();
 
-  // allocate and free the ram to test if there is enough?
-  //nvic_sys_reset - what does this do?
+  datalogger->loop();
+  return; // skip the old loop below
 
-  bool bursting = checkBursting();
+  bool bursting = shouldContinueBursting();
   bool debugLoop = checkDebugLoop();
   bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
   bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);
