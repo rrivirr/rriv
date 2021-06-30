@@ -78,9 +78,9 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
     //awakeTime = WaterBear_Control::timestamp(); // Keep us awake once we are talking to the phone
 
     char request[MAX_REQUEST_LENGTH] = "";
-    myStream->readBytesUntil('<', request, MAX_REQUEST_LENGTH);
+    myStream->readBytesUntil('\r', request, MAX_REQUEST_LENGTH);
     myStream->write(">COMMAND RECIEVED: ");
-    myStream->write(&request[1]);
+    myStream->write(&request[0]);
     myStream->write("<");
     myStream->flush();
     delay(100);
@@ -88,7 +88,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream)
     if (!strncmp(request, "version", 7)) {
 
     }
-    else if (!regcomp(&regex, "^set-config .*\\.json\r$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!regcomp(&regex, "^set-config .*\\.json$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
       char * fileName = strchr(request, ' ') + 1;
     }
     else if (!regcomp(&regex, "^get-config [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
