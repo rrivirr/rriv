@@ -90,7 +90,7 @@ extern short burstLength; // how many readings in a burst
 extern short fieldCount; // number of fields to be logged to SDcard file
 
 // State
-extern WaterBear_FileSystem *filesystem;
+extern FileSystem *filesystem;
 extern unsigned char uuid[UUID_LENGTH];
 extern char **values;
 

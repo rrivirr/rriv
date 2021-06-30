@@ -9,7 +9,7 @@ class Monitor
 public:
     bool logToFile = true;
     bool logToSerial = true;
-    WaterBear_FileSystem * filesystem = NULL;
+    FileSystem * filesystem = NULL;
 
 public:
     static Monitor* instance();

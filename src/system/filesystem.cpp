@@ -5,7 +5,7 @@
 char dataDirectory[6] = "/Data";
 
 
-WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin)
+FileSystem::FileSystem(char * deploymentIdentifier, int chipSelectPin)
 {
   strcpy(this->deploymentIdentifier, deploymentIdentifier);
   this->chipSelectPin = chipSelectPin;
@@ -15,7 +15,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
   Serial2.println("Set deployment identifier");
 }
 
-void WaterBear_FileSystem::initializeSDCard(){
+void FileSystem::initializeSDCard(){
    // initialize the SD card
   Serial2.print(F("Initializing SD card..."));
 
@@ -34,19 +34,19 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
-void WaterBear_FileSystem::writeString(char * dataString)
+void FileSystem::writeString(char * dataString)
 {
   this->logfile.print(dataString);
 }
 
-void WaterBear_FileSystem::endOfLine()
+void FileSystem::endOfLine()
 {
   this->logfile.println();
   this->logfile.flush();
 }
 
 
-void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
+void FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)
   {
     //Serial2.println(values[i]);
@@ -60,7 +60,7 @@ void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   this->logfile.flush();
 }
 
-void WaterBear_FileSystem::writeDebugMessage(const char* message)
+void FileSystem::writeDebugMessage(const char* message)
 {
   this->logfile.print("debug,");
   this->logfile.print(message);
@@ -68,7 +68,7 @@ void WaterBear_FileSystem::writeDebugMessage(const char* message)
   this->logfile.flush();
 }
 
-void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent)
+void FileSystem::dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent)
 {
   /*
     // Debug
@@ -164,12 +164,12 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
 */
 }
 
-void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier)
+void FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier)
 {
   strcpy(deploymentIdentifier, newDeploymentIdentifier);
 }
 
-bool WaterBear_FileSystem::openFile(char * filename){
+bool FileSystem::openFile(char * filename){
   this->sd.chdir("/");
   printCurrentDirListing();
   Serial2.println("OK in root");
@@ -228,7 +228,7 @@ bool WaterBear_FileSystem::openFile(char * filename){
 
 }
 
-void WaterBear_FileSystem::setNewDataFile(long unixtime)
+void FileSystem::setNewDataFile(long unixtime)
 {
 
   char uniquename[11] = "NEWFILE";
@@ -261,7 +261,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   //Serial2.println(ret);
 }
 
-void WaterBear_FileSystem::printCurrentDirListing()
+void FileSystem::printCurrentDirListing()
 {
   Serial2.println("printCurrentDirListing");
 
@@ -276,7 +276,7 @@ void WaterBear_FileSystem::printCurrentDirListing()
   }
 }
 
-void WaterBear_FileSystem::closeFileSystem()
+void FileSystem::closeFileSystem()
 {
   Serial2.print(F(">close filesystem<"));
   //this->logfile.sync();
@@ -284,7 +284,7 @@ void WaterBear_FileSystem::closeFileSystem()
   //this->sd.end // doesn't exist
 }
 
-void WaterBear_FileSystem::reopenFileSystem()
+void FileSystem::reopenFileSystem()
 {
 
   initializeSDCard();

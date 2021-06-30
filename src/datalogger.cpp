@@ -17,7 +17,7 @@ short fieldCount = 22; // number of fields to be logged to SDcard file
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
 // State
-WaterBear_FileSystem *filesystem;
+FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
 char lastDownloadDate[11] = "0000000000";
 char **values;
@@ -336,7 +336,7 @@ void Datalogger::initializeFilesystem()
 {
   SdFile::dateTimeCallback(dateTime);
 
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
+  filesystem = new FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = filesystem;
   Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
 
@@ -432,7 +432,7 @@ void initializeFilesystem()
     readDeploymentIdentifier(deploymentIdentifier);
   }
 
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
+  filesystem = new FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = filesystem;
   Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
 

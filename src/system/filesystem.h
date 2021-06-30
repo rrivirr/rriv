@@ -5,7 +5,7 @@
 #include "SdFat.h"
 #include "DS3231.h"
 
-class WaterBear_FileSystem
+class FileSystem
 {
 
 private:
@@ -21,7 +21,7 @@ private:
 
 
 public:
-  WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin);
+  FileSystem(char * deploymentIdentifier, int chipSelectPin);
   void initializeSDCard();
   void writeDebugMessage(const char* message);
   void setDeploymentIdentifier(char * deploymentIdentifier);
