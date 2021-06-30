@@ -2,6 +2,8 @@
 
 GenericAnalog::GenericAnalog(){}
 
+void GenericAnalog::setup(){}
+
 void GenericAnalog::stop(){}
 
 bool GenericAnalog::takeMeasurement(){
@@ -15,7 +17,7 @@ char * GenericAnalog::getDataString(){
 }
 
 char * GenericAnalog::getCSVColumns(){
-
+   return csvColumnHeaders;
 }
 
 protocol_type GenericAnalog::getProtocol(){
