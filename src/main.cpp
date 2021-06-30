@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <libmaple/libmaple.h>
-#include <libmaple/pwr.h> // necessary?
 #include <string.h>
 #include <Ezo_i2c.h>
 
@@ -14,76 +13,14 @@ Datalogger * datalogger;
 
 void setup(void)
 {
+
   startSerial2();
 
   startCustomWatchDog();
 
-  // TODO: read datalogger settings struct from EEPROM
-  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
-  dataloggerSettings->interval = 15;
-  datalogger = new Datalogger(dataloggerSettings);
-  datalogger->setup();
+  datalogger = Datalogger::initialize();
   
-  // disable unused components and hardware pins //
-  componentsAlwaysOff();
-  //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
-
-  setupSwitchedPower();
-
-  Serial2.println("hello");
-  enableSwitchedPower();
-
-  setupHardwarePins();
-  Serial2.println("hello");
-  Serial2.flush();
-
-  //Serial2.println(atlasRGBSensor.get_name());
-  // digitalWrite(PA4, LOW); // turn on the battery measurement
-
-  //blinkTest();
-  
-
-  // Set up the internal RTC
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
-  PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-  
-
-  // delay(20000);
-
-  allocateMeasurementValuesMemory();
-
-  setupManualWakeInterrupts();
-
-  powerUpSwitchableComponents();
-  delay(2000);
-
-   // Don't respond to interrupts during setup
-  disableManualWakeInterrupt();
-  clearManualWakeInterrupt();
-
-  // Clear the alarms so they don't go off during setup
-  clearAllAlarms();
-
-  initializeFilesystem();
-
-  //initBLE();
-
-  readUniqueId(uuid);
-
-  setNotBursting(); // prevents bursting during first loop
-
-  /* We're ready to go! */
-  Monitor::instance()->writeDebugMessage(F("done with setup"));
-  Serial2.flush();
-
-  setupSensors();
-  Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
-  Serial2.flush();
-
-  print_debug_status(); 
 }
-
 
 
 
@@ -97,7 +34,10 @@ void loop(void)
   checkMemory();
 
   datalogger->loop();
-  return; // skip the old loop below
+
+}
+
+void unused(){
 
   bool bursting = shouldContinueBursting();
   bool debugLoop = checkDebugLoop();

@@ -2,7 +2,10 @@
 #include "sensors/sensor_map.h"
 #include "system/monitor.h"
 #include "system/watchdog.h"
+#include "system/low_power.h"
 #include "sensors/atlas_rgb.h"
+#include "scratch/dbgmcu.h"
+
 
 // Settings
 // short interval = 1;     // minutes between loggings when not in short sleep
@@ -31,6 +34,15 @@ bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
 
+Datalogger * Datalogger::initialize(){
+   // TODO: read datalogger settings struct from EEPROM
+  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
+  dataloggerSettings->interval = 15;
+  Datalogger * datalogger = new Datalogger(dataloggerSettings);
+  datalogger->setup();
+  return datalogger;
+}
+
 Datalogger::Datalogger(datalogger_settings * settings)
 {
   powerCycle = true;
@@ -53,6 +65,56 @@ void Datalogger::setup()
   loadSensorConfigurations();
   initializeFilesystem();
   
+  // disable unused components and hardware pins //
+  componentsAlwaysOff();
+  //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
+
+  setupSwitchedPower();
+
+  enableSwitchedPower();
+
+  setupHardwarePins();
+  //Serial2.println(atlasRGBSensor.get_name());
+  // digitalWrite(PA4, LOW); // turn on the battery measurement
+
+  //blinkTest();
+  
+  setUpInternalRTC();
+  
+
+  // delay(20000);
+
+  allocateMeasurementValuesMemory();
+
+  setupManualWakeInterrupts();
+
+  powerUpSwitchableComponents();
+  delay(2000);
+
+   // Don't respond to interrupts during setup
+  disableManualWakeInterrupt();
+  clearManualWakeInterrupt();
+
+  // Clear the alarms so they don't go off during setup
+  clearAllAlarms();
+
+  initializeFilesystem();
+
+  //initBLE();
+
+  readUniqueId(uuid);
+
+  setNotBursting(); // prevents bursting during first loop
+
+  /* We're ready to go! */
+  Monitor::instance()->writeDebugMessage(F("done with setup"));
+  Serial2.flush();
+
+  setupSensors();
+  Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
+  Serial2.flush();
+
+  print_debug_status(); 
 }
 
 void Datalogger::loop()
@@ -290,7 +352,8 @@ void Datalogger::processCLI()
 {
   if(WaterBear_Control::ready(Serial2))
   {
-    handleControlCommand();
+    // WaterBear_Control::processControlCommands(Serial2, this);
+    // handleControlCommand();
   }
 }
 
@@ -462,18 +525,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
 }
 
-void startSerial2()
-{
-  // Start up Serial2
-  // TODO: Need to do an if(Serial2) after an amount of time, just disable it
-  Serial2.begin(SERIAL_BAUD);
-  while (!Serial2)
-  {
-    delay(100);
-  }
-  Monitor::instance()->writeSerialMessage(F("Hello world: serial2"));
-  Monitor::instance()->writeSerialMessage(F("Begin Setup"));
-}
+
 
 void setupHardwarePins()
 {

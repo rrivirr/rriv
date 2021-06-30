@@ -46,6 +46,7 @@ public:
     void ** sensorConfigurations = NULL;
     SensorDriver ** drivers = NULL;
 
+    static Datalogger * initialize();
     Datalogger(datalogger_settings_type * settings);
 
     void setup();
