@@ -6,6 +6,9 @@
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "DS3231.h"
 #include "time.h"
+#include "datalogger.h"
+
+class Datalogger;
 
 #define WT_CONTROL_NONE 0
 #define WT_CONTROL_CONFIG 1000 // displays raw readings, add flags? rename "control"?
@@ -43,10 +46,10 @@ class WaterBear_Control
 
     static int state;
 
-    static int processControlCommands(Stream * myStream);
-    static int processControlCommands(HardwareSerial &port);
-    static int processControlCommands(Adafruit_BluefruitLE_UART &ble);
-    static int processControlCommands(Adafruit_BluefruitLE_SPI &ble);
+    static int processControlCommands(Stream * myStream, Datalogger * datalogger);
+    static int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
+    static int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
+    static int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
 
     static void * getLastPayload();
 
