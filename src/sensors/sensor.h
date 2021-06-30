@@ -32,6 +32,8 @@ class SensorDriver {
     void incrementBurst();
     bool burstCompleted();
 
+    bool configurationDirty = false;
+
   private:
     short burstCount = 0;
     

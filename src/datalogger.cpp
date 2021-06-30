@@ -297,7 +297,7 @@ void Datalogger::processCLI()
 bool Datalogger::configurationIsDirty(){
   for(int i=0; i<sensorCount+1; i++)
   {
-    if(dirtyConfigurations[i])
+    if(this->drivers[i]->configurationDirty)
     {
       return true;
     }
