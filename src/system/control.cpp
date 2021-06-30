@@ -39,22 +39,24 @@ bool WaterBear_Control::ready(Stream * myStream)
   }
 }
 
-int WaterBear_Control::processControlCommands(HardwareSerial &port)
+int WaterBear_Control::processControlCommands(HardwareSerial &port, Datalogger * datalogger)
 {
   Stream *myStream = &port;
-  return WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream, datalogger);
 }
 
-int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble)
+int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::processControlCommands(myStream);
+  return 0;
+  // return WaterBear_Control::processControlCommands(myStream);
 }
 
-int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble)
+int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::processControlCommands(myStream);
+  return 0;
+  // return WaterBear_Control::processControlCommands(myStream);
 }
 
 void * WaterBear_Control::getLastPayload()
@@ -63,7 +65,7 @@ void * WaterBear_Control::getLastPayload()
 }
 
 
-int WaterBear_Control::processControlCommands(Stream * myStream)
+int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * datalogger)
 {
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
   regex_t regex;

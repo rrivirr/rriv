@@ -283,7 +283,7 @@ void Datalogger::processCLI()
 {
   if(WaterBear_Control::ready(Serial2))
   {
-    handleControlCommand();
+    WaterBear_Control::processControlCommands(Serial2, (Datalogger *) this);
   }
 }
 
@@ -756,180 +756,180 @@ void stopAndAwaitTrigger()
   }
 }
 
-void handleControlCommand()
-{
-  Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
-  awakeTime = timestamp(); // Push awake time forward
-  int command = WaterBear_Control::processControlCommands(Serial2);
-  switch (command)
-  {
-  case WT_CLEAR_MODES:
-  {
-    Monitor::instance()->writeDebugMessage(F("Clearing Config, Debug, & TempCal modes"));
-    configurationMode = false;
-    debugValuesMode = false;
-    tempCalMode = false;
-    controlFlag = 0;
-    break;
-  }
-  case WT_CONTROL_CONFIG:
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    configurationMode = true;
-    char *flagPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("ConfigMode: "), flagPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    processControlFlag(flagPtr);
-    break;
-  }
-  case WT_DEBUG_VAlUES:
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    debugValuesMode = true;
-    break;
-  }
-  case WT_CONTROL_CAL_DRY:
-    Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
-    clearECCalibrationData();
-    setECDryPointCalibration();
-    break;
-  case WT_CONTROL_CAL_LOW:
-  {
-    Monitor::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
-    int *lowPointPtr = (int *)WaterBear_Control::getLastPayload();
-    int lowPoint = *lowPointPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    setECLowPointCalibration(lowPoint);
-    break;
-  }
-  case WT_CONTROL_CAL_HIGH:
-  {
-    Monitor::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
-    int *highPointPtr = (int *)WaterBear_Control::getLastPayload();
-    int highPoint = *highPointPtr;
-    char logMessage[31];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
-    setECHighPointCalibration(highPoint);
-    break;
-  }
-  case WT_SET_RTC: // DS3231
-  {
-    Monitor::instance()->writeDebugMessage(F("SET_RTC"));
-    time_t *RTCPtr = (time_t *)WaterBear_Control::getLastPayload();
-    time_t RTC = *RTCPtr;
-    char logMessage[24];
-    sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
-    setTime(RTC);
-    break;
-  }
-  case WT_DEPLOY: // Set deployment identifier via serial
-  {
-    Monitor::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
-    char *deployPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[46];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeDeploymentIdentifier(deployPtr);
-    break;
-  }
-  case WT_CAL_TEMP: // display raw temperature readings, and calibrated if available
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Temperature Calibration Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    tempCalMode = true;
-    break;
-  }
-  case WT_TEMP_CAL_LOW:
-  {
-    clearThermistorCalibration();
-    Monitor::instance()->writeDebugMessage(F("LOW_TEMP_CALIBRATION")); // input in xxx.xxC
-    unsigned short *lowTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
-    unsigned short lowTemp = *lowTempPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_CAL: "), lowTemp);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char*)&lowTemp, TEMPERATURE_C1_ADDRESS_LENGTH);
+// void handleControlCommand()
+// {
+//   Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
+//   awakeTime = timestamp(); // Push awake time forward
+//   int command = WaterBear_Control::processControlCommands(Serial2);
+//   switch (command)
+//   {
+//   case WT_CLEAR_MODES:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Clearing Config, Debug, & TempCal modes"));
+//     configurationMode = false;
+//     debugValuesMode = false;
+//     tempCalMode = false;
+//     controlFlag = 0;
+//     break;
+//   }
+//   case WT_CONTROL_CONFIG:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
+//     Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+//     Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+//     configurationMode = true;
+//     char *flagPtr = (char *)WaterBear_Control::getLastPayload();
+//     char logMessage[30];
+//     sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("ConfigMode: "), flagPtr);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     processControlFlag(flagPtr);
+//     break;
+//   }
+//   case WT_DEBUG_VAlUES:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
+//     Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+//     Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+//     debugValuesMode = true;
+//     break;
+//   }
+//   case WT_CONTROL_CAL_DRY:
+//     Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
+//     clearECCalibrationData();
+//     setECDryPointCalibration();
+//     break;
+//   case WT_CONTROL_CAL_LOW:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
+//     int *lowPointPtr = (int *)WaterBear_Control::getLastPayload();
+//     int lowPoint = *lowPointPtr;
+//     char logMessage[30];
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     setECLowPointCalibration(lowPoint);
+//     break;
+//   }
+//   case WT_CONTROL_CAL_HIGH:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
+//     int *highPointPtr = (int *)WaterBear_Control::getLastPayload();
+//     int highPoint = *highPointPtr;
+//     char logMessage[31];
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
+//     setECHighPointCalibration(highPoint);
+//     break;
+//   }
+//   case WT_SET_RTC: // DS3231
+//   {
+//     Monitor::instance()->writeDebugMessage(F("SET_RTC"));
+//     time_t *RTCPtr = (time_t *)WaterBear_Control::getLastPayload();
+//     time_t RTC = *RTCPtr;
+//     char logMessage[24];
+//     sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
+//     setTime(RTC);
+//     break;
+//   }
+//   case WT_DEPLOY: // Set deployment identifier via serial
+//   {
+//     Monitor::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
+//     char *deployPtr = (char *)WaterBear_Control::getLastPayload();
+//     char logMessage[46];
+//     sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     writeDeploymentIdentifier(deployPtr);
+//     break;
+//   }
+//   case WT_CAL_TEMP: // display raw temperature readings, and calibrated if available
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Entering Temperature Calibration Mode"));
+//     Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
+//     Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
+//     tempCalMode = true;
+//     break;
+//   }
+//   case WT_TEMP_CAL_LOW:
+//   {
+//     clearThermistorCalibration();
+//     Monitor::instance()->writeDebugMessage(F("LOW_TEMP_CALIBRATION")); // input in xxx.xxC
+//     unsigned short *lowTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
+//     unsigned short lowTemp = *lowTempPtr;
+//     char logMessage[30];
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_CAL: "), lowTemp);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     writeEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char*)&lowTemp, TEMPERATURE_C1_ADDRESS_LENGTH);
 
-    unsigned short voltage = analogRead(PB1);
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_VOLTAGE: "), voltage);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V1_ADDRESS_LENGTH);
-    break;
-  }
-  case WT_TEMP_CAL_HIGH:
-  {
-    Monitor::instance()->writeDebugMessage(F("HIGH_TEMP_CALIBRATION")); // input in xxx.xxC
-    unsigned short *highTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
-    unsigned short highTemp = *highTempPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_CAL: "), highTemp);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char*)&highTemp, TEMPERATURE_C2_ADDRESS_LENGTH);
+//     unsigned short voltage = analogRead(PB1);
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_VOLTAGE: "), voltage);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     writeEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V1_ADDRESS_LENGTH);
+//     break;
+//   }
+//   case WT_TEMP_CAL_HIGH:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("HIGH_TEMP_CALIBRATION")); // input in xxx.xxC
+//     unsigned short *highTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
+//     unsigned short highTemp = *highTempPtr;
+//     char logMessage[30];
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_CAL: "), highTemp);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     writeEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char*)&highTemp, TEMPERATURE_C2_ADDRESS_LENGTH);
 
-    unsigned short voltage = analogRead(PB1);
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_VOLTAGE: "), voltage);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V2_ADDRESS_LENGTH);
-    calibrateThermistor();
-    break;
-  }
-  case WT_USER_VALUE:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_VALUE"));
-    char *userValuePtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[24];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_VALUE: "), userValuePtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    sprintf(values[20], "%s", userValuePtr);
-    break;
-  }
-  case WT_USER_NOTE:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_NOTE"));
-    char *userNotePtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[42];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_NOTE: "), userNotePtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    sprintf(values[21], "%s", userNotePtr);
-    break;
-  }
-  case WT_USER_INPUT:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_INPUT"));
-    char *userInputPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[55];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_INPUT: "), userInputPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    for (size_t i = 0; i < 42 ; i++)
-    {
-      if (userInputPtr[i] == '&')
-      {
-        sprintf(values[21], "%s", &userInputPtr[i+1]);
-        userInputPtr[i] = '\0';
-        sprintf(values[20], "%s", userInputPtr);
-        break;
-      }
-      else if (userInputPtr[i] == '\0')
-      {
-        Monitor::instance()->writeDebugMessage(F("incorrect format, delimiter is &"));
-        break;
-      }
-    }
-    break;
-  }
-  default:
-    Monitor::instance()->writeDebugMessage(F("Invalid command code"));
-    break;
-  }
-}
+//     unsigned short voltage = analogRead(PB1);
+//     sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_VOLTAGE: "), voltage);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     writeEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V2_ADDRESS_LENGTH);
+//     calibrateThermistor();
+//     break;
+//   }
+//   case WT_USER_VALUE:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("USER_VALUE"));
+//     char *userValuePtr = (char *)WaterBear_Control::getLastPayload();
+//     char logMessage[24];
+//     sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_VALUE: "), userValuePtr);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     sprintf(values[20], "%s", userValuePtr);
+//     break;
+//   }
+//   case WT_USER_NOTE:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("USER_NOTE"));
+//     char *userNotePtr = (char *)WaterBear_Control::getLastPayload();
+//     char logMessage[42];
+//     sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_NOTE: "), userNotePtr);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     sprintf(values[21], "%s", userNotePtr);
+//     break;
+//   }
+//   case WT_USER_INPUT:
+//   {
+//     Monitor::instance()->writeDebugMessage(F("USER_INPUT"));
+//     char *userInputPtr = (char *)WaterBear_Control::getLastPayload();
+//     char logMessage[55];
+//     sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_INPUT: "), userInputPtr);
+//     Monitor::instance()->writeDebugMessage(logMessage);
+//     for (size_t i = 0; i < 42 ; i++)
+//     {
+//       if (userInputPtr[i] == '&')
+//       {
+//         sprintf(values[21], "%s", &userInputPtr[i+1]);
+//         userInputPtr[i] = '\0';
+//         sprintf(values[20], "%s", userInputPtr);
+//         break;
+//       }
+//       else if (userInputPtr[i] == '\0')
+//       {
+//         Monitor::instance()->writeDebugMessage(F("incorrect format, delimiter is &"));
+//         break;
+//       }
+//     }
+//     break;
+//   }
+//   default:
+//     Monitor::instance()->writeDebugMessage(F("Invalid command code"));
+//     break;
+//   }
+// }
 
 void clearThermistorCalibration()
 {

@@ -128,7 +128,7 @@ void loop(void)
   {
     Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
     awakeTime = timestamp(); // Push awake time forward
-    WaterBear_Control::processControlCommands(getBLE());
+    // WaterBear_Control::processControlCommands(getBLE(), );
     return;
   }
 
