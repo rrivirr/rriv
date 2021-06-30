@@ -53,22 +53,34 @@ public:
 
     bool inMode(mode_type mode);
     void deploy();
+    void initializeFilesystem();
 
 private:
     // state
     char mode = 'i';
     bool powerCycle = true;
     bool interactiveModeLogging = false;
+    char deploymentIdentifier[25];
+    time_t currentEpoch;
+    uint32 offsetMillis;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
-    void measureSensorValues();
+    void measureSensorValues(bool performingBurst = true);
     bool writeMeasurementToLogFile();
+    void writeDebugFieldsToLogFile();
     void processCLI();
     bool configurationIsDirty();
     void storeConfiguration();
     void stopLogging();
     void startLogging();
+    bool shouldContinueBursting();
+
+    // utility
+    void writeStatusFieldsToLogFile();
+    void initializeBurst();
+
+
 };
 
 // Settings

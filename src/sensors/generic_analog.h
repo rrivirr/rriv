@@ -8,6 +8,7 @@ class GenericAnalog : public AnalogSensorDriver
     GenericAnalog();
 
     // Interface
+    void setup();
     void stop();
     bool takeMeasurement();
     char * getDataString();
@@ -15,5 +16,7 @@ class GenericAnalog : public AnalogSensorDriver
     protocol_type getProtocol();
 
   private:
+    char csvColumnHeaders[100] = "ms,ne,h";
+
     char dataString[16];
 };
