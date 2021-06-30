@@ -5,8 +5,8 @@
 #include "sensors/atlas_rgb.h"
 
 // Settings
-short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 100; // how many readings in a burst - this is a per slot settings
+// short interval = 1;     // minutes between loggings when not in short sleep
+// short burstLength = 100; // how many readings in a burst - this is a per slot settings
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -17,7 +17,6 @@ short fieldCount = 22; // number of fields to be logged to SDcard file
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
 // State
-FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
 char lastDownloadDate[11] = "0000000000";
 char **values;
@@ -135,18 +134,10 @@ void Datalogger::loadSensorConfigurations(){
   for(int i=0; i<sensorCount; i++){
     SensorDriver * driver = driverForSensorType(sensorTypes[i]);
     drivers[i] = driver;
-    switch(driver->getProtocol()){
-      case analog:
-        ((AnalogSensorDriver*) driver)->setup();
-        break;
-      case i2c:
-        ((I2CSensorDriver*) driver)->setup(&WireTwo);
-        break;
-      default:
-        break;
-    }
-    //driver->configure(struct *);  //pass configuration struct to the driver
   }
+  setupDrivers();
+
+    //driver->configure(struct *);  //pass configuration struct to the driver
 
   AtlasRGB::instance()->setup(&WireTwo); // legacy 
 
@@ -157,6 +148,22 @@ void Datalogger::loadSensorConfigurations(){
     free(dirtyConfigurations);
   }
   dirtyConfigurations = (bool *) malloc(sizeof(bool) * (sensorCount + 1));
+}
+
+void Datalogger::setupDrivers(){
+  for(int i=0; i<sensorCount; i++){
+      SensorDriver * driver = this->drivers[i];
+      switch(driver->getProtocol()){
+      case analog:
+        ((AnalogSensorDriver*) driver)->setup();
+        break;
+      case i2c:
+        ((I2CSensorDriver*) driver)->setup(&WireTwo);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 void Datalogger::startLogging(){
@@ -349,26 +356,110 @@ void Datalogger::initializeFilesystem()
 
 
 
-void powerUpSwitchableComponents()  
+void Datalogger::stopAndAwaitTrigger()
+{
+  Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
+
+  if (Clock.checkIfAlarm(1))
+  {
+    Monitor::instance()->writeDebugMessage(F("Alarm 1"));
+  }
+
+  printInterruptStatus(Serial2);
+  Monitor::instance()->writeDebugMessage(F("Going to sleep"));
+
+  // save enabled interrupts
+  int iser1, iser2, iser3;
+  storeAllInterrupts(iser1, iser2, iser3);
+
+  clearManualWakeInterrupt();
+  setNextAlarmInternalRTC(interval); 
+
+  powerDownSwitchableComponents();
+  filesystem->closeFileSystem(); // close file, filesystem
+  disableSwitchedPower();
+
+  awakenedByUser = false; // Don't go into sleep mode with any interrupt state
+
+  componentsStopMode();
+
+  disableCustomWatchDog();
+  Serial2.println("disabled watchdog");
+  Serial2.flush();
+  disableSerialLog(); // TODO
+  hardwarePinsStopMode(); // switch to input mode
+  
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
+
+  enableManualWakeInterrupt(); // The button, which is not powered during stop mode on v0.2 hardware
+  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+
+  enterStopMode();
+  //enterSleepMode();
+
+  //reopen sd card file (save file name? or use variable that has it already)
+  //filesystem->openFileForAppend();
+
+  reenableAllInterrupts(iser1, iser2, iser3);
+  disableManualWakeInterrupt();
+  nvic_irq_disable(NVIC_RTCALARM);  
+
+  enableSerialLog(); 
+  setupHardwarePins(); // used from setup steps in datalogger
+
+  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
+
+  startCustomWatchDog(); // could go earlier once working reliably
+  // delay( (WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
+
+
+  if(awakenedByUser == true)
+  {
+    Monitor::instance()->writeDebugMessage(F("USER TRIGGERED INTERRUPT"));
+  }
+
+  /////turn components back on
+  componentsBurstMode();
+  // We have woken from the interrupt
+  printInterruptStatus(Serial2);
+
+  powerUpSwitchableComponents();
+  setupDrivers();
+  filesystem->reopenFileSystem();
+
+
+  if(awakenedByUser == true)
+  {
+    awakeTime = timestamp();
+  }
+
+  // We need to check on which interrupt was triggered
+  if (awakenedByUser)
+  {
+    prepareForUserInteraction();
+  }
+  else
+  {
+    prepareForTriggeredMeasurement();
+  }
+}
+
+void Datalogger::powerUpSwitchableComponents()  
 {
   cycleSwitchablePower();
   enableI2C1();
-  if(USE_EC_OEM){
-    enableI2C2();
-    setupEC_OEM(&WireTwo);
-  }
-  Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
-
+  enableI2C2();
   Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
 }
 
-void powerDownSwitchableComponents() // called in stopAndAwaitTrigger
+void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
-  if(USE_EC_OEM){
-    hibernateEC_OEM();
-    i2c_disable(I2C2);
-    Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
+  for(int i=0; i<sensorCount; i++){
+    this->drivers[i]->stop();
   }
+  i2c_disable(I2C2);
+  Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
 }
 
 void startSerial2()
@@ -666,95 +757,6 @@ bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
   return takeMeasurement;
 }
 
-void stopAndAwaitTrigger()
-{
-  Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
-
-  if (Clock.checkIfAlarm(1))
-  {
-    Monitor::instance()->writeDebugMessage(F("Alarm 1"));
-  }
-
-  printInterruptStatus(Serial2);
-  Monitor::instance()->writeDebugMessage(F("Going to sleep"));
-
-  // save enabled interrupts
-  int iser1, iser2, iser3;
-  storeAllInterrupts(iser1, iser2, iser3);
-
-  clearManualWakeInterrupt();
-  setNextAlarmInternalRTC(interval); 
-
-
-  powerDownSwitchableComponents();
-  filesystem->closeFileSystem(); // close file, filesystem
-  disableSwitchedPower();
-
-  awakenedByUser = false; // Don't go into sleep mode with any interrupt state
-
-
-  componentsStopMode();
-
-  disableCustomWatchDog();
-  Serial2.println("disabled watchdog");
-  Serial2.flush();
-  disableSerialLog(); // TODO
-  hardwarePinsStopMode(); // switch to input mode
-  
-  clearAllInterrupts();
-  clearAllPendingInterrupts();
-
-  enableManualWakeInterrupt(); // The button, which is not powered during stop mode on v0.2 hardware
-  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
-
-  enterStopMode();
-  //enterSleepMode();
-
-  //reopen sd card file (save file name? or use variable that has it already)
-  //filesystem->openFileForAppend();
-
-  reenableAllInterrupts(iser1, iser2, iser3);
-  disableManualWakeInterrupt();
-  nvic_irq_disable(NVIC_RTCALARM);  
-
-  enableSerialLog(); 
-  setupHardwarePins(); // used from setup steps in datalogger
-
-  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
-
-  startCustomWatchDog(); // could go earlier once working reliably
-  // delay( (WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
-
-
-  if(awakenedByUser == true){
-
-    Monitor::instance()->writeDebugMessage(F("USER TRIGGERED INTERRUPT"));
-  }
-
-  /////turn components back on
-  componentsBurstMode();
-  // We have woken from the interrupt
-  printInterruptStatus(Serial2);
-
-  powerUpSwitchableComponents();
-  filesystem->reopenFileSystem();
-
-
-  if(awakenedByUser == true)
-  {
-    awakeTime = timestamp();
-  }
-
-  // We need to check on which interrupt was triggered
-  if (awakenedByUser)
-  {
-    prepareForUserInteraction();
-  }
-  else
-  {
-    prepareForTriggeredMeasurement();
-  }
-}
 
 void handleControlCommand()
 {

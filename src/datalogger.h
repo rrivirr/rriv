@@ -64,6 +64,9 @@ private:
     time_t currentEpoch;
     uint32 offsetMillis;
 
+    // facilities
+    FileSystem *filesystem;
+
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
     void measureSensorValues(bool performingBurst = true);
@@ -75,6 +78,11 @@ private:
     void stopLogging();
     void startLogging();
     bool shouldContinueBursting();
+    void stopAndAwaitTrigger();
+    void powerUpSwitchableComponents();
+    void powerDownSwitchableComponents();
+    void setupDrivers();
+
 
     // utility
     void writeStatusFieldsToLogFile();
