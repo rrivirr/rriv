@@ -13,18 +13,30 @@ class SensorDriver {
     SensorDriver();
 
     // Interface
+    virtual void configure(void * configuration); // pass block of configuration memory, read from EEPROM
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
     virtual const char * getCSVColumnNames();
     virtual protocol_type getProtocol();
     
-    virtual void initializeBurst();
-    virtual void incrementBurst();
-    virtual bool burstCompleted();
+    // JSON
+    virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
+    virtual void loadConfigurationJSON(char * configurationJSON);
+
+    // Calibration
+    virtual void initCalibration();
+    virtual void calibrationStep(char * step, int value);
+
+    void initializeBurst();
+    void incrementBurst();
+    bool burstCompleted();
 
   private:
     short burstCount = 0;
+    
+    // replace these with a struct
+    short burstLength = 10;
 };
 
 class AnalogSensorDriver : public SensorDriver {
