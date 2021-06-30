@@ -13,6 +13,7 @@ typedef std::map<short, SensorDriver*(*)()> map_type;
 void buildDriverSensorMap();
 SensorDriver * driverForSensorType(short type);
 
-#define GENERIC_ANALOG_SENSOR 0x00
+#define GENERIC_ANALOG_SENSOR 0x0000
+#define TEMPERATURE_SENSOR 0x0001
 
 #endif

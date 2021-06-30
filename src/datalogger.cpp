@@ -126,6 +126,7 @@ void Datalogger::loadSensorConfigurations(){
   sensorCount = 1;
   sensorTypes = (short *) malloc(sizeof(short) * sensorCount);
   sensorTypes[0] = GENERIC_ANALOG_SENSOR;
+  sensorTypes[1] = TEMPERATURE_SENSOR;
 
   // load the full configurations from EEPROM
 
