@@ -1,10 +1,10 @@
-#include "temp_analog.h"
+#include "temperature_analog.h"
 
-TempAnalog::TempAnalog(){}
+TemperatureAnalog::TemperatureAnalog(){}
 
-void TempAnalog::stop(){}
+void TemperatureAnalog::stop(){}
 
-bool TempAnalog::takeMeasurement(){
+bool TemperatureAnalog::takeMeasurement(){
   // take measurement and write to dataString member variable
   //int value = analogRead(sensorPins[i]);
   int measurement = 1200;
@@ -12,7 +12,7 @@ bool TempAnalog::takeMeasurement(){
   return true;
 }
 
-char * TempAnalog::getDataString(){
+char * TemperatureAnalog::getDataString(){
   
 
   // when settings file is complete add option to check for new calibration parameters to over-ride hard-coded values.
@@ -20,12 +20,12 @@ char * TempAnalog::getDataString(){
   return dataString;
 }
 
-const char * TempAnalog::getCSVColumns(){
+const char * TemperatureAnalog::getCSVColumns(){
 return CSVColumns;
 
 }
 
-protocol_type TempAnalog::getProtocol(){
+protocol_type TemperatureAnalog::getProtocol(){
   return analog;
 }
 
