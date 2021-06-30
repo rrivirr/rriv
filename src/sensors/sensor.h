@@ -13,6 +13,7 @@ class SensorDriver {
     SensorDriver();
 
     // Interface
+    virtual void configure(void * configuration); // pass block of configuration memory, read from EEPROM
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
