@@ -170,7 +170,7 @@ void Datalogger::stopLogging(){
 
 bool Datalogger::shouldExitLoggingMode()
 {
-  
+  return 0;
 }
 
 bool Datalogger::shouldContinueBursting()
@@ -249,13 +249,13 @@ void Datalogger::writeStatusFieldsToLogFile(){
   t_t2ts(currentTime, currentMillis-offsetMillis, humanTimeString);        // convert time_t value to human readable timestamp
 
   filesystem->writeString(uuidString);
-  filesystem->writeString(",");
+  filesystem->writeString((char *) ",");
   filesystem->writeString(deploymentUUID);
-  filesystem->writeString(",");
+  filesystem->writeString((char *)",");
   filesystem->writeString(currentTimeString);
-  filesystem->writeString(",");
+  filesystem->writeString((char *)",");
   filesystem->writeString(humanTimeString);
-  filesystem->writeString(",");
+  filesystem->writeString((char *)",");
   
 }
 
@@ -274,9 +274,10 @@ bool Datalogger::writeMeasurementToLogFile()
     // get values from the sensor
     char * dataString = drivers[i]->getDataString();
     filesystem->writeString(dataString);
-    filesystem->writeString(",");
+    filesystem->writeString((char *)",");
   }
   filesystem->endOfLine();
+  return true;
 }
 
 void Datalogger::processCLI()
