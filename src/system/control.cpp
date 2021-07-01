@@ -48,15 +48,13 @@ int WaterBear_Control::processControlCommands(HardwareSerial &port, Datalogger *
 int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return 0;
-  // return WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream, datalogger);
 }
 
 int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return 0;
-  // return WaterBear_Control::processControlCommands(myStream);
+  return WaterBear_Control::processControlCommands(myStream, datalogger);
 }
 
 void * WaterBear_Control::getLastPayload()

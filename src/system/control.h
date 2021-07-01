@@ -8,6 +8,7 @@
 #include "time.h"
 #include "datalogger.h"
 
+// Forward declaration of class
 class Datalogger;
 
 #define WT_CONTROL_NONE 0
