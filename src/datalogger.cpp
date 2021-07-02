@@ -284,7 +284,7 @@ void Datalogger::processCLI()
 {
   if(WaterBear_Control::ready(Serial2))
   {
-    WaterBear_Control::processControlCommands(Serial2, (Datalogger *) this);
+    WaterBear_Control::processControlCommands(Serial2, this);
   }
 }
 
