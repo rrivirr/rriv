@@ -1,6 +1,6 @@
 #include "control.h"
 #include "clock.h"
-#include <regex.h>
+#include <re.h>
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -66,7 +66,6 @@ void * WaterBear_Control::getLastPayload()
 int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * datalogger)
 {
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
-  regex_t regex;
 
   if(WaterBear_Control::state == 0)
   {
@@ -85,53 +84,55 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     myStream->flush();
     delay(100);
 
+    int matchLength;
+
     if (!strncmp(request, "version", 7)) {
 
     }
-    else if (!regcomp(&regex, "^set-config .*\\.json$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^set-config .*\\.json$", request, &matchLength)){
       char * fileName = strchr(request, ' ') + 1;
     }
-    else if (!regcomp(&regex, "^get-config [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^get-config [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
     }
     else if (!strncmp(request, "list", 4)) {
 
     }
-    else if (!regcomp(&regex, "^calibrate [0-9] init$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^calibrate [0-9] init$", request, &matchLength)){
       char * find = (strchr(request, ' ')) + 1;
       char * slotString;
       strncpy(slotString, find, 1);
       unsigned short slot = atoi(find);
 
     }
-    else if (!regcomp(&regex, "^calibrate [0-9] .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^calibrate [0-9] .*$", request, &matchLength)){
       char * find = (strchr(request, ' ')) + 1;
       char * slotString;
       strncpy(slotString, find, 1);
       unsigned short slot = atoi(find);
     }
-    else if (!regcomp(&regex, "^set-rtc .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^set-rtc .*$", request, &matchLength)){
       char * time = strchr(request, ' ') + 1;
     }
     else if (!strncmp(request, "get-rtc", 7)) {
 
     }
-    else if (!regcomp(&regex, "^user-note .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^user-note .*$", request, &matchLength)){
       char * note = strchr(request, ' ') + 1;
     }
-    else if (!regcomp(&regex, "^user-value [0-9]*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^user-value [0-9]*$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
     }
     else if (!strncmp(request, "delete-config", 13)) {
 
     }
-    else if (!regcomp(&regex, "^reset-slot [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^reset-slot [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
     }
-    else if (!regcomp(&regex, "^delete-slot [0-9]$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^delete-slot [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
     }
@@ -153,7 +154,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     else if (!strncmp(request, "start-logging", 13)) {
 
     }
-    else if (!regcomp(&regex, "^set-site-name .*$", 0) && !regexec(&regex, request, 0, NULL, 0)) {
+    else if (!re_match("^set-site-name .*$", request, &matchLength)){
       char * siteName = strchr(request, ' ') + 1;
     }
     else if (!strncmp(request, "show-copyright", 14)) {

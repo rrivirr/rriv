@@ -2,7 +2,6 @@
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h> // necessary?
 #include <string.h>
-#include <Ezo_i2c.h>
 
 #include "datalogger.h"
 #include "scratch/dbgmcu.h"
