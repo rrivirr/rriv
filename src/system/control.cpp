@@ -85,6 +85,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     delay(100);
 
     int matchLength;
+    SensorDriver * driver;
 
     if (!strncmp(request, "version", 7)) {
 
@@ -95,6 +96,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     else if (!re_match("^get-config [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
+      driver = datalogger->drivers[slot];
     }
     else if (!strncmp(request, "list", 4)) {
 
@@ -104,13 +106,14 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
       char * slotString;
       strncpy(slotString, find, 1);
       unsigned short slot = atoi(find);
-
+      driver = datalogger->drivers[slot];
     }
     else if (!re_match("^calibrate [0-9] .*$", request, &matchLength)){
       char * find = (strchr(request, ' ')) + 1;
       char * slotString;
       strncpy(slotString, find, 1);
       unsigned short slot = atoi(find);
+      driver = datalogger->drivers[slot];
     }
     else if (!re_match("^set-rtc .*$", request, &matchLength)){
       char * time = strchr(request, ' ') + 1;
@@ -123,7 +126,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     }
     else if (!re_match("^user-value [0-9]*$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
-      unsigned short slot = atoi(find);
+      unsigned short value = atoi(find);
     }
     else if (!strncmp(request, "delete-config", 13)) {
 
@@ -131,10 +134,12 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     else if (!re_match("^reset-slot [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
+      driver = datalogger->drivers[slot];
     }
     else if (!re_match("^delete-slot [0-9]$", request, &matchLength)){
       char * find = strchr(request, ' ') + 1;
       unsigned short slot = atoi(find);
+      driver = datalogger->drivers[slot];
     }
     else if (!strncmp(request, "deploy-now", 10)) {
 
