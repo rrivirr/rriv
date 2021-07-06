@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Wire_slave.h>
+#include <cJSON.h>
 
 typedef enum protocol { analog, i2c } protocol_type;
 
@@ -23,6 +24,7 @@ class SensorDriver {
     // JSON
     virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
     virtual void loadConfigurationJSON(char * configurationJSON);
+    cJSON * JSON;
 
     // Calibration
     virtual void initCalibration();
