@@ -5,11 +5,13 @@ EC_OEM *oem_ec;
 
 void setupEC_OEM(TwoWire *wire)
 {
-
+  // note: this function needs to be cleaned up, debug code not necessary anymore
   Monitor::instance()->writeDebugMessage(F("EC I2C setup"));
   Monitor::instance()->writeDebugMessage(F("Setting up board"));
 
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
+  
+  /*
   bool awoke = oem_ec->wakeUp();
 
   char message[300];
@@ -25,6 +27,7 @@ void setupEC_OEM(TwoWire *wire)
   sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
           parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
   Monitor::instance()->writeDebugMessage(message);
+  */
 
   oem_ec->setLedOn(true);
   //oem_ec->setLedOn(false);

@@ -19,10 +19,12 @@ void setup(void)
   startCustomWatchDog();
 
   // TODO: read datalogger settings struct from EEPROM
+  /*
   datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
   dataloggerSettings->interval = 15;
   datalogger = new Datalogger(dataloggerSettings);
   datalogger->setup();
+  */
   
   // disable unused components and hardware pins //
   componentsAlwaysOff();
@@ -30,25 +32,20 @@ void setup(void)
 
   setupSwitchedPower();
 
-  Serial2.println("hello");
   enableSwitchedPower();
 
   setupHardwarePins();
-  Serial2.println("hello");
-  Serial2.flush();
 
   //Serial2.println(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
-  
 
   // Set up the internal RTC
   RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
   RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
   PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
   
-
   // delay(20000);
 
   allocateMeasurementValuesMemory();
@@ -56,7 +53,7 @@ void setup(void)
   setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
-  delay(2000);
+  delay(2000); // what is this delay for?
 
    // Don't respond to interrupts during setup
   disableManualWakeInterrupt();
@@ -77,11 +74,13 @@ void setup(void)
   Monitor::instance()->writeDebugMessage(F("done with setup"));
   Serial2.flush();
 
+/*
   setupSensors();
   Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
   Serial2.flush();
+*/
 
-  print_debug_status(); 
+  print_debug_status();
 }
 
 
@@ -90,14 +89,16 @@ void setup(void)
 /* main run loop order of operation: */
 void loop(void)
 {
-
+  Serial2.println("STARTING LOOP");
   startCustomWatchDog();
   printWatchDogStatus();
 
   checkMemory();
 
+/*
   datalogger->loop();
   return; // skip the old loop below
+*/
 
   bool bursting = shouldContinueBursting();
   bool debugLoop = checkDebugLoop();

@@ -3,6 +3,7 @@
 #include "system/monitor.h"
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
+#include "sensors/temperature_analog.h"
 
 // Settings
 short interval = 1;     // minutes between loggings when not in short sleep
@@ -148,7 +149,7 @@ void Datalogger::loadSensorConfigurations(){
     //driver->configure(struct *);  //pass configuration struct to the driver
   }
 
-  AtlasRGB::instance()->setup(&WireTwo); // legacy 
+  //AtlasRGB::instance()->setup(&WireTwo); // legacy 
 
 
   // set up bookkeeping for dirty configurations
@@ -409,9 +410,6 @@ void blinkTest()
   //Logger::instance()->writeDebugMessage(F("blink test:"));
   //blink(10,250);
 }
-
-
-
 
 void initializeFilesystem()
 {
@@ -761,6 +759,8 @@ void handleControlCommand()
   Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
   awakeTime = timestamp(); // Push awake time forward
   int command = WaterBear_Control::processControlCommands(Serial2);
+  
+  Serial2.println(command);
   switch (command)
   {
   case WT_CLEAR_MODES:
@@ -1013,12 +1013,21 @@ void takeNewMeasurement()
       Monitor::instance()->writeDebugMessage(F("New EC data not available"));
     }
   }
+  //TEST CODE - KC//
+  
+  Serial2.println("KC TEST START");
+  testWriteConfig(SENSOR_SLOT_2_ADDRESS);
+
+  temperature_analog_sensor TAS;
+  testReadConfig(SENSOR_SLOT_2_ADDRESS, &TAS);
+  
+  printSensorConfig(TAS);
+  Serial2.println("KC TEST FINISH");
 
   // Get reading from RGB Sensor
-  char * data = AtlasRGB::instance()->mallocDataMemory();
-  AtlasRGB::instance()->takeMeasurement(data);
-  free(data);
- 
+  // char * data = AtlasRGB::instance()->mallocDataMemory();
+  // AtlasRGB::instance()->takeMeasurement(data);
+  // free(data);
 
   //Serial2.print(F("Got EC value: "));
   //Serial2.print(ecValue);
