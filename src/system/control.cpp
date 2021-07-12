@@ -28,7 +28,7 @@ bool WaterBear_Control::ready(Adafruit_BluefruitLE_SPI &ble)
 
 bool WaterBear_Control::ready(Stream * myStream)
 {
-  if( (myStream->peek() == '>' && WaterBear_Control::state == 0)
+  if( (WaterBear_Control::state == 0)
       || WaterBear_Control::state == 1)
   {
     return true;
