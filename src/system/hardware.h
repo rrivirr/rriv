@@ -1,3 +1,6 @@
+#ifndef WATERBEAR_HARDWARE
+#define WATERBEAR_HARDWARE
+
 #include <Arduino.h>
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
 
@@ -25,3 +28,4 @@
 
 #define ONBOARD_LED_PIN PA5
 
+#endif

@@ -34,7 +34,6 @@ void startCustomWatchDog(){
   timer_attach_interrupt(TIMER1, TIMER_CC1_INTERRUPT, timerFired);
   Serial2.println("Attached interrupt!");
   Serial2.flush();
-
 }
 
 void disableCustomWatchDog(){
@@ -57,7 +56,7 @@ void disableCustomWatchDog(){
 }
 
 void printWatchDogStatus(){
-  Serial2.println("Timer Count:");
+  Serial2.print("Timer Count:");
   int timerCount = timer_get_count(TIMER1);
   Serial2.println(timerCount);
 }
