@@ -117,6 +117,7 @@ void loop(void)
     stopAndAwaitTrigger();
     return; // Go to top of loop
   }
+  datalogger->processCLI();
 
   if (WaterBear_Control::ready(Serial2))
   {
