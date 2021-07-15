@@ -51,6 +51,7 @@ public:
     void setup();
     void loop();
 
+    void processCLI();
     bool inMode(mode_type mode);
     void deploy();
     void initializeFilesystem();
@@ -69,7 +70,6 @@ private:
     void measureSensorValues(bool performingBurst = true);
     bool writeMeasurementToLogFile();
     void writeDebugFieldsToLogFile();
-    void processCLI();
     bool configurationIsDirty();
     void storeConfiguration();
     void stopLogging();
