@@ -17,7 +17,7 @@ class SensorDriver {
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
-    virtual char * getCSVColumnNames();
+    virtual const char * getCSVColumnNames();
     virtual protocol_type getProtocol();
     
     // JSON
