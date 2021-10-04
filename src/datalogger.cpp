@@ -71,6 +71,7 @@ void enableI2C2()
 void powerUpSwitchableComponents()  
 {
   cycleSwitchablePower();
+  delay(2000);
   enableI2C1();
   if(USE_EC_OEM){
     enableI2C2();

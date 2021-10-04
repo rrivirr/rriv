@@ -63,7 +63,6 @@ void setup(void)
   setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
-  delay(2000);
 
    // Don't respond to interrupts during setup
   disableManualWakeInterrupt();
