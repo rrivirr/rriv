@@ -4,7 +4,7 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 1;     // minutes between loggings when not in short sleep
+short interval = 15;     // minutes between loggings when not in short sleep
 short burstLength = 100; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
@@ -705,6 +705,8 @@ float calculateTemperature()
   else
   {
     Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
+    float rawData = analogRead(PB1);
+    temperature = rawData;
   }
   return temperature;
 }
