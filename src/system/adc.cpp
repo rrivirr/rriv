@@ -3,14 +3,16 @@
 #include "system/monitor.h"
 
 
-AD7091R::AD7091R(){
-  // channel0Enabled = 1;
-  // channel1Enabled = 1;
-  // channel2Enabled = 1;
-  // channel3Enabled = 1;
+AD7091R::AD7091R()
+{
+  channel0Enabled = 0;
+  channel1Enabled = 0;
+  channel2Enabled = 0;
+  channel3Enabled = 0;
 }
 
-void AD7091R::configure(){
+void AD7091R::configure()
+{
   configuration_register configuration; //= this->readConfigurationRegister();
   // this->printConfigurationRegister(configuration);
   configuration.CYCLE_TIMER = 3; // default value
@@ -20,7 +22,6 @@ void AD7091R::configure(){
   this->writeConfigurationRegister(configuration);
 
   struct channel_register channelRegister;
-  Monitor::instance()->writeDebugMessage(F("writing channel register"));
   channelRegister.CH0 = 0;
   channelRegister.CH1 = 0;
   channelRegister.CH2 = 0;
@@ -44,6 +45,11 @@ void AD7091R::enableChannel(short channel)
       channel3Enabled = 1;
       break;
   }
+  
+  Serial2.println(channel0Enabled);
+  Serial2.println(channel1Enabled);
+  Serial2.println(channel2Enabled);
+  Serial2.println(channel3Enabled);
 
   this->updateChannelRegister();
 }
@@ -81,7 +87,8 @@ void AD7091R::updateChannelRegister()
 
 
 
-void AD7091R::convertEnabledChannels(){
+void AD7091R::convertEnabledChannels()
+{
   this->updateChannelRegister(); // writing to the channel register restarts the channel cycle.
 
   this->_channel0Value = -1;
@@ -120,12 +127,14 @@ configuration_register AD7091R::readConfigurationRegister()
   Wire.write(ADC_CONFIGURATION_REGISTER_ADDRESS);
   Wire.endTransmission();
 
-  Wire.requestFrom(ADC_I2C_ADDRESS,2);
+  while(Wire.requestFrom(ADC_I2C_ADDRESS,2) == 0){}
+  while(!Wire.available()){}
+  msb = (short) Wire.read();
+  while(!Wire.available()){}
+  lsb = (short) Wire.read();
 
-  if(Wire.available()) msb = (short) Wire.read();
-  if(Wire.available()) lsb = (short) Wire.read();
-  Serial2.println(msb);
-  Serial2.println(lsb);
+  // Serial2.println(msb);
+  // Serial2.println(lsb);
   
   this->copyBytesToRegister((byte *) &configurationRegister, msb, lsb);
   return configurationRegister;
@@ -140,15 +149,14 @@ conversion_result_register AD7091R::readConversionResultRegister()
   Wire.write((int)ADC_CONVERSION_RESULT_REGISTER_ADDRESS);
   Wire.endTransmission();
 
-  Wire.requestFrom(ADC_I2C_ADDRESS, 2);
-
-  if (Wire.available())
-    msb = Wire.read();
-  if (Wire.available())
-    lsb = Wire.read();
+  while(Wire.requestFrom(ADC_I2C_ADDRESS,2) == 0){}
+  while(!Wire.available()){}
+  msb = Wire.read();
+  while(!Wire.available()){}
+  lsb = Wire.read();
 
   // Serial.println(lsb);
-  // Serial.println(msb);
+  // Serial.println(msb);x`
 
   // Serial.println("decode");
 
@@ -157,9 +165,9 @@ conversion_result_register AD7091R::readConversionResultRegister()
 
   short value = 0;
   memcpy(&value, &conversionResult, 2);
-  Serial.println(value);
-  Serial.println(conversionResult.CH_ID);
-  Serial.println(conversionResult.CONV_RESULT);
+  // Serial2.println(value);
+  // Serial2.println(conversionResult.CH_ID);
+  // Serial2.println(conversionResult.CONV_RESULT);
 
   return conversionResult;
 }
@@ -173,8 +181,8 @@ void AD7091R::writeConfigurationRegister(configuration_register configurationReg
   Wire.write(ADC_CONFIGURATION_REGISTER_ADDRESS);
   
   Monitor::instance()->writeDebugMessage(F("bytes"));
-  Serial2.println( (byte) *( (byte *) &configurationRegister+1) );
-  Serial2.println( (byte) *( (byte *) &configurationRegister) );
+  // Serial2.println( (byte) *( (byte *) &configurationRegister+1) );
+  // Serial2.println( (byte) *( (byte *) &configurationRegister) );
 
   Wire.write(  (byte *) &configurationRegister+1, 1);
   Wire.write(  (byte *) &configurationRegister, 1);
@@ -182,42 +190,29 @@ void AD7091R::writeConfigurationRegister(configuration_register configurationReg
   Wire.endTransmission();
 }
 
-void AD7091R::printConfigurationRegister(configuration_register configurationRegister){
-  Monitor::instance()->writeDebugMessage(F("Printing configuration register"));
-  Serial2.println( configurationRegister.ALERT_DRIVE_TYPE );
-  Serial2.println( configurationRegister.GPO_2 );
-  Serial2.println( configurationRegister.RSV );
-  Serial2.println( configurationRegister.FLTR );
-  Serial2.println( configurationRegister.CMD );
-  Serial2.println( configurationRegister.SWRS );
-  Serial2.println( configurationRegister.AUTO );
-  Serial2.println( configurationRegister.CYCLE_TIMER );
-  Serial2.println( configurationRegister.BUSY );
-  Serial2.println( configurationRegister.ALERT_EN_OR_GPO0 );
-  Serial2.println( configurationRegister.ALERT_POL_OR_GPO0 );
-  Serial2.println( configurationRegister.GPO1 );
-  Serial2.println( configurationRegister.P_DOWN );
 
-}
 
 channel_register AD7091R::readChannelRegister(){
   struct channel_register channelRegister;
-  Serial2.println("reading channel register");
+  Monitor::instance()->writeDebugMessage(F("reading channel register"));
   short lsb = 0xFF;
   Wire.beginTransmission(ADC_I2C_ADDRESS);
   Wire.write(ADC_CHANNEL_REGISTER_ADDRESS);
   Wire.endTransmission();
 
-  Wire.requestFrom(ADC_I2C_ADDRESS,1);
+  while(Wire.requestFrom(ADC_I2C_ADDRESS,1) == 0){}
+  while(!Wire.available()){}
+  lsb = Wire.read();
 
-  if(Wire.available()) lsb = Wire.read();
-  Serial2.println(lsb);
+  // Serial2.println(lsb);
   memcpy(&channelRegister, &lsb, 1);
   return channelRegister;
 }
 
 void AD7091R::writeChannelRegister(channel_register channelConfiguration)
 {
+  Monitor::instance()->writeDebugMessage(F("writing channel register"));
+  // Monitor::instance()->writeDebugMessage( *(byte*) &channelConfiguration);
   Wire.beginTransmission(ADC_I2C_ADDRESS);
   Wire.write(ADC_CHANNEL_REGISTER_ADDRESS);
   Wire.write((byte *) &channelConfiguration, 1);
@@ -249,4 +244,25 @@ short AD7091R::channel2Value()
 short AD7091R::channel3Value()
 {
   return this->_channel3Value;
+}
+
+
+
+
+void AD7091R::printConfigurationRegister(configuration_register configurationRegister)
+{
+  Monitor::instance()->writeDebugMessage(F("Printing configuration register"));
+  Serial2.println( configurationRegister.ALERT_DRIVE_TYPE );
+  Serial2.println( configurationRegister.GPO_2 );
+  Serial2.println( configurationRegister.RSV );
+  Serial2.println( configurationRegister.FLTR );
+  Serial2.println( configurationRegister.CMD );
+  Serial2.println( configurationRegister.SWRS );
+  Serial2.println( configurationRegister.AUTO );
+  Serial2.println( configurationRegister.CYCLE_TIMER );
+  Serial2.println( configurationRegister.BUSY );
+  Serial2.println( configurationRegister.ALERT_EN_OR_GPO0 );
+  Serial2.println( configurationRegister.ALERT_POL_OR_GPO0 );
+  Serial2.println( configurationRegister.GPO1 );
+  Serial2.println( configurationRegister.P_DOWN );
 }

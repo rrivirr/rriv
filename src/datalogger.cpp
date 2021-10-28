@@ -303,8 +303,12 @@ void captureInternalADCValues()
 
 void captureExternalADCValues(){
   externalADC->convertEnabledChannels();
-  Serial2.println("channel 0 value");
+  Serial2.println("channel 0,1,2,3 value");
   Serial2.println(externalADC->channel0Value());
+  Serial2.println(externalADC->channel1Value());
+  Serial2.println(externalADC->channel2Value());
+  Serial2.println(externalADC->channel3Value());
+
   sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
 
 }
