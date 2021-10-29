@@ -4,7 +4,7 @@
 
 void testWriteConfig(short sensor_slot)
 {
-    Serial2.println("testWriteConfig");
+    Monitor::instance()->writeDebugMessage(F("testWriteConfig"));
     Serial2.flush();
     temperature_analog_sensor testValues;
     getDefaultsCommon(&testValues.common);
@@ -21,13 +21,13 @@ void testWriteConfig(short sensor_slot)
     Monitor::instance()->writeDebugMessage(F(buffer));
     
     writeEEPROMBytesMem(sensor_slot, &testValues, sizeof(testValues));
-    Serial2.println("finishWriteConfig");
+    Monitor::instance()->writeDebugMessage(F("finishWriteConfig"));
     Serial2.flush();
 }
 
 void getDefaultsTAS(temperature_analog_sensor *fillValues)
 {
-    Serial2.println("getDefaultsTAS");
+    Monitor::instance()->writeDebugMessage(F("getDefaultsTAS"));
     Serial2.flush();
     fillValues->calibrated = 1;
     fillValues->sensor_port = 1;
@@ -43,17 +43,17 @@ void getDefaultsTAS(temperature_analog_sensor *fillValues)
 
 void testReadConfig(short sensor_slot, temperature_analog_sensor *destination)
 {
-    Serial2.println("testReadConfig");
+    Monitor::instance()->writeDebugMessage(F("testReadConfig"));
     Serial2.flush();
 
     readEEPROMBytesMem(sensor_slot, (void *) destination, sizeof(*destination));
-    Serial2.println("finishReadConfig");
+    Monitor::instance()->writeDebugMessage(F("finishReadConfig"));
     Serial2.flush();
 }
 
 void printSensorConfig(temperature_analog_sensor toPrint)
 {
-    Serial2.println("printSensorConfig");
+    Monitor::instance()->writeDebugMessage(F("printSensorConfig"));
     Serial2.flush();
     char buffer[200];
 

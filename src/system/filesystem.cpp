@@ -12,7 +12,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chip
   this->initializeSDCard();
  
   this->setDeploymentIdentifier(deploymentIdentifier);
-  Serial2.println("Set deployment identifier");
+  Serial2.println(F("Set deployment identifier"));
 }
 
 void WaterBear_FileSystem::initializeSDCard(){

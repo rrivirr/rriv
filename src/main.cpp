@@ -88,7 +88,6 @@ void setup(void)
 /* main run loop order of operation: */
 void loop(void)
 {
-  Serial2.println("STARTING LOOP");
   startCustomWatchDog();
   printWatchDogStatus();
 
@@ -119,13 +118,13 @@ void loop(void)
   }
   datalogger->processCLI();
 
-  if (WaterBear_Control::ready(Serial2))
+  if (CommandInterface::ready(Serial2))
   {
     handleControlCommand();
     return;
   }
 
-  if (WaterBear_Control::ready(getBLE()))
+  if (CommandInterface::ready(getBLE()))
   {
     Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
     awakeTime = timestamp(); // Push awake time forward

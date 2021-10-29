@@ -7,8 +7,8 @@ class Monitor
 {
 
 public:
-    bool logToFile = true;
-    bool logToSerial = true;
+    bool debugToFile = false;
+    bool debugToSerial = false;
     WaterBear_FileSystem * filesystem = NULL;
 
 public:
@@ -20,6 +20,9 @@ public:
     void writeSerialMessage(const __FlashStringHelper * message);
     void writeDebugMessage(const char * message);
     void writeDebugMessage(const __FlashStringHelper * message);
+    void writeDebugMessage(int message);
+    void writeDebugMessage(int message, int base);
+
     void error(const __FlashStringHelper*err);
 
 };

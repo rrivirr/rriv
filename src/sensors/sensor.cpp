@@ -1,4 +1,5 @@
 #include "sensor.h"
+#include "system/monitor.h"
 
 void SensorDriver::initializeBurst(){
   burstCount = 0;
@@ -14,8 +15,7 @@ bool SensorDriver::burstCompleted(){
 
 void getDefaultsCommon(common_config_sensor *fillValues)
 {
-  Serial2.println("getDefaultsCCS");
-  Serial2.flush();
+  Monitor::instance()->writeDebugMessage(F("getDefaultsCCS"));
   fillValues->sensor_type = 1;
   fillValues->slot = 1;
   fillValues->sensor_burst = 10;
