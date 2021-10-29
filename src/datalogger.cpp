@@ -4,7 +4,8 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 15;     // minutes between loggings when not in short sleep
+short interval = 15;     // minutes between loggings when not in short 
+                         // interval between sampling initiations
 short burstLength = 100; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
@@ -310,7 +311,6 @@ void captureExternalADCValues(){
   Serial2.println(externalADC->channel3Value());
 
   sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
-
 }
 
 bool checkBursting()
