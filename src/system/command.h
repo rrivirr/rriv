@@ -35,7 +35,7 @@ class Datalogger;
 
 extern short controlFlag; // for WT_CONTROL_CONFIG
 
-class WaterBear_Control
+class CommandInterface
 {
   private:
     /*Stream *mySerial;

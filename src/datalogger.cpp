@@ -284,9 +284,9 @@ bool Datalogger::writeMeasurementToLogFile()
 
 void Datalogger::processCLI()
 {
-  if(WaterBear_Control::ready(Serial2))
+  if(CommandInterface::ready(Serial2))
   {
-    WaterBear_Control::processControlCommands(Serial2, this);
+    CommandInterface::processControlCommands(Serial2, this);
   }
 }
 
@@ -383,7 +383,6 @@ void startSerial2()
   {
     delay(100);
   }
-  Monitor::instance()->writeSerialMessage(F("Hello world: serial2"));
   Monitor::instance()->writeSerialMessage(F("Begin Setup"));
 }
 
@@ -439,7 +438,7 @@ void initializeFilesystem()
   time_t setupTime = timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
-  Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
+  Monitor::instance()->Monitor::instance()->writeDebugMessage(setupTS);
   filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
 }
 
@@ -696,8 +695,7 @@ void stopAndAwaitTrigger()
   componentsStopMode();
 
   disableCustomWatchDog();
-  Serial2.println("disabled watchdog");
-  Serial2.flush();
+  Monitor::instance()->writeDebugMessage(F("disabled watchdog"));
   disableSerialLog(); // TODO
   hardwarePinsStopMode(); // switch to input mode
   
@@ -1017,14 +1015,14 @@ void takeNewMeasurement()
   }
   //TEST CODE - KC//
   
-  Serial2.println("KC TEST START");
+  Monitor::instance()->writeDebugMessage(F("KC TEST START"));
   testWriteConfig(SENSOR_SLOT_2_ADDRESS);
 
   temperature_analog_sensor TAS;
   testReadConfig(SENSOR_SLOT_2_ADDRESS, &TAS);
   
   printSensorConfig(TAS);
-  Serial2.println("KC TEST FINISH");
+  Monitor::instance()->writeDebugMessage(F("KC TEST FINISH"));
 
   // Get reading from RGB Sensor
   // char * data = AtlasRGB::instance()->mallocDataMemory();

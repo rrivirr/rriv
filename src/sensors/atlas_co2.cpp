@@ -7,6 +7,7 @@
 
 #include "atlas_co2.h"
 #include <Wire_slave.h>
+#include "system/monitor.h"
 
 // Reference object
 AtlasCO2 * co2Sensor = new AtlasCO2();
@@ -22,7 +23,7 @@ AtlasCO2::AtlasCO2(){}
 
 // Constructor/Starter
 void AtlasCO2::start(TwoWire * wire) {
-  Serial2.println("In CO2 constructor");
+  Monitor::instance()->writeDebugMessage(F("In CO2 constructor"));
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
   this->wire = wire;
@@ -30,12 +31,12 @@ void AtlasCO2::start(TwoWire * wire) {
   this->data = 0;
   this->address = 105; // Default address for CO2 sensor 0x69
   this->time = 300; // Response delay time in ms
-  Serial2.println("CO2 Constructor");
+  Monitor::instance()->writeDebugMessage(F("CO2 Constructor"));
 }
 
 void AtlasCO2::sendCommand() {
   Serial2.print("In send command: ");
-  Serial2.println(this->inputString);
+  Monitor::instance()->writeDebugMessage(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
@@ -57,23 +58,23 @@ char * AtlasCO2::receiveResponse() {
     
     switch (this->code) {                  
       case 1:              
-        Serial2.println("Success");
+        Monitor::instance()->writeDebugMessage(F("Success"));
         break;                         
       case 2:              
-        Serial2.println("Failed");             
+        Monitor::instance()->writeDebugMessage(F("Failed"));             
         break;                         
       case 254:              
-        Serial2.println("Pending");            
+        Monitor::instance()->writeDebugMessage(F("Pending"));            
         break;                         
       case 255:              
-        Serial2.println("No Data");
+        Monitor::instance()->writeDebugMessage(F("No Data"));
         break;                         
     }
 
     // Constructing response array
     while (this->wire->available()) {
       char res = this->wire->read();
-      Serial2.println(res);
+      Monitor::instance()->writeDebugMessage(res);
       this->sensorString[i++] = res;   
       if (res == 0) {                
         i = 0;            
@@ -155,7 +156,7 @@ int AtlasCO2::setBaudRate(int value) {
 // Sets gamma correction: 0.01 - 4.99
 int AtlasCO2::gammaCorrection(float value) {
   if (value < 0) {
-    strcpy(this->inputString, "G,?");
+    strcpy(this->inputString, reinterpret_cast<const char *> F("G,?"));
     return 0;
   }
   if (value >= 0.01 && value <= 4.99) {
@@ -168,44 +169,44 @@ int AtlasCO2::gammaCorrection(float value) {
 // Sets custom name for sensor
 void AtlasCO2::nameDevice(char * value) {
   if (!strcmp(value, "")) {
-    strcpy(this->inputString, "Name,?");
+    strcpy(this->inputString, reinterpret_cast<const char *> F("Name,?"));
   }
   else {
-    sprintf(this->inputString, "Name,%s", value);
+    sprintf(this->inputString, reinterpret_cast<const char *> F("Name,%s"), value);
   }
 }
 
 // Returns device information 
 void AtlasCO2::deviceInformation() {
-  strcpy(this->inputString, "i");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("i"));
 }
 
 // Enters sleep mode
 void AtlasCO2::sleepSensor() {
-  strcpy(this->inputString, "Sleep");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("Sleep"));
 }
 
 // Performs a factory reset
 void AtlasCO2::factoryReset() {
-  strcpy(this->inputString, "Factory");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("Factory"));
 }
 
 // Takes a single reading
 void AtlasCO2::singleMode() {
-  strcpy(this->inputString, "R");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("R"));
 }
 
 // Calibrates sensor
 void AtlasCO2::calibrateSensor() {
-  strcpy(this->inputString, "Cal");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("Cal"));
 }
 
 // Flashes LED to find sensor
 void AtlasCO2::findSensor() {
-  strcpy(this->inputString, "Find");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("Find"));
 }
 
 // Returns device status
 void AtlasCO2::getStatus() {
-  strcpy(this->inputString, "Status");
+  strcpy(this->inputString, reinterpret_cast<const char *> F("Status"));
 }

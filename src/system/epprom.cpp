@@ -123,24 +123,23 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Littl
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
 {
-  Serial2.println("readEEPROMBytesMem");
-  Serial2.flush();
+  Monitor::instance()->writeDebugMessage(F("readEEPROMBytesMem"));
   char buffer[size];
   for (uint8_t i = 0; i < size; i++)
   {
     // read everything from address into buffer
-    Serial2.print(address+i);
-    Serial2.print(",");
-    Serial2.flush(); 
+    // Serial2.print(address+i);
+    // Serial2.print(",");
+    // Serial2.flush(); 
     buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
   }
-  Serial2.println();
+  // Serial2.println();
   memcpy(destination, &buffer, size); // copy buffer to destination
 }
 
 void writeEEPROMBytesMem(short address, void * source, uint8_t size)
 {
-  Serial2.println("writeEEPROMBytesMem");
+  Monitor::instance()->writeDebugMessage(F("writeEEPROMBytesMem"));
   Serial2.flush();
   char buffer[size];
   //read everything from source into buffer
@@ -151,13 +150,13 @@ void writeEEPROMBytesMem(short address, void * source, uint8_t size)
     // note: output will look weird because 
     // serial print doesn't distinguish between char and ints
     // Serial2.print(buffer[i]);
-    Serial2.print(address+i);
-    Serial2.print(",");
-    Serial2.flush();
+    // Serial2.print(address+i);
+    // Serial2.print(",");
+    // Serial2.flush();
     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
   }
   Serial2.println();
-  Serial2.println("\nfinish writeEEPROMBytesMem");
+  Monitor::instance()->writeDebugMessage(F("\nfinish writeEEPROMBytesMem"));
   Serial2.flush();
 }
 

@@ -1,37 +1,38 @@
 #include "control.h"
 #include "clock.h"
 #include <re.h>
+#include <Cmd.h>
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
-int WaterBear_Control::state = 0;
+int CommandInterface::state = 0;
 void * lastCommandPayload;
 bool lastCommandPayloadAllocated = false;
 
-bool WaterBear_Control::ready(HardwareSerial &port)
+bool CommandInterface::ready(HardwareSerial &port)
 {
   Stream *myStream = &port;
-  return WaterBear_Control::ready(myStream);
+  return CommandInterface::ready(myStream);
 }
 
-bool WaterBear_Control::ready(Adafruit_BluefruitLE_UART &ble)
+bool CommandInterface::ready(Adafruit_BluefruitLE_UART &ble)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::ready(myStream);
+  return CommandInterface::ready(myStream);
 }
 
-bool WaterBear_Control::ready(Adafruit_BluefruitLE_SPI &ble)
+bool CommandInterface::ready(Adafruit_BluefruitLE_SPI &ble)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::ready(myStream);
+  return CommandInterface::ready(myStream);
 }
 
-bool WaterBear_Control::ready(Stream * myStream)
+bool CommandInterface::ready(Stream * myStream)
 {
-  if( (WaterBear_Control::state == 0)
-      || WaterBear_Control::state == 1)
+  if( (CommandInterface::state == 0)
+      || CommandInterface::state == 1)
   {
-    return true;
+    return myStream->peek() != -1;
   }
   else
   {
@@ -39,35 +40,35 @@ bool WaterBear_Control::ready(Stream * myStream)
   }
 }
 
-int WaterBear_Control::processControlCommands(HardwareSerial &port, Datalogger * datalogger)
+int CommandInterface::processControlCommands(HardwareSerial &port, Datalogger * datalogger)
 {
   Stream *myStream = &port;
-  return WaterBear_Control::processControlCommands(myStream, datalogger);
+  return CommandInterface::processControlCommands(myStream, datalogger);
 }
 
-int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger)
+int CommandInterface::processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::processControlCommands(myStream, datalogger);
+  return CommandInterface::processControlCommands(myStream, datalogger);
 }
 
-int WaterBear_Control::processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger)
+int CommandInterface::processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger)
 {
   Stream *myStream = &ble;
-  return WaterBear_Control::processControlCommands(myStream, datalogger);
+  return CommandInterface::processControlCommands(myStream, datalogger);
 }
 
-void * WaterBear_Control::getLastPayload()
+void * CommandInterface::getLastPayload()
 {
   return lastCommandPayload;
 }
 
 
-int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * datalogger)
+int CommandInterface::processControlCommands(Stream * myStream, Datalogger * datalogger)
 {
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
 
-  if(WaterBear_Control::state == 0)
+  if(CommandInterface::state == 0)
   {
     if(lastCommandPayloadAllocated == true)
     {
@@ -78,7 +79,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
 
     char request[MAX_REQUEST_LENGTH] = "";
     myStream->readBytesUntil('\r', request, MAX_REQUEST_LENGTH);
-    myStream->write(">COMMAND RECIEVED: ");
+    myStream->write(">COMMAND RECIEVED:");
     myStream->write(&request[0]);
     myStream->write("<");
     myStream->flush();
@@ -151,7 +152,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
 
     }
     else if (!strncmp(request, "debug", 5)) {
-
+      Monitor::instance()->debugToSerial = !Monitor::instance()->debugToSerial;
     }
     else if (!strncmp(request, "interactive", 11)) {
 
@@ -390,7 +391,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     //   myStream->flush();
     // }
   }
-  else if(WaterBear_Control::state == 1)
+  else if(CommandInterface::state == 1)
   {
     char ack[7] = "";
     myStream->readBytesUntil('<', ack, 7);
@@ -405,7 +406,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
       while (millis () - now < 1000)
       myStream->read ();  // read and discard any input
 
-      WaterBear_Control::state = 0;
+      CommandInterface::state = 0;
       return WT_CONTROL_NONE;
     }
 
@@ -424,7 +425,7 @@ int WaterBear_Control::processControlCommands(Stream * myStream, Datalogger * da
     {
       // There was some kind of error
     }
-    WaterBear_Control::state = 0;
+    CommandInterface::state = 0;
   }
   return WT_CONTROL_NONE;
 }

@@ -7,6 +7,8 @@
 
 #include "atlas_rgb.h"
 #include <Wire_slave.h>
+#include "system/monitor.h"
+
 // Reference object
 AtlasRGB * rgbSensor = new AtlasRGB();
 
@@ -24,7 +26,7 @@ void AtlasRGB::setup(TwoWire * wire)
   AtlasRGB::instance()->start(wire);
   AtlasRGB::instance()->deviceInformation();
   AtlasRGB::instance()->sendCommand();
-  Serial2.println(AtlasRGB::instance()->receiveResponse());
+  Monitor::instance()->writeDebugMessage(AtlasRGB::instance()->receiveResponse());
 }
 
 void AtlasRGB::stop(){
@@ -40,13 +42,13 @@ void AtlasRGB::takeMeasurement(char * data)
 {
   AtlasRGB::instance()->singleMode();
   AtlasRGB::instance()->sendCommand();
-  Serial2.println(AtlasRGB::instance()->receiveResponse());
+  Monitor::instance()->writeDebugMessage(AtlasRGB::instance()->receiveResponse());
 }
 
 // Constructor/Starter
 void AtlasRGB::start(TwoWire * wire)
 {
-  Serial2.println("In RGB constructor");
+  Monitor::instance()->writeDebugMessage(F("In RGB constructor"));
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
   this->wire = wire;
@@ -56,12 +58,12 @@ void AtlasRGB::start(TwoWire * wire)
   this->blue = 0;
   this->address = 112; // Default address for RGB sensor 0x70
   this->time = 300; // Response delay time in ms
-  Serial2.println("RGB Constructor");
+  Monitor::instance()->writeDebugMessage(F("RGB Constructor"));
 }
 
 void AtlasRGB::sendCommand() {
   Serial2.print("In send command: ");
-  Serial2.println(this->inputString);
+  Monitor::instance()->writeDebugMessage(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
@@ -83,16 +85,16 @@ char * AtlasRGB::receiveResponse() {
     
     switch (this->code) {                  
       case 1:              
-        Serial2.println("Success");
+        Monitor::instance()->writeDebugMessage(F("Success"));
         break;                         
       case 2:              
-        Serial2.println("Failed");             
+        Monitor::instance()->writeDebugMessage(F("Failed"));             
         break;                         
       case 254:              
-        Serial2.println("Pending");            
+        Monitor::instance()->writeDebugMessage(F("Pending"));            
         break;                         
       case 255:              
-        Serial2.println("No Data");
+        Monitor::instance()->writeDebugMessage(F("No Data"));
         break;                         
     }
 

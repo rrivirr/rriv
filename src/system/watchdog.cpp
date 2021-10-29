@@ -1,6 +1,7 @@
 #include "watchdog.h"
 #include <Arduino.h>
 #include <libmaple/libmaple.h>
+#include "monitor.h"
 
 void timerFired(){
   timer_pause(TIMER1);
@@ -10,13 +11,13 @@ void timerFired(){
   nvic_sys_reset();
 }
 
-void startCustomWatchDog(){
+void startCustomWatchDog()
+{
   // Serial2.println("skipped custom watchdog!");
   // return;
 
-  Serial2.println("Setup custom watchdog!");
-  Serial2.flush();
-
+  Monitor::instance()->writeDebugMessage(F("Setup custom watchdog"));
+ 
   timer_init(TIMER1);
   timer_set_prescaler(TIMER1, 65535);  //  64000000 / 65536 = 976.5 Hz
   // int watchdogValue = 5 * 976.5 ; // 976.5 Hz * ( 5 * 976.5 counts) = 5s
@@ -28,15 +29,14 @@ void startCustomWatchDog(){
   timer_generate_update(TIMER1);
 
   timer_resume(TIMER1);
-  Serial2.println("Resumed timer");
-  Serial2.flush();
+  Monitor::instance()->writeDebugMessage(F("Resumed timer"));
 
   timer_attach_interrupt(TIMER1, TIMER_CC1_INTERRUPT, timerFired);
-  Serial2.println("Attached interrupt!");
-  Serial2.flush();
+  Monitor::instance()->writeDebugMessage(F("Attached interrupt!"));
 }
 
-void disableCustomWatchDog(){
+void disableCustomWatchDog()
+{
   // Serial2.println("skipped disable custom watchdog!");
   // return;
   timer_detach_interrupt(TIMER1, TIMER_CC1_INTERRUPT);
@@ -56,7 +56,8 @@ void disableCustomWatchDog(){
 }
 
 void printWatchDogStatus(){
-  Serial2.print("Timer Count:");
+  char message[100];
   int timerCount = timer_get_count(TIMER1);
-  Serial2.println(timerCount);
+  sprintf(message, reinterpret_cast<const char *> F("Timer Count: %d\0"), timerCount);
+  Monitor::instance()->writeDebugMessage(timerCount);
 }
