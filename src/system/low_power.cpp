@@ -72,7 +72,6 @@ void componentsAlwaysOff()
 
   spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
-  timer_disable(&timer1);
   timer_disable(&timer2);
   timer_disable(&timer3);
   timer_disable(&timer4);
