@@ -36,22 +36,18 @@ void setup(void)
   startSerial2();
 
   startCustomWatchDog();
-  
+  printWatchDogStatus();
+
+
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
 
   setupSwitchedPower();
 
-  Serial2.println("hello");
   enableSwitchedPower();
 
   setupHardwarePins();
-  Serial2.println("hello");
-  Serial2.flush();
-
-  //Serial2.println(atlasRGBSensor.get_name());
-  // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
   
@@ -60,7 +56,8 @@ void setup(void)
   RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
   RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
   PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-  
+
+
   allocateMeasurementValuesMemory();
 
   setupManualWakeInterrupts();
