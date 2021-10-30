@@ -30,18 +30,20 @@ void setNextAlarmInternalRTC(short interval){
   // secondsUntilWake = 720 - 12 = 708
 
   short nextMinutes = (minutes + interval - (minutes % interval));
-  // Serial2.println("next minutes");
-  // Serial2.println(nextMinutes);
+  Serial2.println("next minutes");
+  Serial2.println(nextMinutes);
   short minutesDiff = nextMinutes - minutes;
   short minutesDiffSeconds = minutesDiff * 60;
   short secondsUntilWake = minutesDiffSeconds - seconds; // -offset.  Offset would allow for some startup time.
-  // Serial2.println("seconds until wake");
-  // Serial2.println(secondsUntilWake);
+  Serial2.println("seconds until wake");
+  Serial2.println(secondsUntilWake);
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
+  Serial2.println("made clock");  Serial2.flush();
+
   char message[100];
-  // sprintf(message, "Got clock value (current): %i", clock->getTime());
-  // Monitor::instance()->writeDebugMessage(message);
+  sprintf(message, "Got clock value (current): %i", clock->getTime());
+  Monitor::instance()->writeDebugMessage(message);
     
   clock->setTime(0);
   sprintf(message, "Got clock value (reset): %i", clock->getTime());
