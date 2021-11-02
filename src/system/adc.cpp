@@ -14,6 +14,9 @@ AD7091R::AD7091R()
 
 void AD7091R::configure()
 {
+  configuration_register configurationGet = this->readConfigurationRegister();
+  this->printConfigurationRegister(configurationGet);
+
   configuration_register configuration; //= this->readConfigurationRegister();
   // this->printConfigurationRegister(configuration);
   configuration.CYCLE_TIMER = 3; // default value
@@ -123,7 +126,7 @@ configuration_register AD7091R::readConfigurationRegister()
 {
   Monitor::instance()->writeDebugMessage(F("reading configuration register"));
   struct configuration_register configurationRegister; // 2 bytes
-  this->sendTransmission(ADC_CONVERSION_RESULT_REGISTER_ADDRESS);
+  this->sendTransmission(ADC_CONFIGURATION_REGISTER_ADDRESS);
   this->requestBytes((byte *)&configurationRegister, 2);
   return configurationRegister;
 }
@@ -132,7 +135,9 @@ void AD7091R::writeConfigurationRegister(configuration_register configurationReg
 {
   Monitor::instance()->writeDebugMessage(F("writing configuration register"));
   printConfigurationRegister(configurationRegister);
-  this->sendTransmission(ADC_CONFIGURATION_REGISTER_ADDRESS, (byte *)&configurationRegister, 2);
+  Serial2.println(  *((byte *) &configurationRegister+1), BIN);
+  Serial2.println(  *((byte *) &configurationRegister), BIN);
+  this->sendTransmission(ADC_CONFIGURATION_REGISTER_ADDRESS, &configurationRegister, 2);
 }
 
 channel_register AD7091R::readChannelRegister()
@@ -168,8 +173,14 @@ void AD7091R::sendTransmission(byte registerAddress)
   this->sendTransmission(registerAddress, 0, 0);
 }
 
-void AD7091R::sendTransmission(byte registerAddress, byte *data, int numBytes)
+void AD7091R::sendTransmission(byte registerAddress, const void * data, int numBytes)
 {
+  // Serial2.println( "IN SEND TRANSMISSION" );
+  // Serial2.println(registerAddress);
+  // if(numBytes > 0){
+  // Serial2.println(  *((byte *) data+1), BIN);
+  // Serial2.println(  *((byte *) data), BIN);
+  // }
   i2cSendTransmission(ADC_I2C_ADDRESS, registerAddress, data, numBytes);
 }
 
@@ -209,11 +220,11 @@ void AD7091R::requestBytes(byte *buffer, int length)
   // doing this a dumb way for the moment, extend later for other devices
   if (length == 1)
   {
-    memcpy(&buffer, &msb, 1);
+    memcpy(buffer, &msb, 1);
   }
   else if (length == 2)
   {
-    this->copyBytesToRegister((byte *)&buffer, msb, lsb);
+    this->copyBytesToRegister(buffer, msb, lsb);
   }
 }
 

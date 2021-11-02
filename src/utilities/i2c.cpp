@@ -31,7 +31,7 @@ void i2cError(int transmissionCode)
 
 
 
-void i2cSendTransmission(byte i2cAddress, byte registerAddress, byte * data, int numBytes)
+void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * data, int numBytes)
 {
   // char debugMessage[100];
   // sprintf(debugMessage, "i2c %d %d %d", i2cAddress, registerAddress, numBytes);
@@ -42,11 +42,12 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, byte * data, int
   {
     Wire.beginTransmission(i2cAddress);
     Wire.write(registerAddress);
-    // if(numBytes > 0){
-    //   Wire.write(data, numBytes);
-    // }
-    for(int i=numBytes-1; i>=0; i--){
-      Wire.write(&data[i], 1);
+
+    for(int i=numBytes-1; i>=0; i--){ // correct order
+    // for(int i=0; i<numBytes; i++){
+      Serial2.println(i);
+      Serial2.println( *( ((byte *) data) +i), BIN );
+      Wire.write( ((byte *) data) +i, 1);
     }
 
     rval = Wire.endTransmission();
@@ -54,7 +55,7 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, byte * data, int
 
     if(rval != 0){
       i2cError(rval);
-      delay(100); // give it a chance to fix itself
+      delay(1000); // give it a chance to fix itself
       // i2c_bus_reset(I2C1);            // consider i2c reset?
     }
   }

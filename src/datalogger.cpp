@@ -93,7 +93,6 @@ void powerUpSwitchableComponents()
   Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
   externalADC = new AD7091R();
   externalADC->configure();
-  while(1){}
   externalADC->enableChannel(0);
   externalADC->enableChannel(1);
   externalADC->enableChannel(2);

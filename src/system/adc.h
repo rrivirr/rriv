@@ -59,7 +59,7 @@ private:
 
   void copyBytesToRegister(byte * registerPtr, byte msb, byte lsb);
   void updateChannelRegister();
-  void sendTransmission(byte registerAddress, byte * data, int numBytes);
+  void sendTransmission(byte registerAddress, const void * data, int numBytes);
   void sendTransmission(byte registerAddress);
   void requestBytes(byte * buffer, int length);
 
