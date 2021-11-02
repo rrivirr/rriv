@@ -7,7 +7,6 @@
 #include "configuration.h"
 #include "system/control.h"
 
-void scanIC2(TwoWire * wire);
 
 void printInterruptStatus(HardwareSerial &serial);
 void printDateTime(HardwareSerial &serial, DateTime now);

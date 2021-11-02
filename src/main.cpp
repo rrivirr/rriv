@@ -93,7 +93,10 @@ void setup(void)
   // Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
   // Serial2.flush();
 
-  print_debug_status(); 
+
+  disableCustomWatchDog();
+  print_debug_status(); // delays for 10s with user message, don't want watchdog to trigger
+  startCustomWatchDog();
 }
 
 
@@ -102,7 +105,6 @@ void setup(void)
 /* main run loop order of operation: */
 void loop(void)
 {
-
   startCustomWatchDog();
   printWatchDogStatus();
 

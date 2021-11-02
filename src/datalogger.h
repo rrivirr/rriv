@@ -45,6 +45,9 @@ extern bool tempCalMode;
 //extern bool thermistorCalibrated;
 
 
+extern AD7091R * externalADC;
+
+
 
 void enableI2C1();
 

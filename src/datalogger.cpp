@@ -1,12 +1,13 @@
 #include "datalogger.h"
 #include "system/watchdog.h"
+#include "utilities/i2c.h"
 
 // Settings
 char version[5] = "v2.0";
 
-short interval = 15;     // minutes between loggings when not in short 
+short interval = 1;     // minutes between loggings when not in short 
                          // interval between sampling initiations
-short burstLength = 100; // how many readings in a burst
+short burstLength = 5; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -55,7 +56,7 @@ void enableI2C1()
   delay(1000);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
-
+  
   scanIC2(&Wire);
 }
 
@@ -78,9 +79,28 @@ void enableI2C2()
 
 void powerUpSwitchableComponents()  
 {
+
   cycleSwitchablePower();
-  delay(2000);
+  delay(500);
   enableI2C1();
+
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(PC5,0);
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(PC5,1);
+  delay(100); // Wait for ADC to start up
+  
+  Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
+  externalADC = new AD7091R();
+  externalADC->configure();
+  while(1){}
+  externalADC->enableChannel(0);
+  externalADC->enableChannel(1);
+  externalADC->enableChannel(2);
+  externalADC->enableChannel(3);
+
+  scanIC2(&Wire);
+
   if(USE_EC_OEM){
     enableI2C2();
     setupEC_OEM(&WireTwo);
@@ -88,16 +108,8 @@ void powerUpSwitchableComponents()
     Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
   }
   
-  Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
-  externalADC = new AD7091R();
-  externalADC->configure();
-  externalADC->enableChannel(0);
-  externalADC->enableChannel(1);
-  externalADC->enableChannel(2);
-  externalADC->enableChannel(3);
-
-
   Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
+
 }
 
 void powerDownSwitchableComponents() // called in stopAndAwaitTrigger
@@ -175,7 +187,7 @@ void initializeFilesystem()
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
   Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
-  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
+  // filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
 }
 
 void allocateMeasurementValuesMemory()
@@ -303,12 +315,14 @@ void captureInternalADCValues()
 }
 
 void captureExternalADCValues(){
+  debug("captureExternalADCValues");
   externalADC->convertEnabledChannels();
   Serial2.println("channel 0,1,2,3 value");
   Serial2.println(externalADC->channel0Value());
   Serial2.println(externalADC->channel1Value());
   Serial2.println(externalADC->channel2Value());
   Serial2.println(externalADC->channel3Value());
+  Serial2.flush();
 
   sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
 }
@@ -755,15 +769,11 @@ void takeNewMeasurement()
 
   sprintf(values[19], "%i", burstCount); // log burstCount
 
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog"));
-  }
+
+  Monitor::instance()->writeDebugMessage(F("writeLog"));
   filesystem->writeLog(values, fieldCount);
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog done"));
-  }
+  Monitor::instance()->writeDebugMessage(F("writeLog done"));
+  
 }
 
 void trackBurst(bool bursting)

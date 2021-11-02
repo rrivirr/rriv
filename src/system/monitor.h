@@ -3,6 +3,10 @@
 
 #include "filesystem.h"
 
+// Convienience functions
+void debug(const char*);
+void debug(const __FlashStringHelper * message);
+
 class Monitor
 {
 

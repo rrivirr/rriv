@@ -309,7 +309,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // ADC12_IN15
+  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);

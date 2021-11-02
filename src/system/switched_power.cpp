@@ -24,7 +24,7 @@ void cycleSwitchablePower()
 {
   Monitor::instance()->writeDebugMessage(F("Cycle switched power"));
   disableSwitchedPower();
-  delay(1000);
+  delay(500);
   enableSwitchedPower();
-  delay(1000);
+  delay(500);
 }

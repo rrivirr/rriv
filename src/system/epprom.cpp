@@ -1,28 +1,27 @@
 #include "eeprom.h"
 #include "monitor.h"
 #include "utilities/STM32-UID.h"
+#include "utilities/i2c.h"
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
 {
-  wire->beginTransmission(deviceaddress);
-  wire->write(eeaddress);
-  wire->write(data);
-  wire->endTransmission();
-
+  i2cSendTransmission(deviceaddress, eeaddress, &data, 1);
   delay(5);
 }
 
 byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress )
 {
   byte rdata = 0xFF;
+  i2cSendTransmission(deviceaddress, eeaddress, 0, 0);
+  delay(5);
 
-  wire->beginTransmission(deviceaddress);
-  wire->write(eeaddress);
-  wire->endTransmission();
+  short numBytes = wire->requestFrom(deviceaddress,1);
+  // char debugMessage[100];
+  // sprintf(debugMessage, "ee got %i bytes", numBytes);
+  // debug(debugMessage);
 
-  wire->requestFrom(deviceaddress,1);
-
-  if(wire->available()) rdata = wire->read();
+  while(!wire->available()){} 
+  rdata = wire->read();
 
   return(rdata);
 }

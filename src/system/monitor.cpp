@@ -1,5 +1,17 @@
 #include "monitor.h"
 
+
+void debug(const char* message)
+{
+  Monitor::instance()->writeDebugMessage(message);
+}
+
+void debug(const __FlashStringHelper * message)
+{
+  Monitor::instance()->writeDebugMessage(message);
+}
+
+
 Monitor * monitor = new Monitor();
 
 // get default logger
