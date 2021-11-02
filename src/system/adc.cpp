@@ -56,6 +56,16 @@ void AD7091R::enableChannel(short channel)
   } 
 
   this->updateChannelRegister();
+
+  configuration_register configuration;
+  configuration.CYCLE_TIMER = 3; // default value
+  configuration.CMD = 1;
+  configuration.AUTO = 0;
+  // this->printConfigurationRegister(configuration);
+  this->writeConfigurationRegister(configuration);
+  
+  configuration_register configurationSet = this->readConfigurationRegister();
+  this->printConfigurationRegister(configurationSet);
 }
 
 void AD7091R::disableChannel(short channel)

@@ -5,7 +5,7 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 10;     // minutes between loggings when not in short 
+short interval = 1;     // minutes between loggings when not in short 
                          // interval between sampling initiations
 short burstLength = 10; // how many readings in a burst
 
@@ -85,9 +85,9 @@ void powerUpSwitchableComponents()
   enableI2C1();
 
   delay(1); // delay > 50ns before applying ADC reset
-  digitalWrite(PC5,0);
+  digitalWrite(PC5,LOW); // reset is active low
   delay(1); // delay > 10ns after starting ADC reset
-  digitalWrite(PC5,1);
+  digitalWrite(PC5,HIGH);
   delay(100); // Wait for ADC to start up
   
   Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
@@ -151,6 +151,9 @@ void setupHardwarePins()
   // redundant?
   //pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   //pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
+
+  pinMode(PC5, OUTPUT); // external ADC reset
+  digitalWrite(PC5, HIGH);
 }
 
 void blinkTest()
@@ -186,7 +189,7 @@ void initializeFilesystem()
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
   Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
-  // filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
+  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
 }
 
 void allocateMeasurementValuesMemory()

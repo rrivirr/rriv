@@ -144,7 +144,7 @@ return;
   
 }
 
-void hardwarePinsAlwaysOff()
+void hardwarePinsAlwaysOff() // not currently used
 {
 // any pins changed need to be set back to the right modes when we wake
 // need to find out what pinModes are default or how to reset them
@@ -184,7 +184,7 @@ void hardwarePinsAlwaysOff()
   pinMode(PB15, INPUT);
 
   pinMode(PC4, INPUT);
-  pinMode(PC5, INPUT);
+  // pinMode(PC5, INPUT); // external ADC reset
   //  pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
