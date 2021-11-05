@@ -4,7 +4,7 @@
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
 #include "sensors/temperature_analog.h"
-#include "system/control.h"
+#include "system/command.h"
 
 // Settings
 short interval = 1;     // minutes between loggings when not in short sleep
@@ -108,7 +108,7 @@ void Datalogger::loop()
       writeMeasurementToLogFile();
     }
   }
-  else if (inMode(debug))
+  else if (inMode(debugging))
   {
     measureSensorValues(false);
     writeMeasurementToLogFile();
@@ -316,7 +316,7 @@ bool Datalogger::inMode(mode_type mode){
   switch(mode){
     case interactive:
       return mode == 'i';
-    case debug:
+    case debugging:
       return mode == 'd';
     case logging:
       return mode == 'l';
@@ -760,7 +760,7 @@ void handleControlCommand()
   // awakeTime = timestamp(); // Push awake time forward
   // int command = WaterBear_Control::processControlCommands(Serial2);
   
-  // Serial2.println(command);
+  // Monitor::instance()->writeDebugMessage(command);
   // switch (command)
   // {
   // case WT_CLEAR_MODES:
@@ -1029,9 +1029,8 @@ void takeNewMeasurement()
   // AtlasRGB::instance()->takeMeasurement(data);
   // free(data);
 
-  //Serial2.print(F("Got EC value: "));
-  //Serial2.print(ecValue);
-  //Serial2.println();
+  //Monitor::instance()->writeDebugMessage(F("Got EC value: "));
+  //Monitor::instance()->writeDebugMessage(ecValue);
   sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
 
   sprintf(values[19], "%i", burstCount); // log burstCount
@@ -1087,15 +1086,10 @@ void monitorConfiguration()
   //test code simplified calls to write and read eeprom
   /*
   int test = 1337;
-  Serial2.println("writing 1337");
-  Serial2.flush();
   writeExposedBytes(TEST_START, (unsigned char *)&test, TEST_LENGTH);
 
   unsigned short read = 0;
   readExposedBytes(TEST_START,(unsigned char *)&read, TEST_LENGTH);
-  Serial2.print("reading:");
-  Serial2.println(read);
-  Serial2.flush();
   */
 }
 

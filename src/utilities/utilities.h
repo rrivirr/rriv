@@ -4,7 +4,7 @@
 // #include <Arduino.h>
 #include "DS3231.h"
 #include "configuration.h"
-#include "system/control.h"
+#include "system/command.h"
 
 void printInterruptStatus(HardwareSerial &serial);
 void printDateTime(HardwareSerial &serial, DateTime now);

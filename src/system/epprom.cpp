@@ -155,9 +155,7 @@ void writeEEPROMBytesMem(short address, void * source, uint8_t size)
     // Serial2.flush();
     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
   }
-  Serial2.println();
   Monitor::instance()->writeDebugMessage(F("\nfinish writeEEPROMBytesMem"));
-  Serial2.flush();
 }
 
 void clearEEPROMAddress(short address, uint8_t length)

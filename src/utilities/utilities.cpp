@@ -54,10 +54,8 @@ void blink(int times, int duration)
 void printDS3231Time()
 {
   char testTime[11]; // timestamp responses
-  Serial2.print(F("TS:"));
-  sprintf(testTime, "%lld", timestamp()); // convert time_t value into string
-  Serial2.println(testTime);
-  Serial2.flush();
+  sprintf(testTime, "TS: %lld", timestamp()); // convert time_t value into string
+  Monitor::instance()->writeDebugMessage(testTime);
 }
 
 void printNVICStatus(){

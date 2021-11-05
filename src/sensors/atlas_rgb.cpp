@@ -62,7 +62,7 @@ void AtlasRGB::start(TwoWire * wire)
 }
 
 void AtlasRGB::sendCommand() {
-  Serial2.print("In send command: ");
+  Monitor::instance()->writeDebugMessage("In send command: ");
   Monitor::instance()->writeDebugMessage(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);

@@ -263,7 +263,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
-  Serial2.println("printCurrentDirListing");
+  debug("printCurrentDirListing");
 
   this->sd.vwd()->rewind();
   SdFile dirFile;
@@ -271,7 +271,7 @@ void WaterBear_FileSystem::printCurrentDirListing()
   while (dirFile.openNext(sd.vwd(), O_READ))
   {
     dirFile.getName(sdFilename, 30);
-    Serial2.println(sdFilename);
+    debug(sdFilename);
     dirFile.close();
   }
 }

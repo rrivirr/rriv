@@ -2,6 +2,17 @@
 
 Monitor *monitor = new Monitor();
 
+void debug(const char* message)
+{
+  Monitor::instance()->writeDebugMessage(message);
+}
+
+void debug(const __FlashStringHelper * message)
+{
+  Monitor::instance()->writeDebugMessage(message);
+}
+
+
 // get default logger
 Monitor *Monitor::instance()
 {

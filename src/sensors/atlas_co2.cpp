@@ -35,7 +35,7 @@ void AtlasCO2::start(TwoWire * wire) {
 }
 
 void AtlasCO2::sendCommand() {
-  Serial2.print("In send command: ");
+  Monitor::instance()->writeDebugMessage("In send command: ");
   Monitor::instance()->writeDebugMessage(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);

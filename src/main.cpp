@@ -14,6 +14,7 @@ Datalogger * datalogger;
 void setup(void)
 {
   startSerial2();
+  Monitor::instance()->debugToSerial=true;
 
   startCustomWatchDog();
 
@@ -35,7 +36,7 @@ void setup(void)
 
   setupHardwarePins();
 
-  //Serial2.println(atlasRGBSensor.get_name());
+  //Monitor::instance()->writeDebugMessage(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
@@ -71,7 +72,6 @@ void setup(void)
 
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
-  Serial2.flush();
 
 /*
   setupSensors();
@@ -80,6 +80,8 @@ void setup(void)
 */
 
   print_debug_status();
+  Monitor::instance()->debugToSerial=false;
+
 }
 
 

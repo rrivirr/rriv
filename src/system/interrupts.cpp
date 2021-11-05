@@ -42,15 +42,14 @@ void setupManualWakeInterrupts()
 
 
 void enableRTCAlarmInterrupt(){
-  Serial2.println("wait RTC finished");
-  Serial2.flush();
+  debug("wait RTC finished");
   rtc_wait_finished();
   
-  Serial2.println("setting up EXTI");
+  debug("setting up EXTI");
   *bb_perip(&EXTI_BASE->IMR, EXTI_RTC_ALARM_BIT) = 1;
 	*bb_perip(&EXTI_BASE->RTSR, EXTI_RTC_ALARM_BIT) = 1;
 
-  Serial2.println("setting up NVIC");
+  debug("setting up NVIC");
   nvic_irq_enable(NVIC_RTCALARM);  // ISER
 }
 

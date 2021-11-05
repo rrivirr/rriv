@@ -10,7 +10,7 @@
 
 #include "system/ble.h"
 #include "system/clock.h"
-#include "system/control.h"
+#include "system/command.h"
 #include "system/eeprom.h"
 #include "system/filesystem.h"
 #include "system/hardware.h"
@@ -30,7 +30,7 @@ typedef struct datalogger_settings {
     char padding[61];        // padded  
 } datalogger_settings_type;
 
-typedef enum mode { interactive, debug, logging, deploy_on_trigger } mode_type;
+typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
 
 class Datalogger
 {

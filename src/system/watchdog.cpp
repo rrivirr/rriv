@@ -5,7 +5,7 @@
 
 void timerFired(){
   timer_pause(TIMER1);
-  Serial2.println("FT!");
+  Serial2.println("TF!");
   // Serial2.flush(); // causes crash
   delay(5000);
   nvic_sys_reset();

@@ -1,4 +1,4 @@
-#include "control.h"
+#include "command.h"
 #include "clock.h"
 #include <re.h>
 #include <Cmd.h>

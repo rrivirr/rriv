@@ -23,7 +23,6 @@ void scanIC2(TwoWire *wire)
       if (address < 16)
         Monitor::instance()->writeDebugMessage(F("0"));
       Monitor::instance()->writeDebugMessage(address, HEX);
-      Serial.println(address, HEX);
       nDevices++;
     }
     else if (error == 4)
