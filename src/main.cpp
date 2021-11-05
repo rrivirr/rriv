@@ -95,10 +95,10 @@ void loop(void)
 
   checkMemory();
 
-/*
+
   datalogger->loop();
   return; // skip the old loop below
-*/
+
 
   bool bursting = shouldContinueBursting();
   bool debugLoop = checkDebugLoop();

@@ -1,4 +1,5 @@
 #include "datalogger.h"
+#include <Cmd.h>
 #include "sensors/sensor_map.h"
 #include "system/monitor.h"
 #include "system/watchdog.h"
@@ -284,10 +285,12 @@ bool Datalogger::writeMeasurementToLogFile()
 
 void Datalogger::processCLI()
 {
-  if(CommandInterface::ready(Serial2))
-  {
-    CommandInterface::processControlCommands(Serial2, this);
-  }
+
+  cmdPoll();
+  // if(CommandInterface::ready(Serial2))
+  // {
+  //   CommandInterface::processControlCommands(Serial2, this);
+  // }
 }
 
 bool Datalogger::configurationIsDirty(){
