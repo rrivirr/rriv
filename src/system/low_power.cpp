@@ -72,7 +72,6 @@ void componentsAlwaysOff()
 
   spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
-  timer_disable(&timer1);
   timer_disable(&timer2);
   timer_disable(&timer3);
   timer_disable(&timer4);
@@ -145,7 +144,7 @@ return;
   
 }
 
-void hardwarePinsAlwaysOff()
+void hardwarePinsAlwaysOff() // not currently used
 {
 // any pins changed need to be set back to the right modes when we wake
 // need to find out what pinModes are default or how to reset them
@@ -185,7 +184,7 @@ void hardwarePinsAlwaysOff()
   pinMode(PB15, INPUT);
 
   pinMode(PC4, INPUT);
-  pinMode(PC5, INPUT);
+  // pinMode(PC5, INPUT); // external ADC reset
   //  pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
@@ -310,7 +309,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // ADC12_IN15
+  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);

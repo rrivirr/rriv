@@ -11,6 +11,25 @@
 // Setup and Loop
 Datalogger * datalogger;
 
+// void setupSensors(){
+
+//   // read sensors types from EEPROM
+//   // malloc configuration structs
+//   // read configuration structs from EEPROM for each sensor type
+//   // run setup for each sensor
+
+  
+//   // Setup RGB Sensor
+//   AtlasRGB::instance()->setup(&WireTwo);
+
+// }
+
+void copyBytesToRegister(byte * registerPtr, byte msb, byte lsb){
+  memcpy( registerPtr + 1, &msb, 1);
+  memcpy( registerPtr, &lsb, 1);
+}
+
+
 void setup(void)
 {
   startSerial2();
@@ -26,6 +45,9 @@ void setup(void)
   datalogger->setup();
   */
   
+  printWatchDogStatus();
+
+
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
@@ -45,17 +67,14 @@ void setup(void)
   RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
   RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
   PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-  
-  // delay(20000);
 
   allocateMeasurementValuesMemory();
 
   setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
-  delay(2000); // what is this delay for?
 
-   // Don't respond to interrupts during setup
+  // Don't respond to interrupts during setup
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
@@ -67,6 +86,12 @@ void setup(void)
   //initBLE();
 
   readUniqueId(uuid);
+  uuidString[2 * UUID_LENGTH] = '\0';
+  for (short i = 0; i < UUID_LENGTH; i++)
+  {
+    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
+  }
+  Serial2.println(uuidString);
 
   setNotBursting(); // prevents bursting during first loop
 
@@ -80,8 +105,11 @@ void setup(void)
 */
 
   print_debug_status();
-  Monitor::instance()->debugToSerial=false;
 
+  disableCustomWatchDog();
+  print_debug_status(); // delays for 10s with user message, don't want watchdog to trigger
+  startCustomWatchDog();
+  Monitor::instance()->debugToSerial=false;
 }
 
 
@@ -92,13 +120,16 @@ void loop(void)
 {
   startCustomWatchDog();
   printWatchDogStatus();
-
   checkMemory();
-
 
   datalogger->loop();
   return; // skip the old loop below
 
+  // Get reading from RGB Sensor
+  // char * data = AtlasRGB::instance()->mallocDataMemory();
+  // AtlasRGB::instance()->takeMeasurement(data);
+  // free(data);
+ 
 
   bool bursting = shouldContinueBursting();
   bool debugLoop = checkDebugLoop();

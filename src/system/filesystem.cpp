@@ -26,6 +26,19 @@ void WaterBear_FileSystem::initializeSDCard(){
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
     Serial2.println(F(">Card fail<"));
+    // one way to handle a failure:
+    // flash the led in an alert like fashion
+    // go to sleep for a short period of time
+    // then wake up and reset
+    //
+    // another way to handle a failure:
+    // somehow latch on an error led and power everything else down.
+    // errored out mode
+    //
+    // another way to handle a failure:
+    // just go to sleep and wait for the next cycle
+    // also produce some kind of check engine light.
+    // can we do a very low current blink LED or something.
     while(1);
   }
   else
@@ -49,7 +62,7 @@ void WaterBear_FileSystem::endOfLine()
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)
   {
-    //Serial2.println(values[i]);
+    // Serial2.println(values[i]);  Serial2.flush();
     this->logfile.print(values[i]);
     if(i+1 < fieldCount)
     {

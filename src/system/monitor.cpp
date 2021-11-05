@@ -1,7 +1,5 @@
 #include "monitor.h"
 
-Monitor *monitor = new Monitor();
-
 void debug(const char* message)
 {
   Monitor::instance()->writeDebugMessage(message);
@@ -12,6 +10,7 @@ void debug(const __FlashStringHelper * message)
   Monitor::instance()->writeDebugMessage(message);
 }
 
+Monitor * monitor = new Monitor();
 
 // get default logger
 Monitor *Monitor::instance()

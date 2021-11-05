@@ -5,7 +5,7 @@
 #define USER_WAKE_TIMEOUT           60 * 15 // Timeout after wakeup from user interaction, seconds
 
 // DEBUG behaviors
-#define DEBUG_MEASUREMENTS true // enable log messages related to measurement & bursts
+#define DEBUG_MEASUREMENTS false // enable log messages related to measurement & bursts
 #define DEBUG_LOOP false         // don't sleep
 #define DEBUG_USING_SHORT_SLEEP false // sleep for a hard coded short amount of time
 #define DEBUG_TO_FILE 1   // Also send debug messages to the output file [comment out to disable]

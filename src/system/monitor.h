@@ -3,7 +3,8 @@
 
 #include "filesystem.h"
 
-void debug(const char* message);
+// Convienience functions
+void debug(const char*);
 void debug(const __FlashStringHelper * message);
 
 class Monitor

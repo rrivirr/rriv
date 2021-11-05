@@ -10,6 +10,14 @@
 // Settings
 short interval = 1;     // minutes between loggings when not in short sleep
 short burstLength = 100; // how many readings in a burst - this is a per slot settings
+#include "utilities/i2c.h"
+
+// Settings
+char version[5] = "v2.0";
+
+short interval = 10;     // minutes between loggings when not in short 
+                         // interval between sampling initiations
+short burstLength = 10; // how many readings in a burst
 
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
@@ -19,9 +27,15 @@ short fieldCount = 22; // number of fields to be logged to SDcard file
 //int bluefruitModePin = D4;
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
+// Components
+AD7091R * externalADC;
+
 // State
 WaterBear_FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
+char uuidString[25]; // 2 * UUID_LENGTH + 1
+char deploymentIdentifier[26];
+
 char lastDownloadDate[11] = "0000000000";
 char **values;
 unsigned long lastMillis = 0;
@@ -357,15 +371,36 @@ void Datalogger::initializeFilesystem()
 
 void powerUpSwitchableComponents()  
 {
+
   cycleSwitchablePower();
+  delay(500);
   enableI2C1();
+
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(PC5,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(PC5,HIGH);
+  delay(100); // Wait for ADC to start up
+  
+  Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
+  externalADC = new AD7091R();
+  externalADC->configure();
+  externalADC->enableChannel(0);
+  externalADC->enableChannel(1);
+  externalADC->enableChannel(2);
+  externalADC->enableChannel(3);
+
+  scanIC2(&Wire);
+
   if(USE_EC_OEM){
     enableI2C2();
     setupEC_OEM(&WireTwo);
+  } else {
+    Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
   }
-  Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
-
+  
   Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
+
 }
 
 void powerDownSwitchableComponents() // called in stopAndAwaitTrigger
@@ -407,6 +442,9 @@ void setupHardwarePins()
   // redundant?
   //pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   //pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
+
+  pinMode(PC5, OUTPUT); // external ADC reset
+  digitalWrite(PC5, HIGH);
 }
 
 void blinkTest()
@@ -506,20 +544,9 @@ void setNotBursting()
   burstCount = burstLength; // Set to not bursting
 }
 
-void measureSensorValues()
+void captureInternalADCValues()
 {
-  // TODO: do we need to do this every time ??
-  char uuidString[2 * UUID_LENGTH + 1];
-  uuidString[2 * UUID_LENGTH] = '\0';
-  for (short i = 0; i < UUID_LENGTH; i++)
-  {
-    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
-  }
 
-  // Get the deployment identifier
-  // TODO: do we need to do this every time ??
-  char deploymentIdentifier[26];
-  readDeploymentIdentifier(deploymentIdentifier);
   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
   memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
@@ -542,23 +569,19 @@ void measureSensorValues()
     currentEpoch = timestamp();
     offsetMillis = millis();
   }
-  /*else if (!currentEpoch && !offsetMillis)
-  {
-    currentEpoch = timestamp();
-    offsetMillis = millis();
-  }*/
   uint32 currentMillis = millis();
   currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
 
-  //debug timestamp calculations
+  // Debug timestamp calculations
   char valuesBuffer[190];
   sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 
+  // Create human readable datetime
   sprintf(values[2], "%10.3f", currentTime); // convert double value into string
   t_t2ts(currentTime, currentMillis-offsetMillis, values[3]);        // convert time_t value to human readable timestamp
 
-  // Measure the new data
+  // Measure the data on internal ADC pins
   short sensorCount = 6;
   short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
   for (short i = 0; i < sensorCount; i++)
@@ -566,6 +589,7 @@ void measureSensorValues()
     int value = analogRead(sensorPins[i]);
     sprintf(values[4 + i], "%4d", value);
   }
+
   // Measure and log temperature data and calibration info -> move to seperate function?
   unsigned int uiData = 0;
   unsigned short usData = 0;
@@ -585,6 +609,19 @@ void measureSensorValues()
   readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_B_ADDRESS_LENGTH);
   sprintf(values[17], "%i", uiData);
   sprintf(values[18], "%.2f", calculateTemperature());
+}
+
+void captureExternalADCValues(){
+  debug("captureExternalADCValues");
+  externalADC->convertEnabledChannels();
+  Serial2.println("channel 0,1,2,3 value");
+  Serial2.println(externalADC->channel0Value());
+  Serial2.println(externalADC->channel1Value());
+  Serial2.println(externalADC->channel2Value());
+  Serial2.println(externalADC->channel3Value());
+  Serial2.flush();
+
+  sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
 }
 
 bool shouldContinueBursting()
@@ -740,6 +777,8 @@ void stopAndAwaitTrigger()
   powerUpSwitchableComponents();
   filesystem->reopenFileSystem();
 
+  // Get the deployment identifier
+  readDeploymentIdentifier(deploymentIdentifier);
 
   if(awakenedByUser == true)
   {
@@ -995,6 +1034,8 @@ float calculateTemperature()
   else
   {
     Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
+    float rawData = analogRead(PB1);
+    temperature = rawData;
   }
   return temperature;
 }
@@ -1005,7 +1046,7 @@ void takeNewMeasurement()
   {
     Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
   }
-  measureSensorValues();
+  captureInternalADCValues();
 
   // OEM EC
   float ecValue = -1;
@@ -1032,21 +1073,20 @@ void takeNewMeasurement()
   // AtlasRGB::instance()->takeMeasurement(data);
   // free(data);
 
-  //Monitor::instance()->writeDebugMessage(F("Got EC value: "));
-  //Monitor::instance()->writeDebugMessage(ecValue);
+  captureExternalADCValues();
+
+  //Serial2.print(F("Got EC value: "));
+  //Serial2.print(ecValue);
+  //Serial2.println();
   sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
 
   sprintf(values[19], "%i", burstCount); // log burstCount
 
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog"));
-  }
+
+  Monitor::instance()->writeDebugMessage(F("writeLog"));
   filesystem->writeLog(values, fieldCount);
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog done"));
-  }
+  Monitor::instance()->writeDebugMessage(F("writeLog done"));
+  
 }
 
 void trackBurst(bool bursting)

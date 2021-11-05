@@ -17,22 +17,39 @@ void setNextAlarmInternalRTC(short interval){
   //Serial2.println(Clock.getMinute(), DEC);
   //Serial2.println(minutes);
   short seconds = Clock.getSecond();
+<<<<<<< HEAD
   //Serial2.println("seconds");
   //Serial2.println(seconds);
   // // short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+=======
+  Serial2.println("seconds");
+  Serial2.println(seconds);
+  // an example of the math
+  // time = 10:48:12 (current time)
+  // minutes = 48 ( current minutes)
+  // seconds = 12 ( current seconds)
+  // interval = 15
+  // nextMinutes = 48 + 15 - (3) = 60
+  // minutesDiff = 60 - 48 = 12
+  // minutesDiffSeconds = 12 * 60 = 720
+  // secondsUntilWake = 720 - 12 = 708
+
+>>>>>>> external-adc
   short nextMinutes = (minutes + interval - (minutes % interval));
-  // Serial2.println("next minutes");
-  // Serial2.println(nextMinutes);
+  Serial2.println("next minutes");
+  Serial2.println(nextMinutes);
   short minutesDiff = nextMinutes - minutes;
   short minutesDiffSeconds = minutesDiff * 60;
-  short secondsUntilWake = minutesDiffSeconds - seconds;
-  // Serial2.println("seconds until wake");
-  // Serial2.println(secondsUntilWake);
+  short secondsUntilWake = minutesDiffSeconds - seconds; // -offset.  Offset would allow for some startup time.
+  Serial2.println("seconds until wake");
+  Serial2.println(secondsUntilWake);
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
+  Serial2.println("made clock");  Serial2.flush();
+
   char message[100];
-  // sprintf(message, "Got clock value (current): %i", clock->getTime());
-  // Monitor::instance()->writeDebugMessage(message);
+  sprintf(message, "Got clock value (current): %i", clock->getTime());
+  Monitor::instance()->writeDebugMessage(message);
     
   clock->setTime(0);
   sprintf(message, "Got clock value (reset): %i", clock->getTime());
@@ -44,8 +61,14 @@ void setNextAlarmInternalRTC(short interval){
   clock->createAlarm(handleInterrupt, secondsUntilWake);
   delete clock;
 
+<<<<<<< HEAD
   sprintf(message, "set alarm time to wake, seconds until wake %d", secondsUntilWake);
   Serial2.println(message);
+=======
+  sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
+  Monitor::instance()->writeDebugMessage(message);
+
+>>>>>>> external-adc
 }
 
 
