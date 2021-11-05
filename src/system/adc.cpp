@@ -201,6 +201,11 @@ void AD7091R::requestBytes(byte *buffer, int length)
   // debug(debugMessage);
 
   short numBytes = Wire.requestFrom(ADC_I2C_ADDRESS, length);
+  if(numBytes != length){
+    // TODO
+    // or just rely on the watchdog
+    return false; /// add return value to requestBytes and rerun the transmission
+  }
   // sprintf(debugMessage, "got %i bytes", numBytes);
   // debug(debugMessage);
 
