@@ -18,6 +18,7 @@ void intentionalMemoryLeak(){
   Monitor::instance()->Monitor::instance()->writeDebugMessage(mem); // use it so compiler doesn't remove the leak
 }
 
+
 void checkMemory(){
   // calculate and print free memory
   // reset the system if we are running out of memory

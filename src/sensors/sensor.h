@@ -40,14 +40,14 @@ class SensorDriver {
     virtual char * getCSVColumnNames();
     virtual protocol_type getProtocol();
     
-    // JSON
-    virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
-    virtual void loadConfigurationJSON(char * configurationJSON);
-    cJSON * JSON;
+    // // JSON
+    // virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
+    // virtual void loadConfigurationJSON(char * configurationJSON);
+    // cJSON * JSON;
 
-    // Calibration
-    virtual void initCalibration();
-    virtual void calibrationStep(char * step, int value);
+    // // Calibration
+    // virtual void initCalibration();
+    // virtual void calibrationStep(char * step, int value);
 
     void initializeBurst();
     void incrementBurst();

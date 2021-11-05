@@ -14,8 +14,7 @@ void timerFired()
 
 void startCustomWatchDog()
 {
-  Serial2.println("Setup custom watchdog!");
-  Serial2.flush();
+  debug("Setup custom watchdog!");
 
   timer_init(TIMER1);
   timer_set_prescaler(TIMER1, 65535); //  64000000 / 65536 = 976.5 Hz

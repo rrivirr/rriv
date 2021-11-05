@@ -1,8 +1,17 @@
 #include "generic_analog.h"
+#include "system/monitor.h"
 
-GenericAnalog::GenericAnalog(){}
+GenericAnalog::GenericAnalog()
+{
+  Serial2.println("hello");
+  Serial2.flush();
+  // debug("allocation GenericAnalog");
+}
 
-void GenericAnalog::setup(){}
+void GenericAnalog::setup()
+{
+  debug("setup GenericAnalog");
+}
 
 void GenericAnalog::stop(){}
 

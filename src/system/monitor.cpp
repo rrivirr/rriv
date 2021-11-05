@@ -10,6 +10,14 @@ void debug(const __FlashStringHelper * message)
   Monitor::instance()->writeDebugMessage(message);
 }
 
+void debug(short number)
+{
+  char message[10];
+  sprintf(message, "%d", number);
+  Monitor::instance()->writeDebugMessage(message);
+}
+
+
 Monitor * monitor = new Monitor();
 
 // get default logger

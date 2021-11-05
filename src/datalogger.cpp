@@ -6,11 +6,8 @@
 #include "sensors/atlas_rgb.h"
 #include "sensors/temperature_analog.h"
 #include "system/command.h"
-
-// Settings
-short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 100; // how many readings in a burst - this is a per slot settings
 #include "utilities/i2c.h"
+#include "utilities/qos.h"
 
 // Settings
 char version[5] = "v2.0";
@@ -57,10 +54,18 @@ Datalogger::Datalogger(datalogger_settings * settings)
   {
     this->interval = settings->interval;
   }
-  if(settings->mode == 0){
-    mode = 'i';
-  } else {
-    mode = settings->mode;
+  switch(settings->mode)
+  {
+    case interactive:
+      mode = interactive;
+      strcpy(deploymentIdentifier, reinterpret_cast<const char *> F("INTERACTIVE"));
+      break;
+    case logging:
+      mode = logging;
+      readDeploymentIdentifier(deploymentIdentifier);
+    default:
+      mode = interactive; // getModeFromSettings(settings->mode);
+      strcpy(deploymentIdentifier, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
   }
 
 }
@@ -68,14 +73,14 @@ Datalogger::Datalogger(datalogger_settings * settings)
 
 void Datalogger::setup()
 {
+  buildDriverSensorMap();
   loadSensorConfigurations();
   initializeFilesystem();
-  
+  setUpCLI();
 }
 
 void Datalogger::loop()
 {
-
   if(inMode(deploy_on_trigger)){
     deploy();
     return;
@@ -90,7 +95,7 @@ void Datalogger::loop()
 
     if(shouldExitLoggingMode())
     {
-      mode = 'i';
+      mode = interactive;
       return;
     }
 
@@ -131,8 +136,9 @@ void Datalogger::loop()
   else
   {
     // invalid mode!
-    Monitor::instance()->writeDebugMessage(F("Invalid Mode!"));
-    mode = 'i';
+    Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
+    mode = interactive;
+    delay(1000);
   }
 
   powerCycle = false;
@@ -150,7 +156,16 @@ void Datalogger::loadSensorConfigurations(){
   // construct the drivers
   drivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
   for(int i=0; i<sensorCount; i++){
-    SensorDriver * driver = driverForSensorType(sensorTypes[i]);
+    debug("get sensor driver");
+    // debug(sensorTypes[i]);
+
+
+    GenericAnalog * driver = new GenericAnalog(); // driverForSensorType(sensorTypes[i]);
+    Serial2.println("OK");
+Serial2.flush();
+
+    debug("got sensor driver");
+
     drivers[i] = driver;
     switch(driver->getProtocol()){
       case analog:
@@ -241,10 +256,6 @@ void Datalogger::writeStatusFieldsToLogFile(){
     sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
   }
 
-  // Get the deployment identifier
-  // TODO: do we need to do this every time ??
-  char deploymentIdentifier[26];
-  readDeploymentIdentifier(deploymentIdentifier);
   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
   memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
@@ -297,10 +308,13 @@ bool Datalogger::writeMeasurementToLogFile()
   return true;
 }
 
+void Datalogger::setUpCLI()
+{
+  CommandInterface::setup();
+}
 void Datalogger::processCLI()
 {
-
-  cmdPoll();
+  CommandInterface::poll();
   // if(CommandInterface::ready(Serial2))
   // {
   //   CommandInterface::processControlCommands(Serial2, this);
@@ -330,25 +344,27 @@ void Datalogger::storeConfiguration()
 }
 
 bool Datalogger::inMode(mode_type mode){
-  switch(mode){
-    case interactive:
-      return mode == 'i';
-    case debugging:
-      return mode == 'd';
-    case logging:
-      return mode == 'l';
-    case deploy_on_trigger:
-      return mode == 't';
-    default:
-      return false;
-  }
+  return this->mode == mode;
+  // switch(mode){
+  //   case interactive:
+  //     return mode == 'i';
+  //   case debugging:
+  //     return mode == 'd';
+  //   case logging:
+  //     return mode == 'l';
+  //   case deploy_on_trigger:
+  //     return mode == 't';
+  //   default:
+  //     return false;
+  // }
 }
 
 
 void Datalogger::deploy(){
   char defaultDeployment[25] = "SITENAME_00000000000000";
-  memcpy(defaultDeployment, deploymentIdentifier, 25); 
+  memcpy(deploymentIdentifier, defaultDeployment, 25); 
   writeDeploymentIdentifier(defaultDeployment);
+  initializeFilesystem();
 }
 
 

@@ -17,11 +17,6 @@ void setNextAlarmInternalRTC(short interval){
   //Serial2.println(Clock.getMinute(), DEC);
   //Serial2.println(minutes);
   short seconds = Clock.getSecond();
-<<<<<<< HEAD
-  //Serial2.println("seconds");
-  //Serial2.println(seconds);
-  // // short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
-=======
   Serial2.println("seconds");
   Serial2.println(seconds);
   // an example of the math
@@ -34,7 +29,6 @@ void setNextAlarmInternalRTC(short interval){
   // minutesDiffSeconds = 12 * 60 = 720
   // secondsUntilWake = 720 - 12 = 708
 
->>>>>>> external-adc
   short nextMinutes = (minutes + interval - (minutes % interval));
   Serial2.println("next minutes");
   Serial2.println(nextMinutes);
@@ -61,14 +55,9 @@ void setNextAlarmInternalRTC(short interval){
   clock->createAlarm(handleInterrupt, secondsUntilWake);
   delete clock;
 
-<<<<<<< HEAD
-  sprintf(message, "set alarm time to wake, seconds until wake %d", secondsUntilWake);
-  Serial2.println(message);
-=======
   sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
   Monitor::instance()->writeDebugMessage(message);
 
->>>>>>> external-adc
 }
 
 

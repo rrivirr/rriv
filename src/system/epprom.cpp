@@ -139,7 +139,6 @@ void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Litt
 void writeEEPROMBytesMem(short address, void * source, uint8_t size)
 {
   Monitor::instance()->writeDebugMessage(F("writeEEPROMBytesMem"));
-  Serial2.flush();
   char buffer[size];
   //read everything from source into buffer
   memcpy(&buffer, source, size);

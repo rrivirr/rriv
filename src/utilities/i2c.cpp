@@ -1,8 +1,6 @@
 #include "i2c.h"
-#include <Wire_slave.h> // Communicate with I2C/TWI devices
-#include <libmaple/libmaple.h>
-#include "system/monitor.h"
 #include "system/hardware.h"
+#include "system/monitor.h"
 
 void i2cError(int transmissionCode)
 {
@@ -45,8 +43,8 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * dat
 
     for(int i=numBytes-1; i>=0; i--){ // correct order
     // for(int i=0; i<numBytes; i++){
-      Serial2.println(i);
-      Serial2.println( *( ((byte *) data) +i), BIN );
+      // Serial2.println(i);
+      // Serial2.println( *( ((byte *) data) +i), BIN );
       Wire.write( ((byte *) data) +i, 1);
     }
 

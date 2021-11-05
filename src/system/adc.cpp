@@ -204,7 +204,7 @@ void AD7091R::requestBytes(byte *buffer, int length)
   if(numBytes != length){
     // TODO
     // or just rely on the watchdog
-    return false; /// add return value to requestBytes and rerun the transmission
+    // return false; /// add return value to requestBytes and rerun the transmission
   }
   // sprintf(debugMessage, "got %i bytes", numBytes);
   // debug(debugMessage);

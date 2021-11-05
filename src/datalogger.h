@@ -52,14 +52,16 @@ public:
     void setup();
     void loop();
 
-    void processCLI();
     bool inMode(mode_type mode);
     void deploy();
     void initializeFilesystem();
 
+    void processCLI();
+
+
 private:
     // state
-    char mode = 'i';
+    mode_type mode = interactive;
     bool powerCycle = true;
     bool interactiveModeLogging = false;
     char deploymentIdentifier[25];
@@ -76,6 +78,9 @@ private:
     void stopLogging();
     void startLogging();
     bool shouldContinueBursting();
+
+    // CLI
+    void setUpCLI();
 
     // utility
     void writeStatusFieldsToLogFile();

@@ -47,6 +47,9 @@ class CommandInterface
 
     static int state;
 
+    static void setup();
+    static void poll();
+
     static int processControlCommands(Stream * myStream, Datalogger * datalogger);
     static int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
     static int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);

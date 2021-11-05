@@ -6,6 +6,7 @@
 // Convienience functions
 void debug(const char*);
 void debug(const __FlashStringHelper * message);
+void debug(short number);
 
 class Monitor
 {

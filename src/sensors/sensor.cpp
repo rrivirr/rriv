@@ -1,6 +1,11 @@
 #include "sensor.h"
 #include "system/monitor.h"
 
+SensorDriver::SensorDriver()
+{
+
+}
+
 void SensorDriver::initializeBurst(){
   burstCount = 0;
 }

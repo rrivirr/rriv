@@ -63,16 +63,22 @@ void * CommandInterface::getLastPayload()
   return lastCommandPayload;
 }
 
-void toggleDebug()
+void toggleDebug(int arg_cnt, char **args)
 {
   Monitor::instance()->debugToSerial = !Monitor::instance()->debugToSerial;
 }
 
-CommandInterface::setup(){
+void CommandInterface::setup()
+{
   cmdInit(&Serial2);
-  cmdAdd('debug', toggleDebug);
+  cmdAdd("debug", toggleDebug);
+  
 }
 
+void CommandInterface::poll()
+{
+  cmdPoll();
+}
 
 
 int CommandInterface::processControlCommands(Stream * myStream, Datalogger * datalogger)

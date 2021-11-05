@@ -36,15 +36,6 @@ void setup(void)
   Monitor::instance()->debugToSerial=true;
 
   startCustomWatchDog();
-
-  // TODO: read datalogger settings struct from EEPROM
-  /*
-  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
-  dataloggerSettings->interval = 15;
-  datalogger = new Datalogger(dataloggerSettings);
-  datalogger->setup();
-  */
-  
   printWatchDogStatus();
 
 
@@ -73,6 +64,7 @@ void setup(void)
   setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
+  debug("ok");
 
   // Don't respond to interrupts during setup
   disableManualWakeInterrupt();
@@ -80,8 +72,9 @@ void setup(void)
 
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
+  debug("okok");
 
-  initializeFilesystem();
+  // initializeFilesystem();
 
   //initBLE();
 
@@ -95,6 +88,13 @@ void setup(void)
 
   setNotBursting(); // prevents bursting during first loop
 
+  // TODO: read datalogger settings struct from EEPROM
+  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
+  dataloggerSettings->interval = 15;
+  datalogger = new Datalogger(dataloggerSettings);
+  Monitor::instance()->writeDebugMessage("created datalogger");
+  datalogger->setup();
+  
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
 
@@ -110,8 +110,10 @@ void setup(void)
   print_debug_status(); // delays for 10s with user message, don't want watchdog to trigger
   startCustomWatchDog();
   Monitor::instance()->debugToSerial=false;
-}
+  Monitor::instance()->writeSerialMessage("Entering main run loop");
+  Monitor::instance()->writeSerialMessage("Press return to access CLI");
 
+}
 
 
 

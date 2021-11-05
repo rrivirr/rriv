@@ -4,17 +4,13 @@
 // #include <Arduino.h>
 #include "DS3231.h"
 #include "configuration.h"
-<<<<<<< HEAD
 #include "system/command.h"
-=======
-#include "system/control.h"
-
->>>>>>> external-adc
 
 void printInterruptStatus(HardwareSerial &serial);
 void printDateTime(HardwareSerial &serial, DateTime now);
 
 void blink(int times, int duration);
 void printDS3231Time();
+
 
 #endif
