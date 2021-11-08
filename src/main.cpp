@@ -64,7 +64,6 @@ void setup(void)
   setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
-  debug("ok");
 
   // Don't respond to interrupts during setup
   disableManualWakeInterrupt();
@@ -72,7 +71,6 @@ void setup(void)
 
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
-  debug("okok");
 
   // initializeFilesystem();
 
@@ -88,9 +86,26 @@ void setup(void)
 
   setNotBursting(); // prevents bursting during first loop
 
+  //// bridging code to handle deployment identifier before change to EEPROM layout
+  char defaultDeployment[25] = "SITENAME_00000000000000";
+  char *deploymentIdentifier = defaultDeployment;
+
+  // get any stored deployment identifier from EEPROM
+  readDeploymentIdentifier(deploymentIdentifier);
+  unsigned char empty[1] = {0xFF};
+  if (memcmp(deploymentIdentifier, empty, 1) == 0)
+  {
+    //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
+
+    writeDeploymentIdentifier(defaultDeployment);
+    readDeploymentIdentifier(deploymentIdentifier);
+  }
+  //// end bridge code
+
   // TODO: read datalogger settings struct from EEPROM
   datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
   dataloggerSettings->interval = 15;
+  strcpy(dataloggerSettings->deploymentIdentifier, deploymentIdentifier);  
   datalogger = new Datalogger(dataloggerSettings);
   Monitor::instance()->writeDebugMessage("created datalogger");
   datalogger->setup();
@@ -133,66 +148,66 @@ void loop(void)
   // free(data);
  
 
-  bool bursting = shouldContinueBursting();
-  bool debugLoop = checkDebugLoop();
-  bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
-  bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);
+  // bool bursting = shouldContinueBursting();
+  // bool debugLoop = checkDebugLoop();
+  // bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
+  // bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);
 
-  // Should we sleep until a measurement is triggered?
-  bool awaitMeasurementTrigger = false;
-  if (!bursting && !awakeForUserInteraction)
-  {
-    Monitor::instance()->writeDebugMessage(F("Not bursting or awake"));
-    awaitMeasurementTrigger = true;
-  }
+  // // Should we sleep until a measurement is triggered?
+  // bool awaitMeasurementTrigger = false;
+  // if (!bursting && !awakeForUserInteraction)
+  // {
+  //   Monitor::instance()->writeDebugMessage(F("Not bursting or awake"));
+  //   awaitMeasurementTrigger = true;
+  // }
 
-  if (awaitMeasurementTrigger) // Go to sleep
-  {
-    stopAndAwaitTrigger();
-    return; // Go to top of loop
-  }
-  datalogger->processCLI();
+  // if (awaitMeasurementTrigger) // Go to sleep
+  // {
+  //   stopAndAwaitTrigger();
+  //   return; // Go to top of loop
+  // }
+  // datalogger->processCLI();
 
-  if (CommandInterface::ready(Serial2))
-  {
-    handleControlCommand();
-    return;
-  }
+  // if (CommandInterface::ready(Serial2))
+  // {
+  //   handleControlCommand();
+  //   return;
+  // }
 
-  if (CommandInterface::ready(getBLE()))
-  {
-    Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
-    awakeTime = timestamp(); // Push awake time forward
-    // WaterBear_Control::processControlCommands(getBLE(), );
-    return;
-  }
+  // if (CommandInterface::ready(getBLE()))
+  // {
+  //   Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
+  //   awakeTime = timestamp(); // Push awake time forward
+  //   // WaterBear_Control::processControlCommands(getBLE(), );
+  //   return;
+  // }
 
-  if (takeMeasurement)
-  {
-    takeNewMeasurement();
-    trackBurst(bursting);
-    if (DEBUG_MEASUREMENTS)
-    {
-      monitorValues();
-    }
-  }
+  // if (takeMeasurement)
+  // {
+  //   takeNewMeasurement();
+  //   trackBurst(bursting);
+  //   if (DEBUG_MEASUREMENTS)
+  //   {
+  //     monitorValues();
+  //   }
+  // }
 
-  if (configurationMode)
-  {
-    monitorConfiguration();
-  }
+  // if (configurationMode)
+  // {
+  //   monitorConfiguration();
+  // }
 
-  if (debugValuesMode)
-  {
-    if (burstCount == burstLength) // will cause loop() to continue until mode turned off
-    {
-      prepareForTriggeredMeasurement();
-    }
-    monitorValues();
-  }
+  // if (debugValuesMode)
+  // {
+  //   if (burstCount == burstLength) // will cause loop() to continue until mode turned off
+  //   {
+  //     prepareForTriggeredMeasurement();
+  //   }
+  //   monitorValues();
+  // }
 
-  if (tempCalMode)
-  {
-    monitorTemperature();
-  }
+  // if (tempCalMode)
+  // {
+  //   monitorTemperature();
+  // }
 }

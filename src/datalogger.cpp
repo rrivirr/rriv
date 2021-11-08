@@ -32,6 +32,7 @@ WaterBear_FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
 char uuidString[25]; // 2 * UUID_LENGTH + 1
 char deploymentIdentifier[26];
+char loggingFolder[26];
 
 char lastDownloadDate[11] = "0000000000";
 char **values;
@@ -50,6 +51,8 @@ Datalogger::Datalogger(datalogger_settings * settings)
 {
   powerCycle = true;
 
+  readDeploymentIdentifier(deploymentIdentifier);
+
   if(settings->interval != 0)
   {
     this->interval = settings->interval;
@@ -58,14 +61,15 @@ Datalogger::Datalogger(datalogger_settings * settings)
   {
     case interactive:
       mode = interactive;
-      strcpy(deploymentIdentifier, reinterpret_cast<const char *> F("INTERACTIVE"));
+      strcpy(loggingFolder, reinterpret_cast<const char *> F("INTERACTIVE"));
       break;
     case logging:
       mode = logging;
       readDeploymentIdentifier(deploymentIdentifier);
+      strcpy(loggingFolder, deploymentIdentifier);
     default:
-      mode = interactive; // getModeFromSettings(settings->mode);
-      strcpy(deploymentIdentifier, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
+      mode = interactive;
+      strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
   }
 
 }
@@ -310,11 +314,12 @@ bool Datalogger::writeMeasurementToLogFile()
 
 void Datalogger::setUpCLI()
 {
-  CommandInterface::setup();
+  cli = CommandInterface::create(Serial2, this);
+  cli->setup();
 }
 void Datalogger::processCLI()
 {
-  CommandInterface::poll();
+  cli->poll();
   // if(CommandInterface::ready(Serial2))
   // {
   //   CommandInterface::processControlCommands(Serial2, this);
@@ -342,6 +347,13 @@ void Datalogger::storeConfiguration()
     }
   }
 }
+
+void Datalogger::getConfiguration(datalogger_settings_type * datalogger_settings){
+  strcpy(datalogger_settings->deploymentIdentifier, deploymentIdentifier);
+  datalogger_settings->interval = interval;
+  datalogger_settings->mode = this->mode;
+}
+
 
 bool Datalogger::inMode(mode_type mode){
   return this->mode == mode;
@@ -372,7 +384,7 @@ void Datalogger::initializeFilesystem()
 {
   SdFile::dateTimeCallback(dateTime);
 
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
+  filesystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = filesystem;
   Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
 
@@ -474,19 +486,7 @@ void initializeFilesystem()
 
   SdFile::dateTimeCallback(dateTime);
 
-  char defaultDeployment[25] = "SITENAME_00000000000000";
-  char *deploymentIdentifier = defaultDeployment;
 
-  // get any stored deployment identifier from EEPROM
-  readDeploymentIdentifier(deploymentIdentifier);
-  unsigned char empty[1] = {0xFF};
-  if (memcmp(deploymentIdentifier, empty, 1) == 0)
-  {
-    //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
-
-    writeDeploymentIdentifier(defaultDeployment);
-    readDeploymentIdentifier(deploymentIdentifier);
-  }
 
   filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = filesystem;
@@ -1220,3 +1220,10 @@ void monitorTemperature() // print out calibration information & current reading
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 }
 
+
+
+void Datalogger::setDeploymentIdentifier(char * deploymentIdentifier)
+{
+  strcpy(this->deploymentIdentifier, deploymentIdentifier);
+  writeDeploymentIdentifier(deploymentIdentifier);
+}

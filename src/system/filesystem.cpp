@@ -5,13 +5,13 @@
 char dataDirectory[6] = "/Data";
 
 
-WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin)
+WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectPin)
 {
-  strcpy(this->deploymentIdentifier, deploymentIdentifier);
+  strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
  
-  this->setDeploymentIdentifier(deploymentIdentifier);
+  this->setLoggingFolder(loggingFolder);
   Serial2.println(F("Set deployment identifier"));
 }
 
@@ -177,9 +177,9 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
 */
 }
 
-void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier)
+void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
 {
-  strcpy(deploymentIdentifier, newDeploymentIdentifier);
+  strcpy(loggingFolder, newLoggingFolder);
 }
 
 bool WaterBear_FileSystem::openFile(char * filename){
@@ -203,24 +203,24 @@ bool WaterBear_FileSystem::openFile(char * filename){
     //Serial2.println(F("cd /Data."));
   }
 
-  if(!this->sd.exists(deploymentIdentifier))
+  if(!this->sd.exists(loggingFolder))
   {
     // printCurrentDirListing();
     Serial2.write("mkdir:");
-    Serial2.println(deploymentIdentifier);
-    this->sd.mkdir(deploymentIdentifier);
+    Serial2.println(loggingFolder);
+    this->sd.mkdir(loggingFolder);
      //delay(10);
   }
 
-  if(!this->sd.chdir(this->deploymentIdentifier))
+  if(!this->sd.chdir(this->loggingFolder))
   {
     Serial2.print("failed:");
-    Serial2.println(deploymentIdentifier);
+    Serial2.println(loggingFolder);
   }
   else
   {
     Serial2.print("cd:");
-    Serial2.println(deploymentIdentifier);
+    Serial2.println(loggingFolder);
   }
   //delay(10);
 

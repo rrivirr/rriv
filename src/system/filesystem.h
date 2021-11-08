@@ -14,17 +14,17 @@ private:
   File logfile;
   int chipSelectPin;
   char filename[15];
-  char deploymentIdentifier[29];
+  char loggingFolder[29];
 
   void printCurrentDirListing();
   bool openFile(char * filename);
 
 
 public:
-  WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin);
+  WaterBear_FileSystem(char * loggingFolder, int chipSelectPin);
   void initializeSDCard();
   void writeDebugMessage(const char* message);
-  void setDeploymentIdentifier(char * deploymentIdentifier);
+  void setLoggingFolder(char * loggingFolder);
   void setNewDataFile(long unixtime);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping

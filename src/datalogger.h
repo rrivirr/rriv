@@ -28,10 +28,15 @@
 typedef struct datalogger_settings {
     short interval;  // 2 bytes
     char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger)
-    char padding[61];        // padded  
+    char deploymentIdentifier[26];
+    char padding[35];        // padded  
+    
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
+
+// Forward declaration of class
+class CommandInterface;
 
 class Datalogger
 {
@@ -58,6 +63,9 @@ public:
 
     void processCLI();
 
+    // settings
+    void setDeploymentIdentifier(char * deploymentIdentifier);
+    void getConfiguration(datalogger_settings_type * dataloggerSettings);
 
 private:
     // state
@@ -80,11 +88,14 @@ private:
     bool shouldContinueBursting();
 
     // CLI
+    CommandInterface * cli;
     void setUpCLI();
 
     // utility
     void writeStatusFieldsToLogFile();
     void initializeBurst();
+
+ 
 
 
 };

@@ -45,30 +45,46 @@ class CommandInterface
 
   public:
 
-    static int state;
+    // TODO: rewrite CommandInterface as OOP class
+    static CommandInterface * create(HardwareSerial &port, Datalogger * datalogger);
+    static CommandInterface * instance();
 
-    static void setup();
-    static void poll();
+    int state;
 
-    static int processControlCommands(Stream * myStream, Datalogger * datalogger);
-    static int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
-    static int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
-    static int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
+    CommandInterface(HardwareSerial &port, Datalogger * datalogger);
 
-    static void * getLastPayload();
+    void setup();
+    void poll();
 
-    static bool ready(Stream * myStream);
-    static bool ready(HardwareSerial &port);
-    static bool ready(Adafruit_BluefruitLE_UART &ble);
-    static bool ready(Adafruit_BluefruitLE_SPI &ble);
+    int processControlCommands(Stream * myStream, Datalogger * datalogger);
+    int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
+    int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
+    int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
 
-    // static time_t timestamp();
-    // static void setTime(time_t toSet);
-    // static void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
+    void * getLastPayload();
+
+    bool ready(Stream * myStream);
+    bool ready(HardwareSerial &port);
+    bool ready(Adafruit_BluefruitLE_UART &ble);
+    bool ready(Adafruit_BluefruitLE_SPI &ble);
+
+    // time_t timestamp();
+    // void setTime(time_t toSet);
+    // void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
 
 #if SOFTWARE_SERIAL_AVAILABLE
-    static void processControlCommands(SoftwareSerial &port);
+    void processControlCommands(SoftwareSerial &port);
 #endif
+
+    // cli functions
+    void _setSiteName(char * siteName);
+    void _getConfig();
+
+
+  private:
+    Datalogger * datalogger;
+    void * lastCommandPayload;
+    bool lastCommandPayloadAllocated = false;
 };
 
 #endif

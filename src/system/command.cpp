@@ -2,12 +2,30 @@
 #include "clock.h"
 #include <re.h>
 #include <Cmd.h>
+#include "version.h"
+#include "system/clock.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
-int CommandInterface::state = 0;
-void * lastCommandPayload;
-bool lastCommandPayloadAllocated = false;
+CommandInterface * commandInterface;
+
+CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
+{
+  commandInterface = new CommandInterface(Serial2, datalogger);
+}
+
+
+CommandInterface * CommandInterface::instance()
+{
+  return commandInterface;
+}
+
+CommandInterface::CommandInterface(HardwareSerial &port, Datalogger * datalogger)
+{
+  this->datalogger = datalogger;
+  cmdInit(&port);
+}
+
 
 bool CommandInterface::ready(HardwareSerial &port)
 {
@@ -68,12 +86,100 @@ void toggleDebug(int arg_cnt, char **args)
   Monitor::instance()->debugToSerial = !Monitor::instance()->debugToSerial;
 }
 
-void CommandInterface::setup()
+void printVersion(int arg_cnt, char **args)
 {
-  cmdInit(&Serial2);
-  cmdAdd("debug", toggleDebug);
-  
+  char message[100];
+  sprintf(message, "Firmware Version: %s", WATERBEAR_FIRMWARE_VERSION);
+  Serial2.println(message);
 }
+
+void invalidArgumentsMessage(const __FlashStringHelper * message)
+{
+  Serial2.println(F("Invalid arguments"));
+  Serial2.println(message);
+  return;
+}
+
+void setSiteName(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-site-name SITE_NAME"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  char * siteName = args[1];
+  CommandInterface::instance()->_setSiteName(siteName);
+}
+
+void CommandInterface::_setSiteName(char * siteName)
+{
+  this->datalogger->setDeploymentIdentifier(siteName);
+  Serial2.println("OK");
+}
+
+void printWarranty(int arg_cnt, char **args)
+{
+  Serial2.println(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
+}
+
+void getConfig(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_getConfig();
+}
+
+void CommandInterface::_getConfig()
+{
+  datalogger_settings_type dataloggerSettings;
+  this->datalogger->getConfiguration(&dataloggerSettings);
+  
+  cJSON* json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, "deployment_identifier", dataloggerSettings.deploymentIdentifier);
+  cJSON_AddNumberToObject(json, "interval", dataloggerSettings.interval);
+ 
+  char * string = cJSON_Print(json);
+  if (string == NULL)
+  {
+    fprintf(stderr, "Failed to print monitor.\n");
+  }
+  Serial2.println(string);
+  free(string);
+}
+
+void setRTC(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-rtc UNIX_EPOCH_TIMESTAMP"));
+    return;
+  }
+
+  int timestamp = atoi(args[1]);
+  setTime(timestamp);
+  Serial2.println("OK");
+}
+
+void getRTC(int arg_cnt, char **args)
+{
+  int time = timestamp();
+  char message[100];
+  sprintf(message, "current timestamp: %i", time);
+  Serial2.println(message);
+}
+
+
+void CommandInterface::setup(){
+  cmdAdd("debug", toggleDebug);
+  cmdAdd("version", printVersion);
+  cmdAdd("set-site-name", setSiteName);
+  cmdAdd("show-warranty", printWarranty);
+  cmdAdd("get-config", getConfig);
+  cmdAdd("set-rtc", setRTC);
+  cmdAdd("get-rtc", getRTC);
+
+}
+
+
+
 
 void CommandInterface::poll()
 {
