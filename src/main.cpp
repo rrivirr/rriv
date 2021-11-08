@@ -87,25 +87,24 @@ void setup(void)
   setNotBursting(); // prevents bursting during first loop
 
   //// bridging code to handle deployment identifier before change to EEPROM layout
-  char defaultDeployment[25] = "SITENAME_00000000000000";
-  char *deploymentIdentifier = defaultDeployment;
+  // char defaultDeployment[25] = "SITENAME_00000000000000";
+  // char *deploymentIdentifier = defaultDeployment;
 
-  // get any stored deployment identifier from EEPROM
-  readDeploymentIdentifier(deploymentIdentifier);
-  unsigned char empty[1] = {0xFF};
-  if (memcmp(deploymentIdentifier, empty, 1) == 0)
-  {
-    //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
+  // // get any stored deployment identifier from EEPROM
+  // readDeploymentIdentifier(deploymentIdentifier);
+  // unsigned char empty[1] = {0xFF};
+  // if (memcmp(deploymentIdentifier, empty, 1) == 0)
+  // {
+  //   //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
 
-    writeDeploymentIdentifier(defaultDeployment);
-    readDeploymentIdentifier(deploymentIdentifier);
-  }
+  //   writeDeploymentIdentifier(defaultDeployment);
+  //   readDeploymentIdentifier(deploymentIdentifier);
+  // }
   //// end bridge code
 
   // TODO: read datalogger settings struct from EEPROM
   datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
-  dataloggerSettings->interval = 15;
-  strcpy(dataloggerSettings->deploymentIdentifier, deploymentIdentifier);  
+  Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
   Monitor::instance()->writeDebugMessage("created datalogger");
   datalogger->setup();

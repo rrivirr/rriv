@@ -78,6 +78,12 @@ class CommandInterface
 
     // cli functions
     void _setSiteName(char * siteName);
+    void _setInterval(int size);
+    void _setBurstSize(int size);
+    void _setBurstNumber(int number);
+    void _setStartUpDelay(int number);
+    void _setBurstDelay(int number);
+
     void _getConfig();
 
 

@@ -1,7 +1,7 @@
 #include "command.h"
-#include "clock.h"
 #include <re.h>
 #include <Cmd.h>
+#include <libmaple/libmaple.h>
 #include "version.h"
 #include "system/clock.h"
 
@@ -118,6 +118,98 @@ void CommandInterface::_setSiteName(char * siteName)
   Serial2.println("OK");
 }
 
+void setInterval(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-interval INTERVAL_BETWEEN_MEASUREMENT_WAKE_MINUTES"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int number = atoi(args[1]);
+  CommandInterface::instance()->_setInterval(number);
+}
+
+void CommandInterface::_setInterval(int size)
+{
+  this->datalogger->setInterval(size);
+  Serial2.println("OK");
+}
+
+void setBurstSize(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-burst_size NUMBER_OF_MEASUREMENTS_IN_BURST"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int size = atoi(args[1]);
+  CommandInterface::instance()->_setBurstSize(size);
+}
+
+void CommandInterface::_setBurstSize(int size)
+{
+  this->datalogger->setBurstSize(size);
+  Serial2.println("OK");
+}
+
+void setBurstNumber(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-burst-number NUMBER_OF_BURSTS"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int number = atoi(args[1]);
+  CommandInterface::instance()->_setBurstNumber(number);
+}
+
+void CommandInterface::_setBurstNumber(int number)
+{
+  this->datalogger->setBurstNumber(number);
+  Serial2.println("OK");
+}
+
+
+void setStartUpDelay(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-startup-delay START_UP_DELAY_SECONDS"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int number = atoi(args[1]);
+  CommandInterface::instance()->_setStartUpDelay(number);
+}
+
+void CommandInterface::_setStartUpDelay(int number)
+{
+  this->datalogger->setStartUpDelay(number);
+  Serial2.println("OK");
+}
+
+void setBurstDelay(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-burst-day DELAY_BETWEEN_BURSTS_SECONDS"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int number = atoi(args[1]);
+  CommandInterface::instance()->_setBurstDelay(number);
+}
+
+void CommandInterface::_setBurstDelay(int number)
+{
+  this->datalogger->setIntraBurstDelay(number);
+  Serial2.println("OK");
+}
+
+
 void printWarranty(int arg_cnt, char **args)
 {
   Serial2.println(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
@@ -136,7 +228,11 @@ void CommandInterface::_getConfig()
   cJSON* json = cJSON_CreateObject();
   cJSON_AddStringToObject(json, "deployment_identifier", dataloggerSettings.deploymentIdentifier);
   cJSON_AddNumberToObject(json, "interval", dataloggerSettings.interval);
- 
+  cJSON_AddNumberToObject(json, "burst_size", dataloggerSettings.burstLength);
+  cJSON_AddNumberToObject(json, "burst_number", dataloggerSettings.burstCount);
+  cJSON_AddNumberToObject(json, "start_up_delay", dataloggerSettings.startUpDelay);
+  cJSON_AddNumberToObject(json, "burst_delay", dataloggerSettings.intraBurstDelay);
+
   char * string = cJSON_Print(json);
   if (string == NULL)
   {
@@ -166,15 +262,26 @@ void getRTC(int arg_cnt, char **args)
   Serial2.println(message);
 }
 
+void restart(int arg_cnt, char **args)
+{
+  nvic_sys_reset();
+}
 
 void CommandInterface::setup(){
   cmdAdd("debug", toggleDebug);
   cmdAdd("version", printVersion);
-  cmdAdd("set-site-name", setSiteName);
   cmdAdd("show-warranty", printWarranty);
   cmdAdd("get-config", getConfig);
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
+  cmdAdd("restart", restart);
+
+  cmdAdd("set-site-name", setSiteName);
+  cmdAdd("set-interval", setInterval);
+  cmdAdd("set-burst-size", setBurstSize);
+  cmdAdd("set-burst-number", setBurstNumber);
+  cmdAdd("set-start-up-delay", setStartUpDelay);
+  cmdAdd("set-burst-delay", setBurstDelay);
 
 }
 

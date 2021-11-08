@@ -23,14 +23,17 @@
 #include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
 
-
+#define DEPLOYMENT_IDENTIFIER_LENGTH 26
 
 typedef struct datalogger_settings {
+    char deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH];
     short interval;  // 2 bytes
-    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger)
-    char deploymentIdentifier[26];
-    char padding[35];        // padded  
-    
+    short burstLength; // 2 bytes
+    short burstCount; // 2 bytes
+    short startUpDelay; // 2 bytes
+    short intraBurstDelay; // 2 bytes
+    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
+    char padding[31];        // padding
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
@@ -42,8 +45,6 @@ class Datalogger
 {
 
 public:
-    // configuration
-    short interval = 15;
 
     // sensors
     int sensorCount = 0;
@@ -51,7 +52,9 @@ public:
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
     SensorDriver ** drivers = NULL;
+    datalogger_settings_type settings;
 
+    static void readConfiguration(datalogger_settings_type * settings);
     Datalogger(datalogger_settings_type * settings);
 
     void setup();
@@ -65,6 +68,12 @@ public:
 
     // settings
     void setDeploymentIdentifier(char * deploymentIdentifier);
+    void setInterval(int interval);
+    void setBurstSize(int size);
+    void setBurstNumber(int number);
+    void setStartUpDelay(int delay);
+    void setIntraBurstDelay(int delay);
+
     void getConfiguration(datalogger_settings_type * dataloggerSettings);
 
 private:
@@ -72,7 +81,6 @@ private:
     mode_type mode = interactive;
     bool powerCycle = true;
     bool interactiveModeLogging = false;
-    char deploymentIdentifier[25];
     time_t currentEpoch;
     uint32 offsetMillis;
 
@@ -95,7 +103,11 @@ private:
     void writeStatusFieldsToLogFile();
     void initializeBurst();
 
+    void storeDataloggerConfiguration();
+
  
+    // run loop
+    void stopAndAwaitTrigger();
 
 
 };
@@ -165,7 +177,6 @@ bool checkAwakeForUserInteraction(bool debugLoop);
 
 bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction);
 
-void stopAndAwaitTrigger();
 
 void handleControlCommand();
 

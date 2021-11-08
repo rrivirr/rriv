@@ -26,24 +26,41 @@ byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress )
   return(rdata);
 }
 
-void readDeploymentIdentifier(char * deploymentIdentifier)
+// void readDeploymentIdentifier(char * deploymentIdentifier)
+// {
+//   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+//   {
+//     short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+//     deploymentIdentifier[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+//   }
+//   deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH] = '\0';
+// }
+
+// void writeDeploymentIdentifier(char * deploymentIdentifier)
+// {
+//   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+//   {
+//     short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+//     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
+//   }
+// }
+
+
+void writeObjectToEEPROM(int baseAddress, void * source, int size)
 {
-  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+  byte * bytes = (byte *) source;
+  for(short i=0; i < size; i++)
   {
-    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
-    deploymentIdentifier[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+    short address = baseAddress + i;
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, bytes[i]);
   }
-  deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH] = '\0';
 }
 
-void writeDeploymentIdentifier(char * deploymentIdentifier)
+void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
 {
-  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
-  {
-    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
-  }
+  writeObjectToEEPROM(EEPROM_DATALOGGER_CONFIGURATION_START, dataloggerSettings, EEPROM_DATALOGGER_CONFIGURATION_SIZE);
 }
+
 
 void readUniqueId(unsigned char * uuid)
 {

@@ -12,10 +12,6 @@
 // Settings
 char version[5] = "v2.0";
 
-short interval = 10;     // minutes between loggings when not in short 
-                         // interval between sampling initiations
-short burstLength = 10; // how many readings in a burst
-
 short fieldCount = 22; // number of fields to be logged to SDcard file
 
 // Pin Mappings for Nucleo Board
@@ -47,16 +43,24 @@ bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
 
-Datalogger::Datalogger(datalogger_settings * settings)
+// static method to read configuration from EEPROM
+void Datalogger::readConfiguration(datalogger_settings_type * settings)
+{
+  byte* buffer = (byte *) malloc(sizeof(byte) * sizeof(datalogger_settings_type));
+  for(short i=0; i < sizeof(datalogger_settings_type); i++)
+  {
+    short address = EEPROM_DATALOGGER_CONFIGURATION_START + i;
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+  }
+  memcpy(settings, buffer, sizeof(datalogger_settings_type));
+}
+
+Datalogger::Datalogger(datalogger_settings_type * settings)
 {
   powerCycle = true;
 
-  readDeploymentIdentifier(deploymentIdentifier);
+  memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
-  if(settings->interval != 0)
-  {
-    this->interval = settings->interval;
-  }
   switch(settings->mode)
   {
     case interactive:
@@ -166,7 +170,7 @@ void Datalogger::loadSensorConfigurations(){
 
     GenericAnalog * driver = new GenericAnalog(); // driverForSensorType(sensorTypes[i]);
     Serial2.println("OK");
-Serial2.flush();
+    Serial2.flush();
 
     debug("got sensor driver");
 
@@ -261,7 +265,7 @@ void Datalogger::writeStatusFieldsToLogFile(){
   }
 
   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-  memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+  memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
@@ -272,7 +276,7 @@ void Datalogger::writeStatusFieldsToLogFile(){
 
   //debug timestamp calculations
   char valuesBuffer[190];
-  sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
+  sprintf(valuesBuffer, "burstCount=%d currentMillis=%d offsetMillis=%d currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 
   char currentTimeString[20];
@@ -348,11 +352,40 @@ void Datalogger::storeConfiguration()
   }
 }
 
-void Datalogger::getConfiguration(datalogger_settings_type * datalogger_settings){
-  strcpy(datalogger_settings->deploymentIdentifier, deploymentIdentifier);
-  datalogger_settings->interval = interval;
-  datalogger_settings->mode = this->mode;
+void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings){
+  memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
 }
+
+void Datalogger::setInterval(int interval)
+{
+  settings.interval = interval;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setBurstSize(int size)
+{
+  settings.burstLength = size;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setBurstNumber(int number)
+{
+  settings.burstCount = number;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setStartUpDelay(int delay)
+{
+  settings.startUpDelay = delay;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setIntraBurstDelay(int delay)
+{
+  settings.intraBurstDelay = delay;
+  storeDataloggerConfiguration();
+}
+
 
 
 bool Datalogger::inMode(mode_type mode){
@@ -721,7 +754,7 @@ bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
   return takeMeasurement;
 }
 
-void stopAndAwaitTrigger()
+void Datalogger::stopAndAwaitTrigger()
 {
   Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
 
@@ -738,7 +771,7 @@ void stopAndAwaitTrigger()
   storeAllInterrupts(iser1, iser2, iser3);
 
   clearManualWakeInterrupt();
-  setNextAlarmInternalRTC(interval); 
+  setNextAlarmInternalRTC(settings.interval); 
 
 
   powerDownSwitchableComponents();
@@ -1221,9 +1254,13 @@ void monitorTemperature() // print out calibration information & current reading
 }
 
 
+void Datalogger::storeDataloggerConfiguration()
+{
+  writeDataloggerSettingsToEEPROM(&this->settings);
+}
 
 void Datalogger::setDeploymentIdentifier(char * deploymentIdentifier)
 {
-  strcpy(this->deploymentIdentifier, deploymentIdentifier);
-  writeDeploymentIdentifier(deploymentIdentifier);
+  strcpy(this->settings.deploymentIdentifier, deploymentIdentifier);
+  storeDataloggerConfiguration();
 }
