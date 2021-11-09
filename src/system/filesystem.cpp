@@ -39,7 +39,8 @@ void WaterBear_FileSystem::initializeSDCard(){
     // just go to sleep and wait for the next cycle
     // also produce some kind of check engine light.
     // can we do a very low current blink LED or something.
-    while(1);
+    delay(6000);
+    nvic_sys_reset();
   }
   else
   {

@@ -85,6 +85,8 @@ class CommandInterface
     void _setBurstDelay(int number);
 
     void _getConfig();
+    void _deployNow();
+
 
 
   private:

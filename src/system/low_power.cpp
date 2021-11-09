@@ -121,7 +121,7 @@ return;
   // rcc_clk_disable( RCC_SPI2);
   rcc_clk_disable( RCC_SPI3);
   rcc_clk_disable( RCC_SRAM);
-  // rcc_clk_disable( RCC_TIMER1); // this clock is needed
+  // rcc_clk_disable( RCC_TIMER1); // this clock is needed by the custom watchdog
   rcc_clk_disable( RCC_TIMER2);
   rcc_clk_disable( RCC_TIMER3);
   rcc_clk_disable( RCC_TIMER4);
@@ -185,7 +185,7 @@ void hardwarePinsAlwaysOff() // not currently used
 
   pinMode(PC4, INPUT);
   // pinMode(PC5, INPUT); // external ADC reset
-  //  pinMode(PC6, INPUT); // this is the switch power pin
+  // pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);

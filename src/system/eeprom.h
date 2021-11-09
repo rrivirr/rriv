@@ -99,8 +99,8 @@
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data );
 byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress );
 
-void readDeploymentIdentifier(char * deploymentIdentifier);
-void writeDeploymentIdentifier(char * deploymentIdentifier);
+// void readDeploymentIdentifier(char * deploymentIdentifier);
+// void writeDeploymentIdentifier(char * deploymentIdentifier);
 
 void readUniqueId(unsigned char * uuid); // uuid must point to char[UUID_LENGTH]
 

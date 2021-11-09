@@ -27,8 +27,6 @@ AD7091R * externalADC;
 WaterBear_FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
 char uuidString[25]; // 2 * UUID_LENGTH + 1
-char deploymentIdentifier[26];
-char loggingFolder[26];
 
 char lastDownloadDate[11] = "0000000000";
 char **values;
@@ -58,22 +56,27 @@ void Datalogger::readConfiguration(datalogger_settings_type * settings)
 Datalogger::Datalogger(datalogger_settings_type * settings)
 {
   powerCycle = true;
+  Serial2.println("creating datalogger");
+  Serial2.println("got mode");
+  Serial2.println(settings->mode);
+  delay(2000);
 
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
   switch(settings->mode)
   {
-    case interactive:
-      mode = interactive;
+    case 'i':
+      changeMode(interactive);
       strcpy(loggingFolder, reinterpret_cast<const char *> F("INTERACTIVE"));
       break;
-    case logging:
-      mode = logging;
-      readDeploymentIdentifier(deploymentIdentifier);
-      strcpy(loggingFolder, deploymentIdentifier);
+    case 'l':
+      changeMode(logging);
+      strcpy(loggingFolder, settings->deploymentIdentifier);
+      break;
     default:
-      mode = interactive;
+      changeMode(interactive);
       strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
+      break;
   }
 
 }
@@ -89,6 +92,7 @@ void Datalogger::setup()
 
 void Datalogger::loop()
 {
+
   if(inMode(deploy_on_trigger)){
     deploy();
     return;
@@ -98,12 +102,14 @@ void Datalogger::loop()
   {
     if(powerCycle)
     {
+      Monitor::instance()->writeDebugMessage("Powercycle");
       deploy();
     }
 
     if(shouldExitLoggingMode())
     {
-      mode = interactive;
+      Monitor::instance()->writeSerialMessage("Should exit logging mode");
+      changeMode(interactive);
       return;
     }
 
@@ -125,6 +131,7 @@ void Datalogger::loop()
   processCLI();
   if (configurationIsDirty())
   {
+    debug("Configuration is dirty");
     storeConfiguration();
     stopLogging();
   }
@@ -143,10 +150,12 @@ void Datalogger::loop()
   }
   else
   {
+    // TODO: can be a deploy mode here, because processCLI may have changed it.
     // invalid mode!
-    Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
-    mode = interactive;
-    delay(1000);
+    // Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
+    // Serial2.println(mode);
+    // mode = interactive;
+    // delay(1000);
   }
 
   powerCycle = false;
@@ -387,29 +396,47 @@ void Datalogger::setIntraBurstDelay(int delay)
 }
 
 
+void Datalogger::storeMode(mode_type mode)
+{
+  char modeStorage = 'i';
+  switch(mode){
+    case logging:
+      modeStorage = 'l';
+      break;
+    case deploy_on_trigger:
+      modeStorage = 't';
+      break;
+    default:
+      modeStorage = 'i';
+      break;
+  }
+  settings.mode = modeStorage;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::changeMode(mode_type mode)
+{
+  char message[100];
+  sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
+  Monitor::instance()->writeSerialMessage(message);
+  this->mode = mode;
+}
 
 bool Datalogger::inMode(mode_type mode){
   return this->mode == mode;
-  // switch(mode){
-  //   case interactive:
-  //     return mode == 'i';
-  //   case debugging:
-  //     return mode == 'd';
-  //   case logging:
-  //     return mode == 'l';
-  //   case deploy_on_trigger:
-  //     return mode == 't';
-  //   default:
-  //     return false;
-  // }
 }
 
 
 void Datalogger::deploy(){
-  char defaultDeployment[25] = "SITENAME_00000000000000";
-  memcpy(deploymentIdentifier, defaultDeployment, 25); 
-  writeDeploymentIdentifier(defaultDeployment);
+  Monitor::instance()->writeSerialMessage(F("Deploying now!"));
+  // setDeploymentIdentifier(d) // TODO: potentially add a timestamp to this deployment
+  strcpy(loggingFolder, settings.deploymentIdentifier);
+  filesystem->closeFileSystem(); 
   initializeFilesystem();
+  changeMode(logging);
+  storeMode(logging);
+  powerCycle = false; // not a powercycle loop
+
 }
 
 
@@ -514,24 +541,6 @@ void blinkTest()
   //blink(10,250);
 }
 
-void initializeFilesystem()
-{
-
-  SdFile::dateTimeCallback(dateTime);
-
-
-
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
-  Monitor::instance()->filesystem = filesystem;
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
-
-  time_t setupTime = timestamp();
-  char setupTS[21];
-  sprintf(setupTS, "unixtime: %lld", setupTime);
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(setupTS);
-  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
-}
-
 void allocateMeasurementValuesMemory()
 {
 
@@ -593,11 +602,11 @@ void setNotBursting()
   burstCount = burstLength; // Set to not bursting
 }
 
-void captureInternalADCValues()
+void Datalogger::captureInternalADCValues()
 {
 
   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-  memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+  memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
@@ -826,8 +835,6 @@ void Datalogger::stopAndAwaitTrigger()
   powerUpSwitchableComponents();
   filesystem->reopenFileSystem();
 
-  // Get the deployment identifier
-  readDeploymentIdentifier(deploymentIdentifier);
 
   if(awakenedByUser == true)
   {
@@ -1089,7 +1096,7 @@ float calculateTemperature()
   return temperature;
 }
 
-void takeNewMeasurement()
+void Datalogger::takeNewMeasurement()
 {
   if (DEBUG_MEASUREMENTS)
   {

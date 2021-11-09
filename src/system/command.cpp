@@ -267,8 +267,17 @@ void restart(int arg_cnt, char **args)
   nvic_sys_reset();
 }
 
+void deployNow(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_deployNow();
+}
+
+void CommandInterface::_deployNow()
+{
+  this->datalogger->deploy();
+}
+
 void CommandInterface::setup(){
-  cmdAdd("debug", toggleDebug);
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
   cmdAdd("get-config", getConfig);
@@ -282,6 +291,12 @@ void CommandInterface::setup(){
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
   cmdAdd("set-burst-delay", setBurstDelay);
+
+  cmdAdd("trace", toggleDebug);
+  // cmdAdd("start-logging", toggleInteractiveLogging);
+
+  // cmdAdd("debug", debugMode);
+  cmdAdd("deploy-now", deployNow);
 
 }
 

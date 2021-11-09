@@ -60,9 +60,9 @@ public:
     void setup();
     void loop();
 
+    void changeMode(mode_type mode);
     bool inMode(mode_type mode);
     void deploy();
-    void initializeFilesystem();
 
     void processCLI();
 
@@ -83,6 +83,7 @@ private:
     bool interactiveModeLogging = false;
     time_t currentEpoch;
     uint32 offsetMillis;
+    char loggingFolder[26];
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -103,11 +104,16 @@ private:
     void writeStatusFieldsToLogFile();
     void initializeBurst();
 
+    void storeMode(mode_type mode);
     void storeDataloggerConfiguration();
 
  
     // run loop
+    void initializeFilesystem();
     void stopAndAwaitTrigger();
+    void takeNewMeasurement();
+    void captureInternalADCValues();
+
 
 
 };
@@ -155,7 +161,6 @@ void setupHardwarePins();
 
 void blinkTest();
 
-void initializeFilesystem();
 
 void setupSensors();
 
@@ -182,7 +187,6 @@ void handleControlCommand();
 
 void monitorConfiguration();
 
-void takeNewMeasurement();
 
 void trackBurst(bool bursting);
 
