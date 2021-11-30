@@ -24,8 +24,10 @@
 #include "sensors/sensor.h"
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 26
+#define SENSOR_SLOTS_START_ADDRESS 64
+#define SENSOR_SLOT_SIZE 64
 
-typedef struct datalogger_settings {
+typedef struct datalogger_settings { // 64 bytes
     char deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH];
     short interval;  // 2 bytes
     short burstLength; // 2 bytes
@@ -33,7 +35,7 @@ typedef struct datalogger_settings {
     short startUpDelay; // 2 bytes
     short intraBurstDelay; // 2 bytes
     char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
-    char padding[31];        // padding
+    char unused[27];        // padding
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;

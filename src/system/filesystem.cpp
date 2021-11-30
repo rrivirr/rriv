@@ -242,7 +242,7 @@ bool WaterBear_FileSystem::openFile(char * filename){
 
 }
 
-void WaterBear_FileSystem::setNewDataFile(long unixtime)
+void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
 {
 
   char uniquename[11] = "NEWFILE";
@@ -256,11 +256,10 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   this->sd.chdir("/");
   delay(1);
 
-  char header[200] = "duuid,uuid,time.s,time.h,battery.V,A2-PB1.V,A3-PC0.V,A4-PC1.V,A5-PC2.V,A6-PC3.V,conductivity.mS,time.TC,C1,V1,C2,V2,M,B,temperature.C,Burst,UserValue,UserNote";
-
   Serial2.print(F(">log:"));
   Serial2.println(header);
   
+  strcpy(this->header, header);
 
   bool success = this->openFile(filename);
   if( !success )
@@ -310,7 +309,7 @@ void WaterBear_FileSystem::reopenFileSystem()
     char setupTS[21];
     sprintf(setupTS, "unixtime: %lld", setupTime);
     Monitor::instance()->writeDebugMessage(setupTS);
-    setNewDataFile(setupTime); // open a new file via epoch timestamp
+    setNewDataFile(setupTime, this->header); // open a new file via epoch timestamp
   }
   else 
   {

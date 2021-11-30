@@ -84,6 +84,13 @@ void * CommandInterface::getLastPayload()
 void toggleDebug(int arg_cnt, char **args)
 {
   Monitor::instance()->debugToSerial = !Monitor::instance()->debugToSerial;
+  // CommandInterface::instance()->_toggleDebug();
+}
+
+void CommandInterface::_toggleDebug()
+{
+  this->datalogger->changeMode(debugging);
+  Serial2.println("OK");
 }
 
 void printVersion(int arg_cnt, char **args)

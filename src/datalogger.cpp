@@ -147,6 +147,7 @@ void Datalogger::loop()
   {
     measureSensorValues(false);
     writeMeasurementToLogFile();
+    delay(5000); // this value could be configurable, also a step / read from CLI is possible
   }
   else
   {
@@ -161,26 +162,48 @@ void Datalogger::loop()
   powerCycle = false;
 }
 
+#define TOTAL_SLOTS 2
 
-void Datalogger::loadSensorConfigurations(){
+void Datalogger::loadSensorConfigurations()
+{
+
   // load sensor configurations from EEPROM and count them
-  sensorCount = 1;
-  sensorTypes = (short *) malloc(sizeof(short) * sensorCount);
-  sensorTypes[0] = GENERIC_ANALOG_SENSOR;
+
+  short sensorCount = 0;
+  generic_config * configs[TOTAL_SLOTS];
+  for(int i=0; i<TOTAL_SLOTS; i++)
+  {
+    debug("reading slot");
+    generic_config* sensorConfig = (generic_config *) malloc(sizeof(generic_config));
+    readEEPROMObject(SENSOR_SLOTS_START_ADDRESS + i * SENSOR_SLOT_SIZE, sensorConfig, SENSOR_SLOT_SIZE);
+    if(sensorConfig->common.sensor_type <= MAX_SENSOR_TYPE)
+    {
+      debug("found configured sensor");
+      sensorCount++;
+    }
+    configs[i] = sensorConfig;
+  }
+  if(sensorCount == 0)
+  {
+    debug("no sensor configurations found");
+  }
 
   // load the full configurations from EEPROM
 
   // construct the drivers
+  debug("construct drivers");
   drivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
-  for(int i=0; i<sensorCount; i++){
-    debug("get sensor driver");
-    // debug(sensorTypes[i]);
+  for(int i=0; i<TOTAL_SLOTS; i++)
+  {
+    if(configs[i]->common.sensor_type > MAX_SENSOR_TYPE)
+    {
+      debug("no sensor");
+      continue;
+    }
 
-
-    GenericAnalog * driver = new GenericAnalog(); // driverForSensorType(sensorTypes[i]);
-    Serial2.println("OK");
-    Serial2.flush();
-
+    debug("getting driver for sensor type");
+    debug(configs[i]->common.sensor_type);
+    SensorDriver * driver  = driverForSensorType(configs[i]->common.sensor_type);
     debug("got sensor driver");
 
     drivers[i] = driver;
@@ -194,10 +217,8 @@ void Datalogger::loadSensorConfigurations(){
       default:
         break;
     }
-    //driver->configure(struct *);  //pass configuration struct to the driver
+    driver->configure(configs[i]);  //pass configuration struct to the driver
   }
-
-  //AtlasRGB::instance()->setup(&WireTwo); // legacy 
 
 
   // set up bookkeeping for dirty configurations
@@ -208,11 +229,13 @@ void Datalogger::loadSensorConfigurations(){
   dirtyConfigurations = (bool *) malloc(sizeof(bool) * (sensorCount + 1));
 }
 
-void Datalogger::startLogging(){
+void Datalogger::startLogging()
+{
   interactiveModeLogging = true;
 }
 
-void Datalogger::stopLogging(){
+void Datalogger::stopLogging()
+{
   interactiveModeLogging = false;
 }
 
@@ -452,7 +475,16 @@ void Datalogger::initializeFilesystem()
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
   Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
-  filesystem->setNewDataFile(setupTime); // name file via epoch timestamps
+
+
+  char header[200];
+  char * statusFields = "duuid,uuid,time.s,time.h,battery.V";
+  strcpy(header, statusFields);
+  for(int i=0; i<sensorCount; i++){
+    strcat(header, drivers[i]->getCSVColumnNames());
+  }
+
+  filesystem->setNewDataFile(setupTime, header); // name file via epoch timestamps
 }
 
 
@@ -477,8 +509,6 @@ void powerUpSwitchableComponents()
   externalADC->enableChannel(1);
   externalADC->enableChannel(2);
   externalADC->enableChannel(3);
-
-  scanIC2(&Wire);
 
   if(USE_EC_OEM){
     enableI2C2();
@@ -806,14 +836,12 @@ void Datalogger::stopAndAwaitTrigger()
   enterStopMode();
   //enterSleepMode();
 
-  //reopen sd card file (save file name? or use variable that has it already)
-  //filesystem->openFileForAppend();
-
   reenableAllInterrupts(iser1, iser2, iser3);
   disableManualWakeInterrupt();
   nvic_irq_disable(NVIC_RTCALARM);  
 
   enableSerialLog(); 
+  enableSwitchedPower();
   setupHardwarePins(); // used from setup steps in datalogger
 
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
@@ -830,7 +858,7 @@ void Datalogger::stopAndAwaitTrigger()
   /////turn components back on
   componentsBurstMode();
   // We have woken from the interrupt
-  printInterruptStatus(Serial2);
+  // printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
   filesystem->reopenFileSystem();

@@ -128,14 +128,23 @@ void writeEEPROMBytes(short address, unsigned char * data, uint8_t size) // Litt
   }
 }
 
+void readEEPROMObject(short address, void * data, uint8_t size) // Little Endian
+{
+  byte * buffer = (byte *) data;
+  for (uint8_t i = 0; i < size; i++)
+  {
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+  }
+}
+
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Little Endian
 {
   for (uint8_t i = 0; i < size; i++)
   {
     data[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
   }
-  data[size] = '\0';
 }
+
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
 {

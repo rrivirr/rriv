@@ -15,6 +15,7 @@ private:
   int chipSelectPin;
   char filename[15];
   char loggingFolder[29];
+  char header[200];
 
   void printCurrentDirListing();
   bool openFile(char * filename);
@@ -25,7 +26,7 @@ public:
   void initializeSDCard();
   void writeDebugMessage(const char* message);
   void setLoggingFolder(char * loggingFolder);
-  void setNewDataFile(long unixtime);
+  void setNewDataFile(long unixtime, char * header);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
   void reopenFileSystem(); // reopen filesystem after wakeup

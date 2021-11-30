@@ -87,6 +87,9 @@ class CommandInterface
     void _getConfig();
     void _deployNow();
 
+    void _toggleDebug();
+
+
 
 
   private:

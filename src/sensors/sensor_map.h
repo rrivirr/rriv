@@ -15,8 +15,8 @@ void buildDriverSensorMap();
 SensorDriver * driverForSensorType(short type);
 
 #define GENERIC_ANALOG_SENSOR 0x0000
-
-
 #define NO_SENSOR 0xFFFF
+
+#define MAX_SENSOR_TYPE GENERIC_ANALOG_SENSOR
 
 #endif

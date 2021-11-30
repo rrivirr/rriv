@@ -26,6 +26,28 @@
 
 typedef enum protocol { analog, i2c } protocol_type;
 
+typedef struct 
+{
+    // note needs to be 32 bytes total (multiple of 4)
+    // rearrange in blocks of 4bytes for diagram
+    // sensor.h
+    ushort sensor_type; // 2 bytes
+    byte slot; // 1 byte
+    byte sensor_burst; // 1 byte
+    unsigned short int warmup; // 2 bytes, in seconds? (65535/60=1092)
+    char tag[4]; // 4 bytes
+    char column_prefix[5]; // 5 bytes
+       
+    char padding[17]; // 17bytes
+} common_config_sensor;
+
+typedef struct 
+{
+  common_config_sensor common;
+  char padding[32];
+} generic_config;
+
+
 class SensorDriver {
 
   public: 
@@ -33,7 +55,7 @@ class SensorDriver {
     SensorDriver();
 
     // Interface
-    virtual void configure(void * configuration); // pass block of configuration memory, read from EEPROM
+    virtual void configure(generic_config * configuration); // pass block of configuration memory, read from EEPROM
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
@@ -70,19 +92,6 @@ class I2CSensorDriver : public SensorDriver {
     virtual void setup(TwoWire * wire);
 };
 
-typedef struct common_config{
-    // note needs to be 32 bytes total (multiple of 4)
-    // rearrange in blocks of 4bytes for diagram
-    // sensor.h
-    short sensor_type; // 2 bytes
-    byte slot; // 1 byte
-    byte sensor_burst; // 1 byte
-    unsigned short int warmup; // 2 bytes, in seconds? (65535/60=1092)
-    char tag[4]; // 4 bytes
-    char column_prefix[5]; // 5 bytes
-       
-    char padding[17]; // 17bytes
-}common_config_sensor;
 
 void getDefaultsCommon(common_config_sensor *fillValues);
 void readCommonConfigOnly(common_config_sensor *readValues); //not made
