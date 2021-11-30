@@ -855,12 +855,14 @@ void Datalogger::stopAndAwaitTrigger()
     Monitor::instance()->writeDebugMessage(F("USER TRIGGERED INTERRUPT"));
   }
 
-  /////turn components back on
-  componentsBurstMode();
+ 
+
   // We have woken from the interrupt
   // printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
+   /////turn components back on
+  componentsBurstMode();
   filesystem->reopenFileSystem();
 
 
