@@ -122,7 +122,7 @@ void setSiteName(int arg_cnt, char **args)
 
 void CommandInterface::_setSiteName(char * siteName)
 {
-  this->datalogger->setDeploymentIdentifier(siteName);
+  this->datalogger->setSiteName(siteName);
   Serial2.println("OK");
 }
 
@@ -234,7 +234,7 @@ void CommandInterface::_getConfig()
   this->datalogger->getConfiguration(&dataloggerSettings);
   
   cJSON* json = cJSON_CreateObject();
-  cJSON_AddStringToObject(json, "deployment_identifier", dataloggerSettings.deploymentIdentifier);
+  cJSON_AddStringToObject(json, "site_name", dataloggerSettings.siteName);
   cJSON_AddNumberToObject(json, "interval", dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, "burst_size", dataloggerSettings.burstLength);
   cJSON_AddNumberToObject(json, "burst_number", dataloggerSettings.burstCount);
@@ -397,7 +397,7 @@ void CommandInterface::setup(){
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-interval", setInterval);
-  cmdAdd("set-burst-size", setBurstSize);
+  cmdAdd("set-burst-size", setBurstSize); // datalogger - deprecated
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
   cmdAdd("set-burst-delay", setBurstDelay);

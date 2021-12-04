@@ -18,10 +18,11 @@ GenericAnalog::GenericAnalog()
 void GenericAnalog::configureFromJSON(cJSON * json)
 {
   common_config_sensor common;
-  SensorDriver::configureCommonFromJSON(json, &common);
+  this->configureCommonFromJSON(json, &common);
+  this->setCommonDefaults(&common);
   configuration.common = common;
   
-  this->configuration.common.sensor_type = GENERIC_ANALOG_SENSOR;
+  configuration.common.sensor_type = GENERIC_ANALOG_SENSOR;
   this->configureCSVColumns();
 }
 
@@ -33,6 +34,7 @@ void GenericAnalog::setup()
 
 void GenericAnalog::configure(generic_config * configuration)
 {
+  this->setCommonDefaults(&configuration->common);
   memcpy(&this->configuration, configuration, sizeof(generic_linear_analog_sensor));
   this->configureCSVColumns();
 }
@@ -50,6 +52,7 @@ cJSON * GenericAnalog::getConfigurationJSON() // returns unprotected pointer
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
   cJSON_AddStringToObject(json, "type", "generic_analog");
   cJSON_AddStringToObject(json, "tag", configuration.common.tag);
+  cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
 
   return json;
 }

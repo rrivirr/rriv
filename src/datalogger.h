@@ -23,17 +23,19 @@
 #include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
 
-#define DEPLOYMENT_IDENTIFIER_LENGTH 26
+#define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 typedef struct datalogger_settings { // 64 bytes
-    char deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH];
+    byte deploymentIdentifier[16];
     short interval;  // 2 bytes
     short burstLength; // 2 bytes
-    short burstCount; // 2 bytes
+    short burstNumber; // 2 bytes
     short startUpDelay; // 2 bytes
-    short intraBurstDelay; // 2 bytes
+    short interBurstDelay; // 2 bytes
     char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
-    char unused[27];        // padding
+    char siteName[8];
+    long deploymentTimestamp;
+    char unused[21];        // padding
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
@@ -67,7 +69,10 @@ public:
     void processCLI();
 
     // settings
-    void setDeploymentIdentifier(char * deploymentIdentifier);
+    void setSiteName(char * siteName);
+    void setDeploymentIdentifier();
+    void setDeploymentTimestamp(int timestamp);
+
     void setInterval(int interval);
     void setBurstSize(int size);
     void setBurstNumber(int number);
@@ -88,6 +93,7 @@ private:
     time_t currentEpoch;
     uint32 offsetMillis;
     char loggingFolder[26];
+    int completedBursts;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -117,6 +123,7 @@ private:
     void initializeFilesystem();
     void stopAndAwaitTrigger();
     void takeNewMeasurement();
+    void writeStatusFields();
     void captureInternalADCValues();
 
 
@@ -125,7 +132,6 @@ private:
 
 // Settings
 
-extern short burstLength; // how many readings in a burst
 
 extern short fieldCount; // number of fields to be logged to SDcard file
 
@@ -178,8 +184,6 @@ void prepareForUserInteraction();
 void setNotBursting();
 
 void measureSensorValues();
-
-bool shouldContinueBursting();
 
 bool checkDebugLoop();
 

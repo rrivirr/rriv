@@ -80,7 +80,7 @@ Datalogger::Datalogger(datalogger_settings_type * settings)
       break;
     case 'l':
       changeMode(logging);
-      strcpy(loggingFolder, settings->deploymentIdentifier);
+      strcpy(loggingFolder, settings->siteName);
       break;
     default:
       changeMode(interactive);
@@ -130,6 +130,14 @@ void Datalogger::loop()
     } 
     else 
     {
+      if(completedBursts < settings.burstNumber)
+      {
+        // TODO: we need to do another burst
+        completedBursts++;
+        delay(settings.interBurstDelay);
+        return;
+      }
+
       // go to sleep
       stopAndAwaitTrigger();
       initializeBurst();
@@ -285,6 +293,7 @@ bool Datalogger::shouldContinueBursting()
 {
   for(int i=0; i<sensorCount; i++)
   {
+    debug(F("check sensor burst"));
     if(!drivers[i]->burstCompleted())
     {
       return true;
@@ -294,24 +303,24 @@ bool Datalogger::shouldContinueBursting()
 }
 
 void Datalogger::initializeBurst(){
-  Monitor::instance()->writeDebugMessage(F("setting base time"));
+  notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
 
   for(int i=0; i<sensorCount; i++){
     drivers[i]->initializeBurst();
   }
+
+  completedBursts = 0;
+
+  notify(F("Waiting for start up delay"));
+  delay(settings.startUpDelay);
   
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
   for(int i=0; i<sensorCount; i++){
-    // get values from the sensor
-    // if(performingBurst && drivers[i]->burstCompleted()
-    // {
-    //   continue;
-    // }
     if(drivers[i]->takeMeasurement())
     {
       if(performingBurst) 
@@ -324,19 +333,10 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
 void Datalogger::writeStatusFieldsToLogFile(){
 
-  // TODO: do we need to do this every time ??
-  char uuidString[2 * UUID_LENGTH + 1];
-  uuidString[2 * UUID_LENGTH] = '\0';
-  for (short i = 0; i < UUID_LENGTH; i++)
-  {
-    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
-  }
-
-  char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-  memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-  memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
+  notify(F("Write status fields"));
+  Serial2.println(settings.siteName);
+  Serial2.println(uuidString);
+  // Serial2.println(deploymentUUID);
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
@@ -352,9 +352,22 @@ void Datalogger::writeStatusFieldsToLogFile(){
   sprintf(currentTimeString, "%10.3f", currentTime); // convert double value into string
   t_t2ts(currentTime, currentMillis-offsetMillis, humanTimeString);        // convert time_t value to human readable timestamp
 
-  filesystem->writeString(uuidString);
+  // TODO: only do this once
+  char deploymentUUIDString[2*16 + 1];
+  for (short i = 0; i < 16; i++)
+  {
+    sprintf(&deploymentUUIDString[2 * i], "%02X", (byte)settings.deploymentIdentifier[i]);
+  }
+  deploymentUUIDString[2*16] = '\0';
+
+
+// site,deployment,deployed_at,uui
+  filesystem->writeString(settings.siteName);
   filesystem->writeString((char *) ",");
-  filesystem->writeString(deploymentUUID);
+  filesystem->writeString(deploymentUUIDString);
+  filesystem->writeString((char *) ",");
+  char buffer[10]; sprintf(buffer, "%d,", settings.deploymentTimestamp); filesystem->writeString(buffer);  
+  filesystem->writeString(uuidString);
   filesystem->writeString((char *)",");
   filesystem->writeString(currentTimeString);
   filesystem->writeString((char *)",");
@@ -372,13 +385,24 @@ bool Datalogger::writeMeasurementToLogFile()
 
   writeStatusFieldsToLogFile();
 
+  // write out the raw battery reading
+  int batteryValue = analogRead(PB0);
+  char buffer[10];
+  sprintf(buffer, "%d,", batteryValue);
+  filesystem->writeString(buffer);
+
   // and write out the sensor data
+  notify(F("Write out sensor data"));
   for(int i=0; i<sensorCount; i++)
   {
+    notify(i);
     // get values from the sensor
     char * dataString = drivers[i]->getDataString();
     filesystem->writeString(dataString);
-    filesystem->writeString((char *)",");
+    if(i < sensorCount - 1)
+    {
+      filesystem->writeString((char *)",");
+    }
   }
   filesystem->endOfLine();
   return true;
@@ -426,36 +450,36 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json){
     SensorDriver * driver = new GenericAnalog();
     driver->configureFromJSON(json);
     generic_config configuration = driver->getConfiguration();
-    // storeSensorConfiguration(&configuration);
+    storeSensorConfiguration(&configuration);
 
-    // notify(F("updating slots"));
-    // bool slotReplacement = false;
-    // notify(sensorCount);
-    // for(int i=0; i<sensorCount; i++){
-    //   if(drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
-    //   {
-    //     slotReplacement = true;
-    //     notify(F("slot replacement"));
-    //     SensorDriver * replacedDriver = drivers[i];
-    //     drivers[i] = driver;
-    //     free(replacedDriver);
-    //     notify(F("OK"));
-    //     break;
-    //   }
-    // }
-    // if(!slotReplacement)
-    // {
-    //   sensorCount = sensorCount + 1;
-    //   SensorDriver ** driverAugmentation = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
-    //   for(int i=0; i<sensorCount-1; i++)
-    //   {
-    //     driverAugmentation[i] = drivers[i];
-    //   }
-    //   driverAugmentation[sensorCount-1] = driver;
-    //   free(drivers);
-    //   drivers = driverAugmentation;
-    // }
-    // notify(F("OK"));
+    notify(F("updating slots"));
+    bool slotReplacement = false;
+    notify(sensorCount);
+    for(int i=0; i<sensorCount; i++){
+      if(drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
+      {
+        slotReplacement = true;
+        notify(F("slot replacement"));
+        SensorDriver * replacedDriver = drivers[i];
+        drivers[i] = driver;
+        free(replacedDriver);
+        notify(F("OK"));
+        break;
+      }
+    }
+    if(!slotReplacement)
+    {
+      sensorCount = sensorCount + 1;
+      SensorDriver ** driverAugmentation = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+      for(int i=0; i<sensorCount-1; i++)
+      {
+        driverAugmentation[i] = drivers[i];
+      }
+      driverAugmentation[sensorCount-1] = driver;
+      free(drivers);
+      drivers = driverAugmentation;
+    }
+    notify(F("OK"));
 
   }
 }
@@ -485,7 +509,7 @@ void Datalogger::setBurstSize(int size)
 
 void Datalogger::setBurstNumber(int number)
 {
-  settings.burstCount = number;
+  settings.burstNumber = number;
   storeDataloggerConfiguration();
 }
 
@@ -497,7 +521,7 @@ void Datalogger::setStartUpDelay(int delay)
 
 void Datalogger::setIntraBurstDelay(int delay)
 {
-  settings.intraBurstDelay = delay;
+  settings.interBurstDelay = delay;
   storeDataloggerConfiguration();
 }
 
@@ -535,8 +559,10 @@ bool Datalogger::inMode(mode_type mode){
 
 void Datalogger::deploy(){
   Monitor::instance()->writeSerialMessage(F("Deploying now!"));
-  // setDeploymentIdentifier(d) // TODO: potentially add a timestamp to this deployment
-  strcpy(loggingFolder, settings.deploymentIdentifier);
+
+  setDeploymentIdentifier();
+  setDeploymentTimestamp(timestamp());
+  strcpy(loggingFolder, settings.siteName);
   filesystem->closeFileSystem(); 
   initializeFilesystem();
   changeMode(logging);
@@ -544,6 +570,7 @@ void Datalogger::deploy(){
   powerCycle = false; // not a powercycle loop
 
 }
+
 
 
 void Datalogger::initializeFilesystem()
@@ -561,7 +588,7 @@ void Datalogger::initializeFilesystem()
 
 
   char header[200];
-  const char * statusFields = "duuid,uuid,time.s,time.h,battery.V";
+  const char * statusFields = "site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
   debug(header);
   for(int i=0; i<sensorCount; i++){
@@ -714,48 +741,50 @@ void prepareForUserInteraction()
   awakeTime = awakenedTime;
 }
 
-void setNotBursting()
-{
-  burstCount = burstLength; // Set to not bursting
-}
+// void Datalogger::writeStatusFields()
+// {
+//   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
+//   memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
+//   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
+//   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
+//   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
+
+//   // Log Deployment UUID
+//   sprintf(values[0], "%s", deploymentUUID);
+
+//   // Log UUID
+//   sprintf(values[1], "%s", uuidString);
+
+//   Serial2.println(values[0]);
+//   Serial2.println(values[1]);
+//   exit(1);
+
+//   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
+//   static double currentTime;
+//   static time_t currentEpoch;
+//   static uint32 offsetMillis;
+//   if (burstCount == 0)
+//   {
+//     Monitor::instance()->writeDebugMessage(F("setting base time"));
+//     currentEpoch = timestamp();
+//     offsetMillis = millis();
+//   }
+//   uint32 currentMillis = millis();
+//   currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
+
+//   // Debug timestamp calculations
+//   char valuesBuffer[190];
+//   sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
+//   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+
+//   // Create human readable datetime
+//   sprintf(values[2], "%10.3f", currentTime); // convert double value into string
+//   t_t2ts(currentTime, currentMillis-offsetMillis, values[3]);        // convert time_t value to human readable timestamp
+
+// }
 
 void Datalogger::captureInternalADCValues()
 {
-
-  char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-  memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-  memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
-
-  // Log Deployment UUID
-  sprintf(values[0], "%s", deploymentUUID);
-
-  // Log UUID
-  sprintf(values[1], "%s", uuidString);
-
-  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
-  static double currentTime;
-  static time_t currentEpoch;
-  static uint32 offsetMillis;
-  if (burstCount == 0)
-  {
-    Monitor::instance()->writeDebugMessage(F("setting base time"));
-    currentEpoch = timestamp();
-    offsetMillis = millis();
-  }
-  uint32 currentMillis = millis();
-  currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
-
-  // Debug timestamp calculations
-  char valuesBuffer[190];
-  sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-
-  // Create human readable datetime
-  sprintf(values[2], "%10.3f", currentTime); // convert double value into string
-  t_t2ts(currentTime, currentMillis-offsetMillis, values[3]);        // convert time_t value to human readable timestamp
-
   // Measure the data on internal ADC pins
   short sensorCount = 6;
   short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
@@ -799,16 +828,6 @@ void captureExternalADCValues(){
   sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
 }
 
-bool shouldContinueBursting()
-{
-  bool bursting = false;
-  if (burstCount < burstLength)
-  {
-    Monitor::instance()->writeDebugMessage(F("Bursting"));
-    bursting = true;
-  }
-  return bursting;
-}
 
 bool checkDebugLoop()
 {
@@ -1219,6 +1238,8 @@ void Datalogger::takeNewMeasurement()
   {
     Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
   }
+  writeStatusFields();
+
   captureInternalADCValues();
 
   // OEM EC
@@ -1230,16 +1251,7 @@ void Datalogger::takeNewMeasurement()
       Monitor::instance()->writeDebugMessage(F("New EC data not available"));
     }
   }
-  //TEST CODE - KC//
-  
-  Monitor::instance()->writeDebugMessage(F("KC TEST START"));
-  testWriteConfig(SENSOR_SLOT_2_ADDRESS);
 
-  temperature_analog_sensor TAS;
-  testReadConfig(SENSOR_SLOT_2_ADDRESS, &TAS);
-  
-  printSensorConfig(TAS);
-  Monitor::instance()->writeDebugMessage(F("KC TEST FINISH"));
 
   // Get reading from RGB Sensor
   // char * data = AtlasRGB::instance()->mallocDataMemory();
@@ -1397,8 +1409,22 @@ void Datalogger::storeSensorConfiguration(generic_config * configuration){
 
 }
 
-void Datalogger::setDeploymentIdentifier(char * deploymentIdentifier)
+void Datalogger::setSiteName(char * siteName)
 {
-  strcpy(this->settings.deploymentIdentifier, deploymentIdentifier);
+  strcpy(this->settings.siteName, siteName);
   storeDataloggerConfiguration();
+}
+
+void Datalogger::setDeploymentIdentifier()
+{
+  byte uuidNumber[16];
+  // TODO need to generate this UUID number
+  // https://www.cryptosys.net/pki/Uuid.c.html
+  memcpy(this->settings.deploymentIdentifier, uuidNumber, 16);
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setDeploymentTimestamp(int timestamp)
+{
+  this->settings.deploymentTimestamp = timestamp;
 }

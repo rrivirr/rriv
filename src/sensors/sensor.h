@@ -33,7 +33,7 @@ typedef struct
     // sensor.h
     ushort sensor_type; // 2 bytes
     byte slot; // 1 byte
-    byte sensor_burst; // 1 byte
+    byte burst_size; // 1 byte
     unsigned short int warmup; // 2 bytes, in seconds? (65535/60=1092)
     char tag[4]; // 4 bytes
        
@@ -83,12 +83,10 @@ class SensorDriver {
     char csvColumnHeaders[100] = "column_header";
     void configureCommonFromJSON(cJSON * json, common_config_sensor * common);
     void configureCSVColumns();
+    void setCommonDefaults(common_config_sensor * common);
 
   private:
     short burstCount = 0;
-    
-    // replace these with a struct
-    short burstLength = 10;
 
 };
 

@@ -13,11 +13,6 @@ Datalogger * datalogger;
 
 // void setupSensors(){
 
-//   // read sensors types from EEPROM
-//   // malloc configuration structs
-//   // read configuration structs from EEPROM for each sensor type
-//   // run setup for each sensor
-
   
 //   // Setup RGB Sensor
 //   AtlasRGB::instance()->setup(&WireTwo);
@@ -83,8 +78,7 @@ void setup(void)
     sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
   }
   Serial2.println(uuidString);
-
-  setNotBursting(); // prevents bursting during first loop
+  
 
   datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);

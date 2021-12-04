@@ -15,7 +15,9 @@ void SensorDriver::incrementBurst(){
 }
 
 bool SensorDriver::burstCompleted(){
-  return burstCount == burstLength;
+  debug(burstCount);
+  debug(getConfiguration().common.burst_size);
+  return burstCount == getConfiguration().common.burst_size;
 }
 
 void getDefaultsCommon(common_config_sensor *fillValues)
@@ -23,7 +25,7 @@ void getDefaultsCommon(common_config_sensor *fillValues)
   Monitor::instance()->writeDebugMessage(F("getDefaultsCCS"));
   fillValues->sensor_type = 1;
   fillValues->slot = 1;
-  fillValues->sensor_burst = 10;
+  fillValues->burst_size = 10;
   fillValues->warmup = 54321;
   strcpy(fillValues->tag, "CCS");
   strcpy(fillValues->tag, "test");
@@ -50,6 +52,15 @@ void SensorDriver::configureCSVColumns()
   }
   strcpy(this->csvColumnHeaders, csvColumnHeaders);
 }
+
+void SensorDriver::setCommonDefaults(common_config_sensor * common)
+{
+  if(common->burst_size < 0 || common->burst_size > 100)
+  {
+    common->burst_size = 10;
+  }
+}
+
 
 void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * common)
 {
