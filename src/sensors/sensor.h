@@ -36,9 +36,8 @@ typedef struct
     byte sensor_burst; // 1 byte
     unsigned short int warmup; // 2 bytes, in seconds? (65535/60=1092)
     char tag[4]; // 4 bytes
-    char column_prefix[5]; // 5 bytes
        
-    char padding[17]; // 17bytes
+    char padding[22]; // 17bytes
 } common_config_sensor;
 
 typedef struct 
@@ -53,14 +52,19 @@ class SensorDriver {
   public: 
     // Constructor
     SensorDriver();
+    virtual void configureFromJSON(cJSON * json);
+
 
     // Interface
     virtual void configure(generic_config * configuration); // pass block of configuration memory, read from EEPROM
+    virtual generic_config getConfiguration();
+    virtual cJSON * getConfigurationJSON(); // returns unprotected pointer
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
     virtual char * getCSVColumnNames();
     virtual protocol_type getProtocol();
+    virtual const char * getBaseColumnHeaders();
     
     // // JSON
     // virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
@@ -75,11 +79,17 @@ class SensorDriver {
     void incrementBurst();
     bool burstCompleted();
 
+  protected:
+    char csvColumnHeaders[100] = "column_header";
+    void configureCommonFromJSON(cJSON * json, common_config_sensor * common);
+    void configureCSVColumns();
+
   private:
     short burstCount = 0;
     
     // replace these with a struct
     short burstLength = 10;
+
 };
 
 class AnalogSensorDriver : public SensorDriver {

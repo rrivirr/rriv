@@ -28,7 +28,10 @@ void setNextAlarmInternalRTC(short interval){
   // minutesDiff = 60 - 48 = 12
   // minutesDiffSeconds = 12 * 60 = 720
   // secondsUntilWake = 720 - 12 = 708
-
+  Serial2.println("interval");
+  Serial2.println(interval);
+  Serial2.println("minutes");
+  Serial2.println(minutes);
   short nextMinutes = (minutes + interval - (minutes % interval));
   Serial2.println("next minutes");
   Serial2.println(nextMinutes);

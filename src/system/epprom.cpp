@@ -61,6 +61,11 @@ void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
   writeObjectToEEPROM(EEPROM_DATALOGGER_CONFIGURATION_START, dataloggerSettings, EEPROM_DATALOGGER_CONFIGURATION_SIZE);
 }
 
+void writeSensorConfigurationToEEPROM(short slot, void * configuration)
+{
+  writeObjectToEEPROM(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+}
+
 
 void readUniqueId(unsigned char * uuid)
 {

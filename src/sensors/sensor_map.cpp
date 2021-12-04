@@ -1,4 +1,5 @@
 #include "sensor_map.h"
+#include "sensor_types.h"
 
 map_type sensorTypeMap;
 

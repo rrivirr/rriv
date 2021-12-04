@@ -29,6 +29,8 @@
 
 #define EEPROM_DATALOGGER_CONFIGURATION_START 16
 #define EEPROM_DATALOGGER_CONFIGURATION_SIZE 64
+#define EEPROM_DATALOGGER_SENSORS_START 80
+#define EEPROM_DATALOGGER_SENSOR_SIZE 64
 
 // #define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_END 43
 // #define DEPLOYMENT_IDENTIFIER_LENGTH 25 // out of 28
@@ -108,6 +110,7 @@ void writeEEPROMBytes(short address, unsigned char * data, uint8_t size);
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
 void writeDataloggerSettingsToEEPROM(void * dataloggerSettings);
+void writeSensorConfigurationToEEPROM(short slot, void * configuration);
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian
 void writeEEPROMBytesMem(short address, void * source, uint8_t size);

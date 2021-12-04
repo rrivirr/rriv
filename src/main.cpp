@@ -86,23 +86,6 @@ void setup(void)
 
   setNotBursting(); // prevents bursting during first loop
 
-  //// bridging code to handle deployment identifier before change to EEPROM layout
-  // char defaultDeployment[25] = "SITENAME_00000000000000";
-  // char *deploymentIdentifier = defaultDeployment;
-
-  // // get any stored deployment identifier from EEPROM
-  // readDeploymentIdentifier(deploymentIdentifier);
-  // unsigned char empty[1] = {0xFF};
-  // if (memcmp(deploymentIdentifier, empty, 1) == 0)
-  // {
-  //   //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
-
-  //   writeDeploymentIdentifier(defaultDeployment);
-  //   readDeploymentIdentifier(deploymentIdentifier);
-  // }
-  //// end bridge code
-
-  // TODO: read datalogger settings struct from EEPROM
   datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
@@ -126,7 +109,14 @@ void setup(void)
   Monitor::instance()->debugToSerial=false;
   Monitor::instance()->writeSerialMessage("Entering main run loop");
   Monitor::instance()->writeSerialMessage("Press return to access CLI");
-
+  int start = timestamp();
+  int now = start;
+  while(now < start + 5)
+  {
+    startCustomWatchDog();
+    datalogger->processCLI();
+    now = timestamp();
+  }
 }
 
 

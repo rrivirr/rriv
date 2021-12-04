@@ -24,8 +24,6 @@
 #include "sensors/sensor.h"
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 26
-#define SENSOR_SLOTS_START_ADDRESS 64
-#define SENSOR_SLOT_SIZE 64
 
 typedef struct datalogger_settings { // 64 bytes
     char deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH];
@@ -77,6 +75,10 @@ public:
     void setIntraBurstDelay(int delay);
 
     void getConfiguration(datalogger_settings_type * dataloggerSettings);
+    cJSON ** getSensorConfigurations();
+
+    void setSensorConfiguration(char * type, cJSON * json);
+
 
 private:
     // state
@@ -108,6 +110,7 @@ private:
 
     void storeMode(mode_type mode);
     void storeDataloggerConfiguration();
+    void storeSensorConfiguration(generic_config * configuration);
 
  
     // run loop

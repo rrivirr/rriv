@@ -13,19 +13,19 @@ typedef struct generic_linear_analog_type // 32 bytes
 {
   // analog sensor that can be 2pt calibrated
     common_config_sensor common;
-    byte calibrated: 1;
-    byte adc_select: 2;  // two bits, support hardware expansion (addnl adc chips)
-    byte sensor_port: 4;
-    byte reserved: 1;
+    short calibrated: 1;
+    short adc_select: 2;  // two bits, support hardware expansion (addnl adc chips)
+    short sensor_port: 4;
+    short reserved: 1;
     unsigned short m; // 2bytes, slope
     int b; // 4bytes, y-intercept
     unsigned int cal_timestamp; // 4byte epoch timestamp at calibration
-    short int x1; // 2bytes for 2pt calibration
-    short int y1; // 2bytes for 2pt calibration
-    short int x2; // 2bytes for 2pt calibration
-    short int y2; // 2bytes for 2pt calibration
+    short x1; // 2bytes for 2pt calibration
+    short y1; // 2bytes for 2pt calibration
+    short x2; // 2bytes for 2pt calibration
+    short y2; // 2bytes for 2pt calibration
 
-    char padding[13];
+    char padding[12];
 } generic_linear_analog_sensor;
 
 class GenericAnalog : public AnalogSensorDriver
@@ -34,20 +34,24 @@ class GenericAnalog : public AnalogSensorDriver
   public: 
     // Constructor
     GenericAnalog();
+    void configureFromJSON(cJSON * json);
 
     // Interface
     void setup();
     void configure(generic_config * configuration);
+    generic_config getConfiguration();
+    cJSON * getConfigurationJSON(); // returns unprotected pointer
     void stop();
     bool takeMeasurement();
     char * getDataString();
-    char * getCSVColumns();
+    char * getCSVColumnNames();
     protocol_type getProtocol();
+    const char * getBaseColumnHeaders();
 
   private:
     generic_linear_analog_sensor configuration;
-    char csvColumnHeaders[100] = "raw";
 
     int value;
+    const char * baseColumnHeaders = "raw";
     char dataString[16];
 };

@@ -13,7 +13,7 @@ void testWriteConfig(short sensor_slot)
     char buffer[200];
     sprintf(buffer, "testValues:\nCCS: %d, %d, %d, %d, %s, %s, %s\nTAS: %d, %d, %d, %d, %d, %d, %d, %d, %d, %s\n", 
         testValues.common.sensor_type, testValues.common.slot, testValues.common.sensor_burst,
-        testValues.common.warmup, testValues.common.tag, testValues.common.column_prefix,
+        testValues.common.warmup, testValues.common.tag, testValues.common.tag,
         testValues.common.padding,
         testValues.calibrated, testValues.sensor_port, testValues.m, testValues.b,
         testValues.cal_timestamp, testValues.c1, testValues.v1, testValues.c2, testValues.v2,
@@ -59,7 +59,7 @@ void printSensorConfig(temperature_analog_sensor toPrint)
 
     sprintf(buffer, "CCS: %d, %d, %d, %d, %s, %s, %s\nTAS: %d, %d, %d, %d, %d, %d, %d, %d, %d, %s",
         toPrint.common.sensor_type, toPrint.common.slot, toPrint.common.sensor_burst,
-        toPrint.common.warmup, toPrint.common.tag, toPrint.common.column_prefix, toPrint.common.padding,
+        toPrint.common.warmup, toPrint.common.tag, toPrint.common.tag, toPrint.common.padding,
         toPrint.calibrated, toPrint.sensor_port, toPrint.m, toPrint.b,
         toPrint.cal_timestamp, toPrint.c1, toPrint.v1, toPrint.c2, toPrint.v2, toPrint.padding);
     Monitor::instance()->writeDebugMessage(F(buffer));

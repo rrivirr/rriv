@@ -4,6 +4,7 @@
 #include <libmaple/libmaple.h>
 #include "version.h"
 #include "system/clock.h"
+#include "utilities/qos.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -243,10 +244,98 @@ void CommandInterface::_getConfig()
   char * string = cJSON_Print(json);
   if (string == NULL)
   {
-    fprintf(stderr, "Failed to print monitor.\n");
+    fprintf(stderr, "Failed to print json.\n");
   }
   Serial2.println(string);
   free(string);
+  free(json);
+
+  cJSON ** sensorConfigurations = this->datalogger->getSensorConfigurations();
+  for(int i=0; i<this->datalogger->sensorCount; i++)
+  {
+    char * string = cJSON_Print(sensorConfigurations[i]);
+    if (string == NULL)
+    {
+      fprintf(stderr, "Failed to print json.\n");
+    }
+    Serial2.println(string);
+    free(sensorConfigurations[i]);
+  }
+  free(sensorConfigurations);
+}
+
+void setConfig(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-config CONFIG_JSON"));
+    return;
+  }
+
+
+  char * config = args[1];
+  CommandInterface::instance()->_setConfig(config);
+}
+
+void CommandInterface::_setConfig(char * config)
+{
+  cJSON *json = cJSON_Parse(config);
+  char * printString = cJSON_Print(json);
+  Serial2.println(printString);
+
+  cJSON_Delete(json);
+}
+
+void setSlotConfig(int arg_cnt, char **args)
+{
+  notify(F("set slot config"));
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON"));
+    return;
+  }
+
+
+  char * config = args[1];
+  CommandInterface::instance()->_setSlotConfig(config);
+}
+
+void CommandInterface::_setSlotConfig(char * config)
+{
+  debug(F("set slot config check JSON"));
+
+  cJSON *json = cJSON_Parse(config);
+  if(json == NULL){
+    notify(F("Invalid JSON"));
+    return;
+  }
+  debug(F("printing json"));
+
+  const char * printString = cJSON_Print(json);
+  Serial2.println(printString);
+  delete(printString);
+
+  const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
+  const cJSON* typeJSON = cJSON_GetObjectItemCaseSensitive(json, "type");
+
+  char type[30];
+
+  if(slotJSON != NULL && cJSON_IsNumber(slotJSON)){
+    short slot = slotJSON->valueint;
+  } else {
+    notify(F("Invalid slot"));
+    return;
+  }
+
+  if (cJSON_IsString(typeJSON) && (typeJSON->valuestring != NULL))
+  {
+    strcpy(type, typeJSON->valuestring);
+  } else {
+    notify(F("Invalid type"));
+    return;
+  }
+
+  this->datalogger->setSensorConfiguration(type, json);
+
+  cJSON_Delete(json);
 }
 
 void setRTC(int arg_cnt, char **args)
@@ -284,10 +373,24 @@ void CommandInterface::_deployNow()
   this->datalogger->deploy();
 }
 
+
+void switchToInteractiveMode(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_switchToInteractiveMode();
+}
+
+void CommandInterface::_switchToInteractiveMode()
+{
+  this->datalogger->changeMode(interactive);
+}
+
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
   cmdAdd("get-config", getConfig);
+  cmdAdd("set-config", setConfig);
+  cmdAdd("set-slot-config", setSlotConfig);
+
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
   cmdAdd("restart", restart);
@@ -304,6 +407,7 @@ void CommandInterface::setup(){
 
   // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
+  cmdAdd("interactive", switchToInteractiveMode);
 
 }
 

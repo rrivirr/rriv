@@ -198,15 +198,15 @@ void hardwarePinsAlwaysOff() // not currently used
 
 void componentsStopMode()
 {
-  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
-  digitalWrite(PC8, LOW);
- 
+
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
   rcc_clk_disable( RCC_I2C1); // these clocks are needed during normal run
   rcc_clk_disable( RCC_I2C2);
 
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, LOW);
   spi_peripheral_disable(SPI1);  // this one is used by the SD card
 
   // this might be redundant
@@ -235,6 +235,7 @@ void hardwarePinsStopMode()
 void componentsBurstMode()
 {
 
+
   Monitor::instance()->writeDebugMessage(F("turn on components"));
 
   //pinmode?
@@ -245,7 +246,10 @@ void componentsBurstMode()
   // i2c_master_enable(I2C1, 0, 0);
   // i2c_master_enable(I2C2, 0, 0);
   
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, HIGH);
   spi_peripheral_enable(SPI1);
+  
   adc_enable(ADC1);
   ADC1->regs->CR2 |= ADC_CR2_TSVREFE; // temperature sensor inside ADC
 

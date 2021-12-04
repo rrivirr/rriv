@@ -85,7 +85,10 @@ class CommandInterface
     void _setBurstDelay(int number);
 
     void _getConfig();
+    void _setConfig(char * config);
+    void _setSlotConfig(char * config);
     void _deployNow();
+    void _switchToInteractiveMode();
 
     void _toggleDebug();
 

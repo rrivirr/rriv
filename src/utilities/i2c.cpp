@@ -74,24 +74,24 @@ void scanIC2(TwoWire *wire)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Monitor::instance()->writeDebugMessage(F("I2C2: I2C device found at address 0x"));
+      Serial.println(F("I2C2: I2C device found at address 0x"));
       if (address < 16)
-        Monitor::instance()->writeDebugMessage(F("0"));
-      Monitor::instance()->writeDebugMessage(address, HEX);
+        Serial.println(F("0"));
+      Serial.println(address, HEX);
       nDevices++;
     }
     else if (error == 4)
     {
-      Monitor::instance()->writeDebugMessage(F("Unknown error at address 0x"));
+      Serial.println(F("Unknown error at address 0x"));
       if (address < 16)
-        Monitor::instance()->writeDebugMessage(F("0"));
-      Monitor::instance()->writeDebugMessage(address, HEX);
+        Serial.println(F("0"));
+      Serial.println(address, HEX);
     }
   }
   if (nDevices == 0)
-    Monitor::instance()->writeDebugMessage(F("No I2C devices found"));
+    Serial.println(F("No I2C devices found"));
   else
-    Monitor::instance()->writeDebugMessage(F("done"));
+    Serial.println(F("done"));
 }
 
 void enableI2C1()

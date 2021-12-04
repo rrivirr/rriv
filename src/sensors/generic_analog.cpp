@@ -1,5 +1,6 @@
 #include "generic_analog.h"
 #include "system/monitor.h"
+#include "sensor_types.h"
 
 int ADC_PINS[5] = {
   ANALOG_INPUT_1_PIN, 
@@ -11,10 +12,19 @@ int ADC_PINS[5] = {
 
 GenericAnalog::GenericAnalog()
 {
-  Serial2.println("hello");
-  Serial2.flush();
-  // debug("allocation GenericAnalog");
+  debug("allocation GenericAnalog");
 }
+
+void GenericAnalog::configureFromJSON(cJSON * json)
+{
+  common_config_sensor common;
+  SensorDriver::configureCommonFromJSON(json, &common);
+  configuration.common = common;
+  
+  this->configuration.common.sensor_type = GENERIC_ANALOG_SENSOR;
+  this->configureCSVColumns();
+}
+
 
 void GenericAnalog::setup()
 {
@@ -24,7 +34,31 @@ void GenericAnalog::setup()
 void GenericAnalog::configure(generic_config * configuration)
 {
   memcpy(&this->configuration, configuration, sizeof(generic_linear_analog_sensor));
+  this->configureCSVColumns();
 }
+
+generic_config GenericAnalog::getConfiguration()
+{
+  generic_config configuration;
+  memcpy(&configuration, &this->configuration, sizeof(generic_linear_analog_sensor));
+  return configuration;
+}
+
+cJSON * GenericAnalog::getConfigurationJSON() // returns unprotected pointer
+{
+  cJSON* json = cJSON_CreateObject();
+  cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
+  cJSON_AddStringToObject(json, "type", "generic_analog");
+  cJSON_AddStringToObject(json, "tag", configuration.common.tag);
+
+  return json;
+}
+
+const char * GenericAnalog::getBaseColumnHeaders()
+{
+  return baseColumnHeaders;
+}
+
 
 void GenericAnalog::stop(){}
 
@@ -56,7 +90,9 @@ char * GenericAnalog::getDataString(){
   return dataString;
 }
 
-char * GenericAnalog::getCSVColumns(){
+char * GenericAnalog::getCSVColumnNames()
+{
+   debug(csvColumnHeaders);
    return csvColumnHeaders;
 }
 
