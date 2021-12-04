@@ -237,9 +237,9 @@ void CommandInterface::_getConfig()
   cJSON_AddStringToObject(json, "site_name", dataloggerSettings.siteName);
   cJSON_AddNumberToObject(json, "interval", dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, "burst_size", dataloggerSettings.burstLength);
-  cJSON_AddNumberToObject(json, "burst_number", dataloggerSettings.burstCount);
+  cJSON_AddNumberToObject(json, "burst_number", dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, "start_up_delay", dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(json, "burst_delay", dataloggerSettings.intraBurstDelay);
+  cJSON_AddNumberToObject(json, "burst_delay", dataloggerSettings.interBurstDelay);
 
   char * string = cJSON_Print(json);
   if (string == NULL)
@@ -384,6 +384,25 @@ void CommandInterface::_switchToInteractiveMode()
   this->datalogger->changeMode(interactive);
 }
 
+
+void calibrate(int arg_cnt, char **args)
+{
+  notify(F("calibrate sensor"));
+  if(arg_cnt < 3){
+    invalidArgumentsMessage(F("calibrate SLOT init|{driver specific command}"));
+    return;
+  }
+
+
+  char * subcommand = args[1];
+  CommandInterface::instance()->_calibrate(subcommand, arg_cnt - 2, &args[2]);
+}
+
+void CommandInterface::calibrate(char * subcommand, int arg_cnt, char ** args)
+{
+  this->datalogger->calibrate(subcommand, arg_cnt, args);
+}
+
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
@@ -401,6 +420,11 @@ void CommandInterface::setup(){
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
   cmdAdd("set-burst-delay", setBurstDelay);
+  // cmdAdd("set-burst-number", setBurstNumber);
+  // cmdAdd("set-warmup-delay", setWarmupDelay);
+
+  cmdAdd("calibrate", calibrate);
+
 
   cmdAdd("trace", toggleDebug);
   // cmdAdd("start-logging", toggleInteractiveLogging);

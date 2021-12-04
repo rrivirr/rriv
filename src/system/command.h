@@ -90,6 +90,8 @@ class CommandInterface
     void _deployNow();
     void _switchToInteractiveMode();
 
+    void calibrate(char * subcommand, int arg_cnt, char ** args)
+
     void _toggleDebug();
 
 

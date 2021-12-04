@@ -83,6 +83,7 @@ public:
     cJSON ** getSensorConfigurations();
 
     void setSensorConfiguration(char * type, cJSON * json);
+    void calibrate(char * subcommand, int arg_cnt, char ** args);
 
 
 private:
