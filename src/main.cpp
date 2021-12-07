@@ -11,14 +11,6 @@
 // Setup and Loop
 Datalogger * datalogger;
 
-// void setupSensors(){
-
-  
-//   // Setup RGB Sensor
-//   AtlasRGB::instance()->setup(&WireTwo);
-
-// }
-
 void copyBytesToRegister(byte * registerPtr, byte msb, byte lsb){
   memcpy( registerPtr + 1, &msb, 1);
   memcpy( registerPtr, &lsb, 1);
@@ -44,7 +36,6 @@ void setup(void)
 
   setupHardwarePins();
 
-  //Monitor::instance()->writeDebugMessage(atlasRGBSensor.get_name());
   // digitalWrite(PA4, LOW); // turn on the battery measurement
 
   //blinkTest();
@@ -53,8 +44,6 @@ void setup(void)
   RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
   RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
   PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-
-  allocateMeasurementValuesMemory();
 
   setupManualWakeInterrupts();
 
@@ -89,12 +78,6 @@ void setup(void)
   /* We're ready to go! */
   Monitor::instance()->writeDebugMessage(F("done with setup"));
 
-/*
-  setupSensors();
-  Monitor::instance()->writeDebugMessage(F("done with sensor setup"));
-  Serial2.flush();
-*/
-
   print_debug_status();
 
   disableCustomWatchDog();
@@ -113,9 +96,6 @@ void setup(void)
   }
 }
 
-
-
-/* main run loop order of operation: */
 void loop(void)
 {
   startCustomWatchDog();
@@ -123,7 +103,9 @@ void loop(void)
   checkMemory();
 
   datalogger->loop();
-  return; // skip the old loop below
+}
+
+// OLD CODE:
 
   // Get reading from RGB Sensor
   // char * data = AtlasRGB::instance()->mallocDataMemory();
@@ -193,4 +175,4 @@ void loop(void)
   // {
   //   monitorTemperature();
   // }
-}
+

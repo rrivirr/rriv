@@ -9,13 +9,13 @@
 #define ANALOG_INPUT_4_PIN PC2 // A5
 #define ANALOG_INPUT_5_PIN PC3 // A6
 
-typedef struct generic_linear_analog_type // 32 bytes
+typedef struct generic_linear_analog_type // 64 bytes
 {
   // analog sensor that can be 2pt calibrated
-    common_config_sensor common;
-    short calibrated: 1;
+    common_config_sensor common; // 32 bytes
     short adc_select: 2;  // two bits, support hardware expansion (addnl adc chips)
     short sensor_port: 4;
+    short calibrated: 1;
     short reserved: 1;
     unsigned short m; // 2bytes, slope
     int b; // 4bytes, y-intercept
@@ -39,6 +39,7 @@ class GenericAnalog : public AnalogSensorDriver
     // Interface
     void setup();
     void configure(generic_config * configuration);
+    void setDefaults();
     generic_config getConfiguration();
     cJSON * getConfigurationJSON(); // returns unprotected pointer
     void stop();

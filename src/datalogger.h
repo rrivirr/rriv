@@ -27,14 +27,14 @@
 
 typedef struct datalogger_settings { // 64 bytes
     byte deploymentIdentifier[16];
-    short interval;  // 2 bytes
-    short burstLength; // 2 bytes
-    short burstNumber; // 2 bytes
-    short startUpDelay; // 2 bytes
-    short interBurstDelay; // 2 bytes
+    unsigned short interval;  // 2 bytes
+    unsigned short reserved; // 2 bytes, unused
+    unsigned short burstNumber; // 2 bytes
+    unsigned short startUpDelay; // 2 bytes
+    unsigned short interBurstDelay; // 2 bytes
     char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
     char siteName[8];
-    long deploymentTimestamp;
+    unsigned long deploymentTimestamp;
     char unused[21];        // padding
 } datalogger_settings_type;
 
@@ -64,6 +64,7 @@ public:
 
     void changeMode(mode_type mode);
     bool inMode(mode_type mode);
+    void storeMode(mode_type mode);
     void deploy();
 
     void processCLI();
@@ -83,10 +84,15 @@ public:
     cJSON ** getSensorConfigurations();
 
     void setSensorConfiguration(char * type, cJSON * json);
+    void clearSlot(int slot);
     void calibrate(char * subcommand, int arg_cnt, char ** args);
 
 
 private:
+    // modules
+    WaterBear_FileSystem *filesystem;
+    AD7091R * externalADC;
+
     // state
     mode_type mode = interactive;
     bool powerCycle = true;
@@ -95,6 +101,7 @@ private:
     uint32 offsetMillis;
     char loggingFolder[26];
     int completedBursts;
+    int awakeTime;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -105,17 +112,18 @@ private:
     void storeConfiguration();
     void stopLogging();
     void startLogging();
+    void initializeBurst();
     bool shouldContinueBursting();
 
     // CLI
     CommandInterface * cli;
+    
     void setUpCLI();
 
     // utility
     void writeStatusFieldsToLogFile();
-    void initializeBurst();
+    void initializeMeasurementCycle();
 
-    void storeMode(mode_type mode);
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(generic_config * configuration);
 
@@ -123,39 +131,29 @@ private:
     // run loop
     void initializeFilesystem();
     void stopAndAwaitTrigger();
-    void takeNewMeasurement();
     void writeStatusFields();
-    void captureInternalADCValues();
+    void prepareForUserInteraction();
 
 
 
 };
 
-// Settings
-
-
-extern short fieldCount; // number of fields to be logged to SDcard file
-
-
 // State
-extern WaterBear_FileSystem *filesystem;
 extern unsigned char uuid[UUID_LENGTH];
 extern char uuidString[25]; // 2 * UUID_LENGTH + 1
-extern char **values;
 
-extern unsigned long lastMillis;
-extern uint32_t awakeTime;
-extern uint32_t lastTime;
-extern short burstCount;
-extern bool configurationMode;
-extern bool debugValuesMode;
-extern bool clearModes;
-extern bool tempCalMode;
+
+// extern unsigned long lastMillis;
+// extern uint32_t awakeTime;
+// extern uint32_t lastTime;
+// extern short burstCount;
+// extern bool configurationMode;
+// extern bool debugValuesMode;
+// extern bool clearModes;
+// extern bool tempCalMode;
 // extern AtlasRGB rgbSensor;   
 //extern bool thermistorCalibrated;
 
-
-extern AD7091R * externalADC;
 
 
 
@@ -180,7 +178,6 @@ void allocateMeasurementValuesMemory();
 
 void prepareForTriggeredMeasurement();
 
-void prepareForUserInteraction();
 
 void setNotBursting();
 
@@ -198,7 +195,6 @@ void handleControlCommand();
 void monitorConfiguration();
 
 
-void trackBurst(bool bursting);
 
 void monitorValues();
 

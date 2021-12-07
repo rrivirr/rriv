@@ -32,18 +32,7 @@
 #define EEPROM_DATALOGGER_SENSORS_START 80
 #define EEPROM_DATALOGGER_SENSOR_SIZE 64
 
-// #define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_END 43
-// #define DEPLOYMENT_IDENTIFIER_LENGTH 25 // out of 28
-
-#define DEVICE_SERIAL_NUMBER_ADDRESS_START 44
-#define DEVICE_SERIAL_NUMBER_ADDRESS_END 63
-#define DEVICE_SERIAL_NUMBER_LENGTH 16 // out of 20
-
-// Waterbear Device Calibration / Significant Values
-#define BURST_INTERVAL_ADDRESS 250
-#define BURST_LENGTH_ADDRESS 251
 #define USER_WAKE_TIMEOUT_ADDRESS 252 // timeout after wakeup from user interaction, seconds->min?
-#define SD_FIELDCOUNT_ADDRESS 253
 
 // Debug settings bit register map {outdated with various serial command modes?}
 /*
@@ -55,16 +44,16 @@
 */
 
 //Sensor slot addresses (64bytes each, 360-999)
-#define SENSOR_SLOT_1_ADDRESS 360
-#define SENSOR_SLOT_2_ADDRESS 424
-#define SENSOR_SLOT_3_ADDRESS 488
-#define SENSOR_SLOT_4_ADDRESS 552
-#define SENSOR_SLOT_5_ADDRESS 616
-#define SENSOR_SLOT_6_ADDRESS 680
-#define SENSOR_SLOT_7_ADDRESS 744
-#define SENSOR_SLOT_8_ADDRESS 808
-#define SENSOR_SLOT_9_ADDRESS 872
-#define SENSOR_SLOT_10_ADDRESS 936
+// #define SENSOR_SLOT_1_ADDRESS 360
+// #define SENSOR_SLOT_2_ADDRESS 424
+// #define SENSOR_SLOT_3_ADDRESS 488
+// #define SENSOR_SLOT_4_ADDRESS 552
+// #define SENSOR_SLOT_5_ADDRESS 616
+// #define SENSOR_SLOT_6_ADDRESS 680
+// #define SENSOR_SLOT_7_ADDRESS 744
+// #define SENSOR_SLOT_8_ADDRESS 808
+// #define SENSOR_SLOT_9_ADDRESS 872
+// #define SENSOR_SLOT_10_ADDRESS 936
 
 //Thermistor Calibration Block
 #define TEMPERATURE_C1_ADDRESS_START 64

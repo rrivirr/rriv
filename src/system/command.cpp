@@ -236,7 +236,6 @@ void CommandInterface::_getConfig()
   cJSON* json = cJSON_CreateObject();
   cJSON_AddStringToObject(json, "site_name", dataloggerSettings.siteName);
   cJSON_AddNumberToObject(json, "interval", dataloggerSettings.interval);
-  cJSON_AddNumberToObject(json, "burst_size", dataloggerSettings.burstLength);
   cJSON_AddNumberToObject(json, "burst_number", dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, "start_up_delay", dataloggerSettings.startUpDelay);
   cJSON_AddNumberToObject(json, "burst_delay", dataloggerSettings.interBurstDelay);
@@ -338,6 +337,24 @@ void CommandInterface::_setSlotConfig(char * config)
   cJSON_Delete(json);
 }
 
+void clearSlot(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("clear-slot SLOT_NUMBER"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  int number = atoi(args[1]);
+  CommandInterface::instance()->_clearSlot(number);
+}
+
+void CommandInterface::_clearSlot(int number)
+{
+  this->datalogger->clearSlot(number);
+  Serial2.println("OK");
+}
+
 void setRTC(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
@@ -382,6 +399,7 @@ void switchToInteractiveMode(int arg_cnt, char **args)
 void CommandInterface::_switchToInteractiveMode()
 {
   this->datalogger->changeMode(interactive);
+  this->datalogger->storeMode(interactive);
 }
 
 
@@ -398,7 +416,7 @@ void calibrate(int arg_cnt, char **args)
   CommandInterface::instance()->_calibrate(subcommand, arg_cnt - 2, &args[2]);
 }
 
-void CommandInterface::calibrate(char * subcommand, int arg_cnt, char ** args)
+void CommandInterface::_calibrate(char * subcommand, int arg_cnt, char ** args)
 {
   this->datalogger->calibrate(subcommand, arg_cnt, args);
 }
@@ -409,6 +427,7 @@ void CommandInterface::setup(){
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
   cmdAdd("set-slot-config", setSlotConfig);
+  cmdAdd("clear-slot", clearSlot);
 
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
@@ -444,6 +463,10 @@ void CommandInterface::poll()
 }
 
 
+
+//
+// old, unused code
+//
 int CommandInterface::processControlCommands(Stream * myStream, Datalogger * datalogger)
 {
   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder

@@ -87,10 +87,11 @@ class CommandInterface
     void _getConfig();
     void _setConfig(char * config);
     void _setSlotConfig(char * config);
+    void _clearSlot(int slot);
     void _deployNow();
     void _switchToInteractiveMode();
 
-    void calibrate(char * subcommand, int arg_cnt, char ** args)
+    void _calibrate(char * subcommand, int arg_cnt, char ** args);
 
     void _toggleDebug();
 

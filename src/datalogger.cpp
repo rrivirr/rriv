@@ -1,5 +1,6 @@
 #include "datalogger.h"
 #include <Cmd.h>
+#include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
 #include "sensors/sensor_types.h"
 #include "system/monitor.h"
@@ -11,9 +12,8 @@
 #include "utilities/qos.h"
 
 // Settings
-char version[5] = "v2.0";
 
-short fieldCount = 22; // number of fields to be logged to SDcard file
+// short fieldCount = 22; // number of fields to be logged to SDcard file
 
 // Pin Mappings for Nucleo Board
 // BLE USART
@@ -32,15 +32,13 @@ char uuidString[25]; // 2 * UUID_LENGTH + 1
 char lastDownloadDate[11] = "0000000000";
 char **values;
 unsigned long lastMillis = 0;
-uint32_t awakeTime = 0;
-uint32_t lastTime = 0;
-short burstCount = 0;
-bool configurationMode = false;
-bool debugValuesMode = false;
-bool clearModes = false;
-bool tempCalMode = false;
-bool tempCalibrated = false;
-short controlFlag = 0;
+
+// bool configurationMode = false;
+// bool debugValuesMode = false;
+// bool clearModes = false;
+// bool tempCalMode = false;
+// bool tempCalibrated = false;
+// short controlFlag = 0;
 
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type * settings)
@@ -53,6 +51,16 @@ void Datalogger::readConfiguration(datalogger_settings_type * settings)
   }
 
   memcpy(settings, buffer, sizeof(datalogger_settings_type));
+
+  // apply defaults
+  if(settings->burstNumber == 0 || settings->burstNumber > 20)
+  {
+    settings->burstNumber = 1;
+  }
+  if(settings->interBurstDelay > 300)
+  {
+    settings->interBurstDelay = 0;
+  }
 }
 
 Datalogger::Datalogger(datalogger_settings_type * settings)
@@ -130,31 +138,40 @@ void Datalogger::loop()
     } 
     else 
     {
+      completedBursts++;
       if(completedBursts < settings.burstNumber)
       {
-        // TODO: we need to do another burst
-        completedBursts++;
+        notify(F("do another burst"));
         delay(settings.interBurstDelay);
+        initializeMeasurementCycle();
         return;
       }
 
       // go to sleep
       stopAndAwaitTrigger();
-      initializeBurst();
+      initializeMeasurementCycle();
       return;
     }
     return;
   }
 
   processCLI();
-  if (configurationIsDirty())
-  {
-    debug("Configuration is dirty");
-    storeConfiguration();
-    stopLogging();
-  }
 
-  if (inMode(interactive))
+  // not currently used
+  // TODO: do we want to cache dirty config to reduce writes to EEPROM?
+  // if (configurationIsDirty())
+  // {
+  //   debug("Configuration is dirty");
+  //   storeConfiguration();
+  //   stopLogging();
+  // }
+
+  if (inMode(logging) || inMode(deploy_on_trigger))
+  {
+    // processCLI may have moved logger into a deployed mode
+    return;
+  }
+  else if (inMode(interactive))
   {
     if(interactiveModeLogging){
       measureSensorValues(false);
@@ -169,18 +186,17 @@ void Datalogger::loop()
   }
   else
   {
-    // TODO: can be a deploy mode here, because processCLI may have changed it.
     // invalid mode!
-    // Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
-    // Serial2.println(mode);
-    // mode = interactive;
-    // delay(1000);
+    Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
+    Serial2.println(mode);
+    mode = interactive;
+    delay(1000);
   }
 
   powerCycle = false;
 }
 
-#define TOTAL_SLOTS 2
+#define TOTAL_SLOTS 1
 
 void Datalogger::loadSensorConfigurations()
 {
@@ -201,14 +217,13 @@ void Datalogger::loadSensorConfigurations()
       debug("found configured sensor");
       sensorCount++;
     }
+    sensorConfig->common.slot = i;
     configs[i] = sensorConfig;
   }
   if(sensorCount == 0)
   {
     debug("no sensor configurations found");
   }
-
-  // load the full configurations from EEPROM
 
   // construct the drivers
   debug("construct drivers");
@@ -293,7 +308,8 @@ bool Datalogger::shouldContinueBursting()
 {
   for(int i=0; i<sensorCount; i++)
   {
-    debug(F("check sensor burst"));
+    notify(F("check sensor burst"));
+    notify(i);
     if(!drivers[i]->burstCompleted())
     {
       return true;
@@ -302,14 +318,21 @@ bool Datalogger::shouldContinueBursting()
   return false;
 }
 
-void Datalogger::initializeBurst(){
+void Datalogger::initializeBurst()
+{
+  for(int i=0; i<sensorCount; i++)
+  {
+    drivers[i]->initializeBurst();
+  }
+}
+
+void Datalogger::initializeMeasurementCycle()
+{
   notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
 
-  for(int i=0; i<sensorCount; i++){
-    drivers[i]->initializeBurst();
-  }
+  initializeBurst();
 
   completedBursts = 0;
 
@@ -331,21 +354,13 @@ void Datalogger::measureSensorValues(bool performingBurst)
   }
 }
 
-void Datalogger::writeStatusFieldsToLogFile(){
-
+void Datalogger::writeStatusFieldsToLogFile()
+{
   notify(F("Write status fields"));
-  Serial2.println(settings.siteName);
-  Serial2.println(uuidString);
-  // Serial2.println(deploymentUUID);
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
   double currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
-
-  //debug timestamp calculations
-  char valuesBuffer[190];
-  sprintf(valuesBuffer, "burstCount=%d currentMillis=%d offsetMillis=%d currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
 
   char currentTimeString[20];
   char humanTimeString[20];
@@ -360,13 +375,11 @@ void Datalogger::writeStatusFieldsToLogFile(){
   }
   deploymentUUIDString[2*16] = '\0';
 
-
-// site,deployment,deployed_at,uui
   filesystem->writeString(settings.siteName);
   filesystem->writeString((char *) ",");
   filesystem->writeString(deploymentUUIDString);
   filesystem->writeString((char *) ",");
-  char buffer[10]; sprintf(buffer, "%d,", settings.deploymentTimestamp); filesystem->writeString(buffer);  
+  char buffer[10]; sprintf(buffer, "%ld,", settings.deploymentTimestamp); filesystem->writeString(buffer);  
   filesystem->writeString(uuidString);
   filesystem->writeString((char *)",");
   filesystem->writeString(currentTimeString);
@@ -418,52 +431,57 @@ void Datalogger::processCLI()
   cli->poll();
 }
 
-bool Datalogger::configurationIsDirty(){
-  for(int i=0; i<sensorCount+1; i++)
-  {
-    if(dirtyConfigurations[i])
-    {
-      return true;
-    }
-  } 
+// not currently used
+// bool Datalogger::configurationIsDirty()
+// {
+//   for(int i=0; i<sensorCount+1; i++)
+//   {
+//     if(dirtyConfigurations[i])
+//     {
+//       return true;
+//     }
+//   } 
 
-  return false;
-}
+//   return false;
+// }
 
-void Datalogger::storeConfiguration()
+// not curretnly used
+// void Datalogger::storeConfiguration()
+// {
+//   for(int i=0; i<sensorCount+1; i++)
+//   {
+//     if(dirtyConfigurations[i]){
+//       //store this config block to EEPROM
+//     }
+//   }
+// }
+
+void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings)
 {
-  for(int i=0; i<sensorCount+1; i++)
-  {
-    if(dirtyConfigurations[i]){
-      //store this config block to EEPROM
-    }
-  }
-}
-
-void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings){
   memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
 }
 
-void Datalogger::setSensorConfiguration(char * type, cJSON * json){
-  if(strcmp(type, "generic_analog") == 0)
+void Datalogger::setSensorConfiguration(char * type, cJSON * json)
+{
+  if(strcmp(type, "generic_analog") == 0) // make generic for all types
   {
     SensorDriver * driver = new GenericAnalog();
     driver->configureFromJSON(json);
     generic_config configuration = driver->getConfiguration();
     storeSensorConfiguration(&configuration);
 
-    notify(F("updating slots"));
+    debug(F("updating slots"));
     bool slotReplacement = false;
-    notify(sensorCount);
+    debug(sensorCount);
     for(int i=0; i<sensorCount; i++){
       if(drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
       {
         slotReplacement = true;
-        notify(F("slot replacement"));
+        debug(F("slot replacement"));
         SensorDriver * replacedDriver = drivers[i];
         drivers[i] = driver;
-        free(replacedDriver);
-        notify(F("OK"));
+        delete(replacedDriver);
+        debug(F("OK"));
         break;
       }
     }
@@ -471,7 +489,7 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json){
     {
       sensorCount = sensorCount + 1;
       SensorDriver ** driverAugmentation = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
-      for(int i=0; i<sensorCount-1; i++)
+      for(int i=0; i<sensorCount-2; i++)
       {
         driverAugmentation[i] = drivers[i];
       }
@@ -483,6 +501,33 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json){
 
   }
 }
+
+void Datalogger::clearSlot(int slot)
+{
+  byte empty[SENSOR_CONFIGURATION_SIZE];
+  for(int i=0; i<SENSOR_CONFIGURATION_SIZE; i++)
+  {
+    empty[i] = 0xFF;
+  }
+  writeSensorConfigurationToEEPROM(slot, empty);
+  sensorCount--;
+
+  SensorDriver ** updatedDrivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+  int j=0;
+  for(int i=0; i<sensorCount+1; i++){
+    generic_config configuration = this->drivers[i]->getConfiguration();
+    if(configuration.common.slot != slot)
+    {
+      updatedDrivers[j] = this->drivers[i];
+      j++;
+    }
+    else
+    {
+      delete(this->drivers[i]);
+    }
+  }
+}
+
 
 cJSON ** Datalogger::getSensorConfigurations() // returns unprotected **
 {
@@ -498,12 +543,6 @@ cJSON ** Datalogger::getSensorConfigurations() // returns unprotected **
 void Datalogger::setInterval(int interval)
 {
   settings.interval = interval;
-  storeDataloggerConfiguration();
-}
-
-void Datalogger::setBurstSize(int size)
-{
-  settings.burstLength = size;
   storeDataloggerConfiguration();
 }
 
@@ -552,12 +591,14 @@ void Datalogger::changeMode(mode_type mode)
   this->mode = mode;
 }
 
-bool Datalogger::inMode(mode_type mode){
+bool Datalogger::inMode(mode_type mode)
+{
   return this->mode == mode;
 }
 
 
-void Datalogger::deploy(){
+void Datalogger::deploy()
+{
   Monitor::instance()->writeSerialMessage(F("Deploying now!"));
 
   setDeploymentIdentifier();
@@ -685,50 +726,7 @@ void blinkTest()
   //blink(10,250);
 }
 
-void allocateMeasurementValuesMemory()
-{
-
-  values = (char **)malloc(sizeof(char *) * fieldCount);
-
-  values[0] = (char *)malloc(sizeof(char) * (DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2)); // Deployment UUID 51
-  sprintf(values[0], "%50d", 0);
-  values[1] = (char *)malloc(sizeof(char) * ((2 * UUID_LENGTH + 1))); // UUID 25
-  sprintf(values[1], "%24d", 0);
-  values[2] = (char *)malloc(sizeof(char) * 15); // epoch timestamp.millis
-  sprintf(values[2], "%10.3f", (double)0);
-  values[3] = (char *)malloc(sizeof(char) * 24); // human readable timestamp
-  sprintf(values[3], "%23d", 0);
-  for (int i = 4; i <= 10; i++)
-  { // 6 sensors + conductivity + 6 for temp calibration data
-    values[i] = (char *)malloc(sizeof(char) * 5);
-    sprintf(values[i], "%4d", 0);
-  }
-
-  values[11] = (char *)malloc(sizeof(char) * 11); // epoch timestamp for temp calibration
-  sprintf(values[11], "%10d", 0);
-  for (int i = 12; i <= 18; i++)
-  { // temp calibration data C1, V1, C2, V2, M, B, temp reading
-    values[i] = (char *)malloc(sizeof(char) * 7);
-    sprintf(values[i], "%6d", 0);
-  }
-  values[19] = (char *)malloc(sizeof(char) * 3); // burst count
-  sprintf(values[19], "%2d", 0);
-  values[20] = (char *)malloc(sizeof(char) * 11); // user serial value input
-  sprintf(values[20], "%10d", 0);
-  values[21] = (char *)malloc(sizeof(char) * 31); // user serial notes input
-  sprintf(values[21], "%30d", 0);
-}
-
-
-void prepareForTriggeredMeasurement()
-{
-  //initialize burst count
-
-
-  burstCount = 0; // deprecated
-}
-
-void prepareForUserInteraction()
+void Datalogger::prepareForUserInteraction()
 {
   char humanTime[26];
   time_t awakenedTime = timestamp();
@@ -741,79 +739,37 @@ void prepareForUserInteraction()
   awakeTime = awakenedTime;
 }
 
-// void Datalogger::writeStatusFields()
+// void Datalogger::captureInternalADCValues()
 // {
-//   char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-//   memcpy(deploymentUUID, settings.deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
-//   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-//   memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
-//   deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
-
-//   // Log Deployment UUID
-//   sprintf(values[0], "%s", deploymentUUID);
-
-//   // Log UUID
-//   sprintf(values[1], "%s", uuidString);
-
-//   Serial2.println(values[0]);
-//   Serial2.println(values[1]);
-//   exit(1);
-
-//   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
-//   static double currentTime;
-//   static time_t currentEpoch;
-//   static uint32 offsetMillis;
-//   if (burstCount == 0)
+//   // Measure the data on internal ADC pins
+//   short sensorCount = 6;
+//   short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
+//   for (short i = 0; i < sensorCount; i++)
 //   {
-//     Monitor::instance()->writeDebugMessage(F("setting base time"));
-//     currentEpoch = timestamp();
-//     offsetMillis = millis();
+//     int value = analogRead(sensorPins[i]);
+//     sprintf(values[4 + i], "%4d", value);
 //   }
-//   uint32 currentMillis = millis();
-//   currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
 
-//   // Debug timestamp calculations
-//   char valuesBuffer[190];
-//   sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
-//   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+//   // Measure and log temperature data and calibration info -> move to seperate function?
+//   unsigned int uiData = 0;
+//   unsigned short usData = 0;
 
-//   // Create human readable datetime
-//   sprintf(values[2], "%10.3f", currentTime); // convert double value into string
-//   t_t2ts(currentTime, currentMillis-offsetMillis, values[3]);        // convert time_t value to human readable timestamp
-
+//   readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+//   sprintf(values[11], "%i", uiData);
+//   readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C1_ADDRESS_LENGTH);
+//   sprintf(values[12], "%i", usData);
+//   readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V1_ADDRESS_LENGTH);
+//   sprintf(values[13], "%i", usData);
+//   readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C2_ADDRESS_LENGTH);
+//   sprintf(values[14], "%i", usData);
+//   readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V2_ADDRESS_LENGTH);
+//   sprintf(values[15], "%i", usData);
+//   readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_M_ADDRESS_LENGTH);
+//   sprintf(values[16], "%i", usData);
+//   readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_B_ADDRESS_LENGTH);
+//   sprintf(values[17], "%i", uiData);
+//   sprintf(values[18], "%.2f", calculateTemperature());
 // }
-
-void Datalogger::captureInternalADCValues()
-{
-  // Measure the data on internal ADC pins
-  short sensorCount = 6;
-  short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
-  for (short i = 0; i < sensorCount; i++)
-  {
-    int value = analogRead(sensorPins[i]);
-    sprintf(values[4 + i], "%4d", value);
-  }
-
-  // Measure and log temperature data and calibration info -> move to seperate function?
-  unsigned int uiData = 0;
-  unsigned short usData = 0;
-
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  sprintf(values[11], "%i", uiData);
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C1_ADDRESS_LENGTH);
-  sprintf(values[12], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V1_ADDRESS_LENGTH);
-  sprintf(values[13], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C2_ADDRESS_LENGTH);
-  sprintf(values[14], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V2_ADDRESS_LENGTH);
-  sprintf(values[15], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_M_ADDRESS_LENGTH);
-  sprintf(values[16], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_B_ADDRESS_LENGTH);
-  sprintf(values[17], "%i", uiData);
-  sprintf(values[18], "%.2f", calculateTemperature());
-}
 
 void captureExternalADCValues(){
   debug("captureExternalADCValues");
@@ -854,28 +810,28 @@ bool checkThermistorCalibration()
   return thermistorCalibrated;
 }
 
-bool checkAwakeForUserInteraction(bool debugLoop)
-{
-  // Are we awake for user interaction?
-  bool awakeForUserInteraction = false;
-  if (timestamp() < awakeTime + USER_WAKE_TIMEOUT)
-  {
-    Monitor::instance()->writeDebugMessage(F("Awake for user interaction"));
-    awakeForUserInteraction = true;
-  }
-  else
-  {
-    if (!debugLoop)
-    {
-      Monitor::instance()->writeDebugMessage(F("Not awake for user interaction"));
-    }
-  }
-  if (!awakeForUserInteraction)
-  {
-    awakeForUserInteraction = debugLoop;
-  }
-  return awakeForUserInteraction;
-}
+// bool Datalogger::checkAwakeForUserInteraction(bool debugLoop)
+// {
+//   // Are we awake for user interaction?
+//   bool awakeForUserInteraction = false;
+//   if (timestamp() < awakeTime + USER_WAKE_TIMEOUT)
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Awake for user interaction"));
+//     awakeForUserInteraction = true;
+//   }
+//   else
+//   {
+//     if (!debugLoop)
+//     {
+//       Monitor::instance()->writeDebugMessage(F("Not awake for user interaction"));
+//     }
+//   }
+//   if (!awakeForUserInteraction)
+//   {
+//     awakeForUserInteraction = debugLoop;
+//   }
+//   return awakeForUserInteraction;
+// }
 
 bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
 {
@@ -1232,55 +1188,47 @@ float calculateTemperature()
   return temperature;
 }
 
-void Datalogger::takeNewMeasurement()
-{
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
-  }
-  writeStatusFields();
+// void Datalogger::takeNewMeasurement()
+// {
+//   if (DEBUG_MEASUREMENTS)
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
+//   }
+//   writeStatusFields();
 
-  captureInternalADCValues();
+//   captureInternalADCValues();
 
-  // OEM EC
-  float ecValue = -1;
-  if(USE_EC_OEM){
-    bool newDataAvailable = readECDataIfAvailable(&ecValue);
-    if (!newDataAvailable)
-    {
-      Monitor::instance()->writeDebugMessage(F("New EC data not available"));
-    }
-  }
-
-
-  // Get reading from RGB Sensor
-  // char * data = AtlasRGB::instance()->mallocDataMemory();
-  // AtlasRGB::instance()->takeMeasurement(data);
-  // free(data);
-
-  captureExternalADCValues();
-
-  //Serial2.print(F("Got EC value: "));
-  //Serial2.print(ecValue);
-  //Serial2.println();
-  sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
-
-  sprintf(values[19], "%i", burstCount); // log burstCount
+//   // OEM EC
+//   float ecValue = -1;
+//   if(USE_EC_OEM){
+//     bool newDataAvailable = readECDataIfAvailable(&ecValue);
+//     if (!newDataAvailable)
+//     {
+//       Monitor::instance()->writeDebugMessage(F("New EC data not available"));
+//     }
+//   }
 
 
-  Monitor::instance()->writeDebugMessage(F("writeLog"));
-  filesystem->writeLog(values, fieldCount);
-  Monitor::instance()->writeDebugMessage(F("writeLog done"));
+//   // Get reading from RGB Sensor
+//   // char * data = AtlasRGB::instance()->mallocDataMemory();
+//   // AtlasRGB::instance()->takeMeasurement(data);
+//   // free(data);
+
+//   captureExternalADCValues();
+
+//   //Serial2.print(F("Got EC value: "));
+//   //Serial2.print(ecValue);
+//   //Serial2.println();
+//   sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
+
+//   sprintf(values[19], "%i", burstCount); // log burstCount
+
+
+//   Monitor::instance()->writeDebugMessage(F("writeLog"));
+//   filesystem->writeLog(values, fieldCount);
+//   Monitor::instance()->writeDebugMessage(F("writeLog done"));
   
-}
-
-void trackBurst(bool bursting)
-{
-  if (bursting)
-  {
-    burstCount = burstCount + 1;
-  }
-}
+// }
 
 // displays relevant readings based on controlFlag
 void monitorConfiguration()

@@ -26,6 +26,8 @@
 
 typedef enum protocol { analog, i2c } protocol_type;
 
+#define SENSOR_CONFIGURATION_SIZE 64
+
 typedef struct 
 {
     // note needs to be 32 bytes total (multiple of 4)
@@ -52,6 +54,7 @@ class SensorDriver {
   public: 
     // Constructor
     SensorDriver();
+    virtual ~SensorDriver();
     virtual void configureFromJSON(cJSON * json);
 
 

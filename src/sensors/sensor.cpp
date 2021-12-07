@@ -15,22 +15,11 @@ void SensorDriver::incrementBurst(){
 }
 
 bool SensorDriver::burstCompleted(){
-  debug(burstCount);
-  debug(getConfiguration().common.burst_size);
+  notify(burstCount);
+  notify(getConfiguration().common.burst_size);
   return burstCount == getConfiguration().common.burst_size;
 }
 
-void getDefaultsCommon(common_config_sensor *fillValues)
-{
-  Monitor::instance()->writeDebugMessage(F("getDefaultsCCS"));
-  fillValues->sensor_type = 1;
-  fillValues->slot = 1;
-  fillValues->burst_size = 10;
-  fillValues->warmup = 54321;
-  strcpy(fillValues->tag, "CCS");
-  strcpy(fillValues->tag, "test");
-  strcpy(fillValues->padding, "0000000000000000");
-}
 
 void SensorDriver::configureCSVColumns()
 {
@@ -55,7 +44,7 @@ void SensorDriver::configureCSVColumns()
 
 void SensorDriver::setCommonDefaults(common_config_sensor * common)
 {
-  if(common->burst_size < 0 || common->burst_size > 100)
+  if(common->burst_size <= 0 || common->burst_size > 100)
   {
     common->burst_size = 10;
   }
@@ -78,5 +67,13 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
     strcpy(common->tag, tagJSON->valuestring);
   } else {
     Serial2.println("Invalid tag");
+  }
+
+  const cJSON * burstSizeJson = cJSON_GetObjectItemCaseSensitive(json, "burst_size");
+  if(burstSizeJson != NULL && cJSON_IsNumber(burstSizeJson) && burstSizeJson->valueint > 0)
+  {
+    common->burst_size = (byte) burstSizeJson->valueint;
+  } else {
+    Serial2.println("Invalid burst size");
   }
 }
