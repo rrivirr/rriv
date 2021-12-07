@@ -26,7 +26,7 @@ void debug(short number)
 
 void notify(const char* message)
 {
-  Monitor::instance()->writeDebugMessage(message);
+  Monitor::instance()->writeSerialMessage(message);
 }
 
 void notify(const __FlashStringHelper * message)

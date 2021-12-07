@@ -83,6 +83,10 @@ class CommandInterface
     void _setBurstNumber(int number);
     void _setStartUpDelay(int number);
     void _setBurstDelay(int number);
+    
+    void _setUserNote(char * note);
+    void _setUserValue(int value);
+
 
     void _getConfig();
     void _setConfig(char * config);
@@ -91,7 +95,7 @@ class CommandInterface
     void _deployNow();
     void _switchToInteractiveMode();
 
-    void _calibrate(char * subcommand, int arg_cnt, char ** args);
+    void _calibrate(int slot, char * subcommand, int arg_cnt, char ** args);
 
     void _toggleDebug();
 

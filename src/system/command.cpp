@@ -412,13 +412,48 @@ void calibrate(int arg_cnt, char **args)
   }
 
 
-  char * subcommand = args[1];
-  CommandInterface::instance()->_calibrate(subcommand, arg_cnt - 2, &args[2]);
+  int slot = atoi(args[1]);
+  char * subcommand = args[2];
+  CommandInterface::instance()->_calibrate(slot, subcommand, arg_cnt - 3, &args[3]);
 }
 
-void CommandInterface::_calibrate(char * subcommand, int arg_cnt, char ** args)
+void CommandInterface::_calibrate(int slot, char * subcommand, int arg_cnt, char ** args)
 {
-  this->datalogger->calibrate(subcommand, arg_cnt, args);
+  this->datalogger->calibrate(slot, subcommand, arg_cnt, args);
+}
+
+void setUserNote(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-user-note NOTE"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  CommandInterface::instance()->_setUserNote(args[1]);
+}
+
+void CommandInterface::_setUserNote(char * note)
+{
+  this->datalogger->setUserNote(note);
+  Serial2.println("OK");
+}
+
+void setUserValue(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-user-note NOTE"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  CommandInterface::instance()->_setUserValue(atoi(args[1]));
+}
+
+void CommandInterface::_setUserValue(int value)
+{
+  this->datalogger->setUserValue(value);
+  Serial2.println("OK");
 }
 
 void CommandInterface::setup(){
@@ -435,14 +470,14 @@ void CommandInterface::setup(){
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-interval", setInterval);
-  cmdAdd("set-burst-size", setBurstSize); // datalogger - deprecated
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
   cmdAdd("set-burst-delay", setBurstDelay);
-  // cmdAdd("set-burst-number", setBurstNumber);
-  // cmdAdd("set-warmup-delay", setWarmupDelay);
 
   cmdAdd("calibrate", calibrate);
+  
+  cmdAdd("set-user-note", setUserNote);
+  cmdAdd("set-user-value", setUserValue);
 
 
   cmdAdd("trace", toggleDebug);

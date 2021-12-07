@@ -25,10 +25,14 @@ void SensorDriver::configureCSVColumns()
 {
   debug("config csv columns");
   char csvColumnHeaders[100] = "\0";
-  debug(this->getBaseColumnHeaders());
-  char * token = strtok( (char * ) this->getBaseColumnHeaders(), ",");
+  char buffer[100];
+  strcpy(buffer, this->getBaseColumnHeaders());
+  debug(buffer);
+  char * token = strtok(buffer, ",");
+  debug("HI");
   while(token != NULL)
   {
+    debug("HI2");
     debug(token);
     strcat(csvColumnHeaders, this->getConfiguration().common.tag);
     strcat(csvColumnHeaders, "_");

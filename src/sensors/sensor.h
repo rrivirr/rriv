@@ -69,14 +69,10 @@ class SensorDriver {
     virtual protocol_type getProtocol();
     virtual const char * getBaseColumnHeaders();
     
-    // // JSON
-    // virtual char * exportConfigurationJSON(); // TODO: where should memory be malloc'd?
-    // virtual void loadConfigurationJSON(char * configurationJSON);
-    // cJSON * JSON;
 
     // // Calibration
-    // virtual void initCalibration();
-    // virtual void calibrationStep(char * step, int value);
+    virtual void initCalibration();
+    virtual void calibrationStep(char * step, int value);
 
     void initializeBurst();
     void incrementBurst();

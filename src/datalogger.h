@@ -84,9 +84,11 @@ public:
     cJSON ** getSensorConfigurations();
 
     void setSensorConfiguration(char * type, cJSON * json);
-    void clearSlot(int slot);
-    void calibrate(char * subcommand, int arg_cnt, char ** args);
+    void clearSlot(unsigned short slot);
+    void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
 
+    void setUserNote(char * note);
+    void setUserValue(int value);
 
 private:
     // modules
@@ -102,6 +104,10 @@ private:
     char loggingFolder[26];
     int completedBursts;
     int awakeTime;
+
+    // user
+    char userNote[100] = "\0";
+    int userValue = INT_MIN;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -133,6 +139,10 @@ private:
     void stopAndAwaitTrigger();
     void writeStatusFields();
     void prepareForUserInteraction();
+
+    // utility
+    SensorDriver * getDriver(unsigned short slot);
+
 
 
 
@@ -175,8 +185,6 @@ void blinkTest();
 void setupSensors();
 
 void allocateMeasurementValuesMemory();
-
-void prepareForTriggeredMeasurement();
 
 
 void setNotBursting();

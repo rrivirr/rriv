@@ -69,7 +69,6 @@ Datalogger::Datalogger(datalogger_settings_type * settings)
   Serial2.println("creating datalogger");
   Serial2.println("got mode");
   Serial2.println(settings->mode);
-  delay(2000);
 
   // defaults
   if(settings->interval < 1) 
@@ -113,6 +112,7 @@ void Datalogger::loop()
 
   if(inMode(deploy_on_trigger)){
     deploy();
+    goto SLEEP;
     return;
   }
 
@@ -122,6 +122,7 @@ void Datalogger::loop()
     {
       Monitor::instance()->writeDebugMessage("Powercycle");
       deploy();
+      goto SLEEP;
     }
 
     if(shouldExitLoggingMode())
@@ -142,13 +143,15 @@ void Datalogger::loop()
       if(completedBursts < settings.burstNumber)
       {
         notify(F("do another burst"));
-        delay(settings.interBurstDelay);
-        initializeMeasurementCycle();
+        notify(settings.burstNumber);
+        notify(completedBursts);
+        delay(settings.interBurstDelay * 1000);
+        initializeBurst();
         return;
       }
 
       // go to sleep
-      stopAndAwaitTrigger();
+      SLEEP: stopAndAwaitTrigger();
       initializeMeasurementCycle();
       return;
     }
@@ -169,7 +172,7 @@ void Datalogger::loop()
   if (inMode(logging) || inMode(deploy_on_trigger))
   {
     // processCLI may have moved logger into a deployed mode
-    return;
+    goto SLEEP;
   }
   else if (inMode(interactive))
   {
@@ -400,7 +403,7 @@ bool Datalogger::writeMeasurementToLogFile()
 
   // write out the raw battery reading
   int batteryValue = analogRead(PB0);
-  char buffer[10];
+  char buffer[50];
   sprintf(buffer, "%d,", batteryValue);
   filesystem->writeString(buffer);
 
@@ -416,6 +419,12 @@ bool Datalogger::writeMeasurementToLogFile()
     {
       filesystem->writeString((char *)",");
     }
+  }
+  sprintf(buffer, ",%s,", userNote);
+  filesystem->writeString(buffer);
+  if(userValue != INT_MIN){
+    sprintf(buffer, "%d", userValue);
+    filesystem->writeString(buffer);
   }
   filesystem->endOfLine();
   return true;
@@ -502,7 +511,7 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
   }
 }
 
-void Datalogger::clearSlot(int slot)
+void Datalogger::clearSlot(unsigned short slot)
 {
   byte empty[SENSOR_CONFIGURATION_SIZE];
   for(int i=0; i<SENSOR_CONFIGURATION_SIZE; i++)
@@ -558,11 +567,47 @@ void Datalogger::setStartUpDelay(int delay)
   storeDataloggerConfiguration();
 }
 
-void Datalogger::setIntraBurstDelay(int delay)
+void Datalogger::Datalogger::setIntraBurstDelay(int delay)
 {
   settings.interBurstDelay = delay;
   storeDataloggerConfiguration();
 }
+
+void Datalogger::setUserNote(char * note)
+{
+  strcpy(userNote, note);
+}
+
+void Datalogger::setUserValue(int value)
+{
+  userValue = value;
+}
+
+SensorDriver * Datalogger::getDriver(unsigned short slot)
+{
+  for(int i=0; i<sensorCount; i++)
+  {
+    if(this->drivers[i]->getConfiguration().common.slot == slot)
+    {
+      return this->drivers[i];
+    }
+  }
+}
+
+void Datalogger::calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args)
+{
+  SensorDriver * driver = getDriver(slot);
+  if(strcmp(subcommand, "init") == 0)
+  {
+    driver->initCalibration();
+  }
+  else
+  {
+    notify(args[0]);
+    driver->calibrationStep(subcommand, atoi(args[0]));
+  }
+}
+
 
 
 void Datalogger::storeMode(mode_type mode)
@@ -609,8 +654,8 @@ void Datalogger::deploy()
   changeMode(logging);
   storeMode(logging);
   powerCycle = false; // not a powercycle loop
-
 }
+
 
 
 
@@ -638,6 +683,7 @@ void Datalogger::initializeFilesystem()
     strcat(header, ",");
     strcat(header, drivers[i]->getCSVColumnNames());
   }
+  strcat(header, ",user_note,user_value");
 
   filesystem->setNewDataFile(setupTime, header); // name file via epoch timestamps
 }
@@ -938,10 +984,7 @@ void Datalogger::stopAndAwaitTrigger()
   {
     prepareForUserInteraction();
   }
-  else
-  {
-    prepareForTriggeredMeasurement();
-  }
+ 
 }
 
 void handleControlCommand()
@@ -1130,63 +1173,6 @@ void clearThermistorCalibration()
   }
 }
 
-void calibrateThermistor() // calibrate using linear slope equation, log time
-{
-  //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  float c1,v1,c2,v2,m,b;
-  unsigned short slope, read;
-  unsigned int intercept;
-  unsigned char * dataPtr = (unsigned char *)&read;
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
-  c1 = *(unsigned short *)dataPtr;
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
-  v1 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
-  c2 = *(unsigned short *)dataPtr;
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
-  v2 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
-  m = (v2-v1)/(c2-c1);
-  b = (((m*(0-c1)) + v1) + ((m*(0-c2)) + v2))/2; //average at two points
-
-  slope = m * TEMPERATURE_SCALER;
-  writeEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&slope, TEMPERATURE_M_ADDRESS_LENGTH);
-  intercept = b;
-  writeEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char*)&intercept, TEMPERATURE_B_ADDRESS_LENGTH);
-  unsigned int tempCalTime= timestamp();
-  writeEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&tempCalTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  Monitor::instance()->writeDebugMessage(F("thermistor calibration complete"));
-}
-
-float calculateTemperature()
-{
-  //v = mx+b  =>  x = (v-b)/m
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  float temperature = -1;
-  if (checkThermistorCalibration() == true)
-  {
-    unsigned short m = 0;
-    unsigned int b = 0;
-    float rawData = analogRead(PB1);
-    if (rawData == 0) // indicates thermistor disconnect
-    {
-      temperature = -2;
-    }
-    else
-    {
-      readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
-      readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
-      temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-    }
-  }
-  else
-  {
-    Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
-    float rawData = analogRead(PB1);
-    temperature = rawData;
-  }
-  return temperature;
-}
 
 // void Datalogger::takeNewMeasurement()
 // {
@@ -1349,11 +1335,7 @@ void Datalogger::storeSensorConfiguration(generic_config * configuration){
   // notify(configuration->common.sensor_type);
   writeSensorConfigurationToEEPROM(configuration->common.slot, configuration);
 
-  generic_config sensorConfig;
-  readEEPROMObject(EEPROM_DATALOGGER_SENSORS_START + configuration->common.slot * EEPROM_DATALOGGER_SENSOR_SIZE, &sensorConfig, EEPROM_DATALOGGER_SENSOR_SIZE);
-  notify(F("Stored sensor configuration"));
-  // notify(sensorConfig.common.slot);
-  // notify(sensorConfig.common.sensor_type);
+
 
 }
 

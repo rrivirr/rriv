@@ -49,10 +49,24 @@ class GenericAnalog : public AnalogSensorDriver
     protocol_type getProtocol();
     const char * getBaseColumnHeaders();
 
+    void initCalibration();
+    void calibrationStep(char * step, int value);
+    void addCalibrationParametersToJSON(cJSON * json);
+
+
   private:
     generic_linear_analog_sensor configuration;
 
     int value;
-    const char * baseColumnHeaders = "raw";
+    const char * baseColumnHeaders = "raw,cal";
     char dataString[16];
+
+    int calibrate_high_reading = 0;
+    int calibrate_high_value = 0;
+    int calibrate_low_reading = 0;
+    int calibrate_low_value = 0;
+
+    void computeCalibratedCurve();
+    void printCalibrationStatus();
+
 };

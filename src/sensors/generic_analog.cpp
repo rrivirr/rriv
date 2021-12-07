@@ -1,6 +1,8 @@
 #include "generic_analog.h"
 #include "system/monitor.h"
 #include "sensor_types.h"
+#include "system/eeprom.h" // TODO: ideally not included in this scope
+#include "system/clock.h"  // TODO: ideally not included in this scope
 
 int ADC_PINS[5] = {
   ANALOG_INPUT_1_PIN, 
@@ -117,6 +119,7 @@ cJSON * GenericAnalog::getConfigurationJSON() // returns unprotected pointer
     default:
       break;
   }
+  addCalibrationParametersToJSON(json);
   return json;
 }
 
@@ -152,7 +155,10 @@ bool GenericAnalog::takeMeasurement(){
 }
 
 char * GenericAnalog::getDataString(){
-  sprintf(dataString, "%d", value);
+  //   int parameterValue = (value-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
+  int parameterValue = (value-(configuration.b))/(configuration.m);
+
+  sprintf(dataString, "%d,%d", value, parameterValue);
   return dataString;
 }
 
@@ -165,3 +171,144 @@ char * GenericAnalog::getCSVColumnNames()
 protocol_type GenericAnalog::getProtocol(){
   return analog;
 }
+
+
+void GenericAnalog::initCalibration()
+{
+  notify(F("Two point calibration"));
+  notify(F("calibrate SLOT low VALUE"));
+  notify(F("calibrate SLOT high VALUE"));
+  notify(F("calibrate SLOT store"));
+  calibrate_high_reading = calibrate_high_value = calibrate_low_reading = calibrate_low_value = 0;
+
+}
+
+void GenericAnalog::printCalibrationStatus()
+{
+  notify(F("Calibration status:"));
+  char buffer[100];
+  sprintf(buffer, "calibrate_high_reading: %d", calibrate_high_reading);
+  notify(buffer);
+  sprintf(buffer, "calibrate_high_value: %d", calibrate_high_value);
+  notify(buffer);
+  sprintf(buffer, "calibrate_low_reading: %d", calibrate_low_reading);
+  notify(buffer);
+  sprintf(buffer, "calibrate_low_value: %d", calibrate_low_value);
+  notify(buffer);
+}
+
+void GenericAnalog::calibrationStep(char * step, int trueValue)
+{
+  takeMeasurement();
+  if(strcmp(step, "high") == 0)
+  {
+    calibrate_high_reading = this->value;
+    calibrate_high_value = trueValue;
+    printCalibrationStatus();
+  }
+  else if (strcmp(step, "low") == 0)
+  {
+    calibrate_low_reading = this->value;
+    calibrate_low_value = trueValue;
+    printCalibrationStatus();
+  }
+  else if (strcmp(step, "store") == 0)
+  {
+    printCalibrationStatus();
+    if(
+      calibrate_high_reading == 0
+      || calibrate_high_value == 0
+      || calibrate_low_reading == 0
+      || calibrate_low_value == 0
+    )
+    {
+      notify("Incomplete calibration");
+      return;
+    }
+
+    computeCalibratedCurve();
+
+    // TODO: ideally this function would not be called from within a driver
+    // but how does datalogger know the configuration is dirty, so it can write?
+    writeSensorConfigurationToEEPROM(configuration.common.slot, &configuration); 
+
+    cJSON* json = cJSON_CreateObject();
+    addCalibrationParametersToJSON(json);
+    char * string = cJSON_Print(json);
+    if (string == NULL)
+    {
+      notify("Failed to print json.");
+    }
+    Serial2.println(string);
+    free(json);
+    
+  }
+  else
+  {
+    notify("Invalid calibration step");
+  }
+}
+
+
+void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equation, log time
+{
+  //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
+  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+  unsigned short slope;
+  unsigned int intercept;
+
+  int m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
+  int b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points
+
+  // slope = m * TEMPERATURE_SCALER;
+  // intercept = b;
+  configuration.m = m;
+  configuration.b = b;
+  configuration.x1 = calibrate_low_reading;
+  configuration.x2 = calibrate_high_reading;
+  configuration.y1 = calibrate_low_value;
+  configuration.y2 = calibrate_high_value;
+  configuration.cal_timestamp = timestamp();
+}
+
+
+void GenericAnalog::addCalibrationParametersToJSON(cJSON * json)
+{
+  cJSON_AddNumberToObject(json, "m", configuration.m);
+  cJSON_AddNumberToObject(json, "b", configuration.b);
+  cJSON_AddNumberToObject(json, "x1", configuration.x1);
+  cJSON_AddNumberToObject(json, "x2", configuration.x2);
+  cJSON_AddNumberToObject(json, "y1", configuration.y1);
+  cJSON_AddNumberToObject(json, "y2", configuration.y2);
+  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+}
+
+// float calculateTemperature()
+// {
+//   //v = mx+b  =>  x = (v-b)/m
+//   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+//   float temperature = -1;
+//   if (checkThermistorCalibration() == true)
+//   {
+//     unsigned short m = 0;
+//     unsigned int b = 0;
+//     float rawData = analogRead(PB1);
+//     if (rawData == 0) // indicates thermistor disconnect
+//     {
+//       temperature = -2;
+//     }
+//     else
+//     {
+//       readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
+//       readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
+//       temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
+//     }
+//   }
+//   else
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
+//     float rawData = analogRead(PB1);
+//     temperature = rawData;
+//   }
+//   return temperature;
+// }
