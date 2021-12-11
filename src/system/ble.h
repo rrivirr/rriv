@@ -1,11 +1,11 @@
-#ifndef WATERBEAR_BLE
-#define WATERBEAR_BLE
+// #ifndef WATERBEAR_BLE
+// #define WATERBEAR_BLE
 
-#include "Adafruit_BluefruitLE_SPI.h"
+// #include "Adafruit_BluefruitLE_SPI.h"
 
-Adafruit_BluefruitLE_SPI& getBLE();
-void bleFirstRun();
-void initBLE();
-void printToBLE(char * valuesBuffer);
+// Adafruit_BluefruitLE_SPI& getBLE();
+// void bleFirstRun();
+// void initBLE();
+// void printToBLE(char * valuesBuffer);
 
-#endif
+// #endif

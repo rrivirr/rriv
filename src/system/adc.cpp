@@ -102,7 +102,6 @@ void AD7091R::updateChannelRegister()
 
 void AD7091R::convertEnabledChannels()
 {
-  debug("converting enabled channels");
   this->updateChannelRegister(); // writing to the channel register restarts the channel cycle.
 
   this->_channel0Value = -1;
@@ -163,7 +162,7 @@ void AD7091R::writeChannelRegister(channel_register channelConfiguration)
 {
   Monitor::instance()->writeDebugMessage(F("writing channel register"));
   // Monitor::instance()->writeDebugMessage( *(byte*) &channelConfiguration);
-  Serial2.println(*(byte*) &channelConfiguration );
+  // Serial2.println(*(byte*) &channelConfiguration );
   this->sendTransmission(ADC_CHANNEL_REGISTER_ADDRESS, (byte *)&channelConfiguration, 1);
 }
 
@@ -196,9 +195,9 @@ void AD7091R::sendTransmission(byte registerAddress, const void * data, int numB
 
 void AD7091R::requestBytes(byte *buffer, int length)
 {
-  // char debugMessage[100];
-  // sprintf(debugMessage, "reading bytes %i", length);
-  // debug(debugMessage);
+  char debugMessage[50];
+  sprintf(debugMessage, "reading bytes %i", length);
+  debug(debugMessage);
 
   short numBytes = Wire.requestFrom(ADC_I2C_ADDRESS, length);
   if(numBytes != length){
@@ -206,8 +205,8 @@ void AD7091R::requestBytes(byte *buffer, int length)
     // or just rely on the watchdog
     // return false; /// add return value to requestBytes and rerun the transmission
   }
-  // sprintf(debugMessage, "got %i bytes", numBytes);
-  // debug(debugMessage);
+  sprintf(debugMessage, "got %i bytes", numBytes);
+  debug(debugMessage);
 
   short lsb = 0xFF;
   short msb = 0xFF;
@@ -217,16 +216,16 @@ void AD7091R::requestBytes(byte *buffer, int length)
   {
     delay(100);
   }
-  // debug("avail 1");
+  debug("avail 1");
   msb = (short)Wire.read();
   if (length == 2)
   {
-    // debug("get 2nd byte");
+    debug("get 2nd byte");
     while (!Wire.available())
     {
       delay(100);
     }
-    // debug("avail 2");
+    debug("avail 2");
     lsb = (short)Wire.read();
   }
 
@@ -247,6 +246,28 @@ void AD7091R::copyBytesToRegister(byte *registerPtr, byte msb, byte lsb)
 {
   memcpy(registerPtr + 1, &msb, 1);
   memcpy(registerPtr, &lsb, 1);
+}
+
+short AD7091R::getChannelValue(short channel)
+{
+  switch(channel)
+  {
+    case 0:
+      return this->_channel0Value;
+      break;
+    case 1:
+      return this->_channel1Value;
+      break;
+    case 2:
+      return this->_channel2Value;
+      break;
+    case 3:
+      return this->_channel3Value;
+      break;
+    default:
+      return -1;
+      break;
+  }
 }
 
 short AD7091R::channel0Value()

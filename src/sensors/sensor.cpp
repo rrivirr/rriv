@@ -1,10 +1,9 @@
 #include "sensor.h"
 #include "system/monitor.h"
 
-SensorDriver::SensorDriver()
-{
+SensorDriver::SensorDriver(){}
+SensorDriver::~SensorDriver(){}
 
-}
 
 void SensorDriver::initializeBurst(){
   burstCount = 0;
@@ -29,10 +28,8 @@ void SensorDriver::configureCSVColumns()
   strcpy(buffer, this->getBaseColumnHeaders());
   debug(buffer);
   char * token = strtok(buffer, ",");
-  debug("HI");
   while(token != NULL)
   {
-    debug("HI2");
     debug(token);
     strcat(csvColumnHeaders, this->getConfiguration().common.tag);
     strcat(csvColumnHeaders, "_");
@@ -81,3 +78,7 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
     Serial2.println("Invalid burst size");
   }
 }
+
+// placeholder for required virtual destructors
+AnalogSensorDriver::~AnalogSensorDriver(){}
+I2CSensorDriver::~I2CSensorDriver(){}

@@ -4,5 +4,6 @@
 int freeMemory();
 void intentionalMemoryLeak();
 void checkMemory();
+void printFreeMemory();
 
 #endif

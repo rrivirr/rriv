@@ -2,8 +2,8 @@
 #define WATERBEAR_CONTROL
 
 #include <Arduino.h>
-#include "Adafruit_BluefruitLE_UART.h"
-#include "Adafruit_BluefruitLE_SPI.h"
+// #include "Adafruit_BluefruitLE_UART.h"
+// #include "Adafruit_BluefruitLE_SPI.h"
 #include "DS3231.h"
 #include "time.h"
 #include "datalogger.h"
@@ -58,15 +58,15 @@ class CommandInterface
 
     int processControlCommands(Stream * myStream, Datalogger * datalogger);
     int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
-    int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
-    int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
+    // int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
+    // int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
 
     void * getLastPayload();
 
     bool ready(Stream * myStream);
     bool ready(HardwareSerial &port);
-    bool ready(Adafruit_BluefruitLE_UART &ble);
-    bool ready(Adafruit_BluefruitLE_SPI &ble);
+    // bool ready(Adafruit_BluefruitLE_UART &ble);
+    // bool ready(Adafruit_BluefruitLE_SPI &ble);
 
     // time_t timestamp();
     // void setTime(time_t toSet);
@@ -98,6 +98,7 @@ class CommandInterface
     void _calibrate(int slot, char * subcommand, int arg_cnt, char ** args);
 
     void _toggleDebug();
+    void _startLogging();
 
 
 

@@ -1,6 +1,7 @@
 #include "i2c.h"
 #include "system/hardware.h"
 #include "system/monitor.h"
+#include "utilities/i2c.h"
 
 void i2cError(int transmissionCode)
 {
@@ -61,10 +62,16 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * dat
 
 void scanIC2(TwoWire *wire)
 {
+  scanIC2(wire, -1);
+}
+
+bool scanIC2(TwoWire *wire, int searchAddress)
+{
   Serial.println("Scanning...");
   byte error, address;
   int nDevices;
   nDevices = 0;
+  bool found = false;
   for (address = 1; address < 127; address++)
   {
     // The i2c_scanner uses the return value of
@@ -78,6 +85,10 @@ void scanIC2(TwoWire *wire)
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
+      if(address == searchAddress)
+      {
+        found = true;
+      }
       nDevices++;
     }
     else if (error == 4)
@@ -92,6 +103,8 @@ void scanIC2(TwoWire *wire)
     Serial.println(F("No I2C devices found"));
   else
     Serial.println(F("done"));
+
+  return found;
 }
 
 void enableI2C1()

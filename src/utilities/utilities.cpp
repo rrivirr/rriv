@@ -58,9 +58,14 @@ void printDS3231Time()
   Monitor::instance()->writeDebugMessage(testTime);
 }
 
-void printNVICStatus(){
+void printNVICStatus()
+{
   char  message[100];
   sprintf(message, "1: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
   Monitor::instance()->writeSerialMessage(F(message));
+}
 
+const char * reinterpretCharPtr(const __FlashStringHelper *string)
+{
+  return reinterpret_cast<const char *>(string);
 }

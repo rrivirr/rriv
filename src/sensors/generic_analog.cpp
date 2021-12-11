@@ -1,6 +1,7 @@
 #include "generic_analog.h"
 #include "system/monitor.h"
 #include "sensor_types.h"
+#include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
 
@@ -16,6 +17,8 @@ GenericAnalog::GenericAnalog()
 {
   debug("allocation GenericAnalog");
 }
+
+GenericAnalog::~GenericAnalog(){}
 
 // TODO: place common routines in SensorDriver base class
 void GenericAnalog::configureFromJSON(cJSON * json)
@@ -143,7 +146,10 @@ bool GenericAnalog::takeMeasurement(){
       break;
     
     case ADC_SELECT_EXTERNAL:
-    {}
+    {
+      debug("getting external ADC measurement");
+      this->value = externalADC->getChannelValue(this->configuration.sensor_port);
+    }
       break;
 
     default:
@@ -186,7 +192,7 @@ void GenericAnalog::initCalibration()
 void GenericAnalog::printCalibrationStatus()
 {
   notify(F("Calibration status:"));
-  char buffer[100];
+  char buffer[50];
   sprintf(buffer, "calibrate_high_reading: %d", calibrate_high_reading);
   notify(buffer);
   sprintf(buffer, "calibrate_high_value: %d", calibrate_high_value);
@@ -283,32 +289,10 @@ void GenericAnalog::addCalibrationParametersToJSON(cJSON * json)
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
 
-// float calculateTemperature()
-// {
-//   //v = mx+b  =>  x = (v-b)/m
-//   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-//   float temperature = -1;
-//   if (checkThermistorCalibration() == true)
-//   {
-//     unsigned short m = 0;
-//     unsigned int b = 0;
-//     float rawData = analogRead(PB1);
-//     if (rawData == 0) // indicates thermistor disconnect
-//     {
-//       temperature = -2;
-//     }
-//     else
+
 //     {
 //       readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
 //       readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
 //       temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
 //     }
-//   }
-//   else
-//   {
-//     Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
-//     float rawData = analogRead(PB1);
-//     temperature = rawData;
-//   }
-//   return temperature;
-// }
+

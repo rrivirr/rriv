@@ -77,6 +77,7 @@ public:
   void writeChannelRegister(channel_register channelConfiguration);
   conversion_result_register readConversionResultRegister();
 
+  short getChannelValue(short channel);
   short channel0Value();
   short channel1Value();
   short channel2Value();

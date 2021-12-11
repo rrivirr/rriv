@@ -3,6 +3,7 @@
 #include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
 #include "sensors/sensor_types.h"
+#include "system/measurement_components.h"
 #include "system/monitor.h"
 #include "system/watchdog.h"
 #include "sensors/atlas_rgb.h"
@@ -21,30 +22,26 @@
 //int bluefruitModePin = D4;
 //Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
 
-// Components
-AD7091R * externalADC;
+
 
 // State
-WaterBear_FileSystem *filesystem;
+// WaterBear_FileSystem *filesystem;
 unsigned char uuid[UUID_LENGTH];
 char uuidString[25]; // 2 * UUID_LENGTH + 1
 
 char lastDownloadDate[11] = "0000000000";
-char **values;
 unsigned long lastMillis = 0;
 
 // bool configurationMode = false;
 // bool debugValuesMode = false;
 // bool clearModes = false;
-// bool tempCalMode = false;
-// bool tempCalibrated = false;
 // short controlFlag = 0;
 
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type * settings)
 {
   byte* buffer = (byte *) malloc(sizeof(byte) * sizeof(datalogger_settings_type));
-  for(short i=0; i < sizeof(datalogger_settings_type); i++)
+  for(unsigned short i=0; i < sizeof(datalogger_settings_type); i++)
   {
     short address = EEPROM_DATALOGGER_CONFIGURATION_START + i;
     buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
@@ -61,6 +58,11 @@ void Datalogger::readConfiguration(datalogger_settings_type * settings)
   {
     settings->interBurstDelay = 0;
   }
+
+  bool externalADCInstalled = scanIC2(&Wire, 0x2f);
+  settings->externalADCEnabled = externalADCInstalled;
+
+  settings->debug_values = true;
 }
 
 Datalogger::Datalogger(datalogger_settings_type * settings)
@@ -142,9 +144,9 @@ void Datalogger::loop()
       completedBursts++;
       if(completedBursts < settings.burstNumber)
       {
-        notify(F("do another burst"));
-        notify(settings.burstNumber);
-        notify(completedBursts);
+        debug(F("do another burst"));
+        debug(settings.burstNumber);
+        debug(completedBursts);
         delay(settings.interBurstDelay * 1000);
         initializeBurst();
         return;
@@ -177,8 +179,13 @@ void Datalogger::loop()
   else if (inMode(interactive))
   {
     if(interactiveModeLogging){
-      measureSensorValues(false);
-      writeMeasurementToLogFile();
+      if(timestamp() > lastInteractiveLogTime + 5)
+      {
+        notify(F("interactive log"));
+        measureSensorValues(false);
+        writeMeasurementToLogFile();
+        lastInteractiveLogTime = timestamp();
+      }
     }
   }
   else if (inMode(debugging))
@@ -346,6 +353,14 @@ void Datalogger::initializeMeasurementCycle()
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
+  if(settings.externalADCEnabled)
+  {
+    // get readings from the external ADC
+    debug("converting enabled channels call");
+    externalADC->convertEnabledChannels();
+    debug("converted enabled channels");
+  }
+
   for(int i=0; i<sensorCount; i++){
     if(drivers[i]->takeMeasurement())
     {
@@ -392,39 +407,43 @@ void Datalogger::writeStatusFieldsToLogFile()
   
 }
 
-void Datalogger::writeDebugFieldsToLogFile(){
-  // notes and burst count, etc.
+
+void Datalogger::debugValues(char * buffer)
+{
+  if(settings.debug_values)
+  {
+    notify(buffer);
+  }
 }
+
 
 bool Datalogger::writeMeasurementToLogFile()
 {
-
   writeStatusFieldsToLogFile();
 
   // write out the raw battery reading
   int batteryValue = analogRead(PB0);
-  char buffer[50];
+  char buffer[100];
   sprintf(buffer, "%d,", batteryValue);
-  filesystem->writeString(buffer);
+  filesystem->writeString(buffer);   debugValues(buffer);
 
   // and write out the sensor data
-  notify(F("Write out sensor data"));
+  debug(F("Write out sensor data"));
   for(int i=0; i<sensorCount; i++)
   {
-    notify(i);
     // get values from the sensor
     char * dataString = drivers[i]->getDataString();
-    filesystem->writeString(dataString);
+    filesystem->writeString(dataString);   debugValues(dataString);
     if(i < sensorCount - 1)
     {
-      filesystem->writeString((char *)",");
+      filesystem->writeString((char *)",");   debugValues(",");
     }
   }
   sprintf(buffer, ",%s,", userNote);
-  filesystem->writeString(buffer);
+  filesystem->writeString(buffer);   debugValues(buffer);
   if(userValue != INT_MIN){
     sprintf(buffer, "%d", userValue);
-    filesystem->writeString(buffer);
+    filesystem->writeString(buffer);   debugValues(buffer);
   }
   filesystem->endOfLine();
   return true;
@@ -479,18 +498,20 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
     generic_config configuration = driver->getConfiguration();
     storeSensorConfiguration(&configuration);
 
-    debug(F("updating slots"));
+    notify(F("updating slots"));
     bool slotReplacement = false;
-    debug(sensorCount);
+    notify(sensorCount);
     for(int i=0; i<sensorCount; i++){
       if(drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
       {
         slotReplacement = true;
-        debug(F("slot replacement"));
+        notify(F("slot replacement"));
+        notify(i);
         SensorDriver * replacedDriver = drivers[i];
         drivers[i] = driver;
+        notify("deleting");
         delete(replacedDriver);
-        debug(F("OK"));
+        notify(F("OK"));
         break;
       }
     }
@@ -567,10 +588,15 @@ void Datalogger::setStartUpDelay(int delay)
   storeDataloggerConfiguration();
 }
 
-void Datalogger::Datalogger::setIntraBurstDelay(int delay)
+void Datalogger::setIntraBurstDelay(int delay)
 {
   settings.interBurstDelay = delay;
   storeDataloggerConfiguration();
+}
+
+void Datalogger::setExternalADCEnabled(bool enabled)
+{
+  settings.externalADCEnabled = enabled;
 }
 
 void Datalogger::setUserNote(char * note)
@@ -581,6 +607,13 @@ void Datalogger::setUserNote(char * note)
 void Datalogger::setUserValue(int value)
 {
   userValue = value;
+}
+
+void Datalogger::toggleTraceValues()
+{
+  settings.debug_values = !settings.debug_values;
+  storeConfiguration();
+  Serial2.println(bool(settings.debug_values));
 }
 
 SensorDriver * Datalogger::getDriver(unsigned short slot)
@@ -630,7 +663,7 @@ void Datalogger::storeMode(mode_type mode)
 
 void Datalogger::changeMode(mode_type mode)
 {
-  char message[100];
+  char message[50];
   sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
   Monitor::instance()->writeSerialMessage(message);
   this->mode = mode;
@@ -817,44 +850,44 @@ void Datalogger::prepareForUserInteraction()
 //   sprintf(values[18], "%.2f", calculateTemperature());
 // }
 
-void captureExternalADCValues(){
-  debug("captureExternalADCValues");
-  externalADC->convertEnabledChannels();
-  Serial2.println("channel 0,1,2,3 value");
-  Serial2.println(externalADC->channel0Value());
-  Serial2.println(externalADC->channel1Value());
-  Serial2.println(externalADC->channel2Value());
-  Serial2.println(externalADC->channel3Value());
-  Serial2.flush();
+// void captureExternalADCValues(){
+//   debug("captureExternalADCValues");
+//   externalADC->convertEnabledChannels();
+//   Serial2.println("channel 0,1,2,3 value");
+//   Serial2.println(externalADC->channel0Value());
+//   Serial2.println(externalADC->channel1Value());
+//   Serial2.println(externalADC->channel2Value());
+//   Serial2.println(externalADC->channel3Value());
+//   Serial2.flush();
 
-  sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
-}
+//   sprintf(values[9], "%d", externalADC->channel0Value()); // stuff ADC0 into values[9] for the moment.
+// }
 
 
-bool checkDebugLoop()
-{
-  // Debug debugLoop
-  // this should be a jumper
-  bool debugLoop = false;
-  if (debugLoop == false)
-  {
-    debugLoop = DEBUG_LOOP;
-  }
-  return debugLoop;
-}
+// bool checkDebugLoop()
+// {
+//   // Debug debugLoop
+//   // this should be a jumper
+//   bool debugLoop = false;
+//   if (debugLoop == false)
+//   {
+//     debugLoop = DEBUG_LOOP;
+//   }
+//   return debugLoop;
+// }
 
-bool checkThermistorCalibration()
-{
-  unsigned int calTime = 0;
-  bool thermistorCalibrated = false;
+// bool checkThermistorCalibration()
+// {
+//   unsigned int calTime = 0;
+//   bool thermistorCalibrated = false;
 
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&calTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  if (calTime > 1617681773 && calTime != 4294967295)
-  {
-    thermistorCalibrated = true;
-  }
-  return thermistorCalibrated;
-}
+//   readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&calTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+//   if (calTime > 1617681773 && calTime != 4294967295)
+//   {
+//     thermistorCalibrated = true;
+//   }
+//   return thermistorCalibrated;
+// }
 
 // bool Datalogger::checkAwakeForUserInteraction(bool debugLoop)
 // {
@@ -1164,14 +1197,14 @@ void handleControlCommand()
   // }
 }
 
-void clearThermistorCalibration()
-{
-  Monitor::instance()->writeDebugMessage(F("clearing thermistor EEPROM registers"));
-  for (size_t i = 0; i < TEMPERATURE_BLOCK_LENGTH; i++)
-  {
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, TEMPERATURE_C1_ADDRESS_START+i, 255);
-  }
-}
+// void clearThermistorCalibration()
+// {
+//   Monitor::instance()->writeDebugMessage(F("clearing thermistor EEPROM registers"));
+//   for (size_t i = 0; i < TEMPERATURE_BLOCK_LENGTH; i++)
+//   {
+//     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, TEMPERATURE_C1_ADDRESS_START+i, 255);
+//   }
+// }
 
 
 // void Datalogger::takeNewMeasurement()
@@ -1217,111 +1250,95 @@ void clearThermistorCalibration()
 // }
 
 // displays relevant readings based on controlFlag
-void monitorConfiguration()
-{
-  blink(1,500); //slow down rate of responses to 1/s
-  if (controlFlag == 0)
-  {
-    Monitor::instance()->writeDebugMessage(F("Error: no control Flag"));
-  }
-  if (controlFlag == 1) // time stamps
-  {
-    printDS3231Time();
-  }
-  if (controlFlag == 2) // conductivity readings
-  {
-    float ecValue = -1;
-    bool newDataAvailable = readECDataIfAvailable(&ecValue);
-    if (newDataAvailable)
-    {
-      char message[100];
-      sprintf(message, "Got EC value: %f", ecValue);
-      Monitor::instance()->writeDebugMessage(message);
-    }
-  }
-  if (controlFlag == 3) // thermistor readings
-  {
-    char valuesBuffer[35];
-    sprintf(valuesBuffer, "raw voltage: %i", analogRead(PB1));
-    Monitor::instance()->writeDebugMessage(valuesBuffer);
-  }
-  //test code simplified calls to write and read eeprom
-  /*
-  int test = 1337;
-  writeExposedBytes(TEST_START, (unsigned char *)&test, TEST_LENGTH);
+// void monitorConfiguration()
+// {
+//   blink(1,500); //slow down rate of responses to 1/s
+//   if (controlFlag == 0)
+//   {
+//     Monitor::instance()->writeDebugMessage(F("Error: no control Flag"));
+//   }
+//   if (controlFlag == 1) // time stamps
+//   {
+//     printDS3231Time();
+//   }
+//   if (controlFlag == 2) // conductivity readings
+//   {
+//     float ecValue = -1;
+//     bool newDataAvailable = readECDataIfAvailable(&ecValue);
+//     if (newDataAvailable)
+//     {
+//       char message[100];
+//       sprintf(message, "Got EC value: %f", ecValue);
+//       Monitor::instance()->writeDebugMessage(message);
+//     }
+//   }
+//   if (controlFlag == 3) // thermistor readings
+//   {
+//     char valuesBuffer[35];
+//     sprintf(valuesBuffer, "raw voltage: %i", analogRead(PB1));
+//     Monitor::instance()->writeDebugMessage(valuesBuffer);
+//   }
+//   //test code simplified calls to write and read eeprom
+//   /*
+//   int test = 1337;
+//   writeExposedBytes(TEST_START, (unsigned char *)&test, TEST_LENGTH);
 
-  unsigned short read = 0;
-  readExposedBytes(TEST_START,(unsigned char *)&read, TEST_LENGTH);
-  */
-}
+//   unsigned short read = 0;
+//   readExposedBytes(TEST_START,(unsigned char *)&read, TEST_LENGTH);
+//   */
+// }
 
-void processControlFlag(char *flag)
-{
-  if (strcmp(flag, "time") == 0)
-  {
-    controlFlag = 1;
-  }
-  else if(strcmp(flag, "conduct") == 0)
-  {
-    controlFlag = 2;
-  }
-  else if(strcmp(flag, "therm") == 0)
-  {
-    controlFlag = 3;
-  }
-  else
-  {
-    controlFlag = 0;
-  }
-}
+// void processControlFlag(char *flag)
+// {
+//   if (strcmp(flag, "time") == 0)
+//   {
+//     controlFlag = 1;
+//   }
+//   else if(strcmp(flag, "conduct") == 0)
+//   {
+//     controlFlag = 2;
+//   }
+//   else if(strcmp(flag, "therm") == 0)
+//   {
+//     controlFlag = 3;
+//   }
+//   else
+//   {
+//     controlFlag = 0;
+//   }
+// }
 
-void monitorValues()
-{
-  // print content being logged each second
-  blink(1, 500);
-  char valuesBuffer[300]; // 51+25+11+24+(7*5)+33
-  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
-      values[0], values[1], values[2], values[3], values[4], values[5],
-      values[6],values[7], values[8], values[9], values[10], values[20], values[21]);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+// void monitorTemperature() // print out calibration information & current readings
+// {
+//   blink(1,500);
+//   unsigned short c1, v1, c2, v2, m;
+//   unsigned int b;
+//   unsigned int calTime;
+//   unsigned char data[4];
+//   unsigned char * dataPtr = data;
 
-  //sprintf(valuesBuffer, "burstcount = %i current millis = %i\n", burstCount, (int)millis());
-  //Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+//   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+//   readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
+//   c1 = *(unsigned short *)dataPtr; //4
+//   readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
+//   v1 = *(unsigned short *)dataPtr; //4
+//   readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
+//   c2 = *(unsigned short *)dataPtr; //4
+//   readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
+//   v2 = *(unsigned short *)dataPtr; //4
+//   readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
+//   m = *(unsigned short *)dataPtr; //4
+//   readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
+//   b = *(unsigned int *)dataPtr; // 5
+//   readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
+//   calTime = *(unsigned int *)dataPtr; // 10
 
-  printToBLE(valuesBuffer);
-}
+//   float temperature = calculateTemperature();
 
-void monitorTemperature() // print out calibration information & current readings
-{
-  blink(1,500);
-  unsigned short c1, v1, c2, v2, m;
-  unsigned int b;
-  unsigned int calTime;
-  unsigned char data[4];
-  unsigned char * dataPtr = data;
-
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
-  c1 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
-  v1 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
-  c2 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
-  v2 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
-  m = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
-  b = *(unsigned int *)dataPtr; // 5
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  calTime = *(unsigned int *)dataPtr; // 10
-
-  float temperature = calculateTemperature();
-
-  char valuesBuffer[150];
-  sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-}
+//   char valuesBuffer[150];
+//   sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
+//   Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+// }
 
 
 void Datalogger::storeDataloggerConfiguration()
@@ -1334,9 +1351,6 @@ void Datalogger::storeSensorConfiguration(generic_config * configuration){
   // notify(configuration->common.slot);
   // notify(configuration->common.sensor_type);
   writeSensorConfigurationToEEPROM(configuration->common.slot, configuration);
-
-
-
 }
 
 void Datalogger::setSiteName(char * siteName)

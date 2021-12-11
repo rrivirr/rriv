@@ -8,7 +8,7 @@
 #include "configuration.h"
 #include "utilities/utilities.h"
 
-#include "system/ble.h"
+// #include "system/ble.h"
 #include "system/clock.h"
 #include "system/command.h"
 #include "system/eeprom.h"
@@ -35,7 +35,11 @@ typedef struct datalogger_settings { // 64 bytes
     char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
     char siteName[8];
     unsigned long deploymentTimestamp;
-    char unused[21];        // padding
+    byte externalADCEnabled : 1;
+    byte debug_values : 1;
+    byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
+    byte reserved2 : 5;
+    char unused[20];        // padding
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
@@ -86,14 +90,18 @@ public:
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
     void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
+    void setExternalADCEnabled(bool enabled);
 
     void setUserNote(char * note);
     void setUserValue(int value);
 
+    void toggleTraceValues();
+    void stopLogging();
+    void startLogging();
+
 private:
     // modules
     WaterBear_FileSystem *filesystem;
-    AD7091R * externalADC;
 
     // state
     mode_type mode = interactive;
@@ -108,6 +116,7 @@ private:
     // user
     char userNote[100] = "\0";
     int userValue = INT_MIN;
+    int lastInteractiveLogTime = 0;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -116,8 +125,6 @@ private:
     void writeDebugFieldsToLogFile();
     bool configurationIsDirty();
     void storeConfiguration();
-    void stopLogging();
-    void startLogging();
     void initializeBurst();
     bool shouldContinueBursting();
 
@@ -143,7 +150,8 @@ private:
     // utility
     SensorDriver * getDriver(unsigned short slot);
 
-
+    // debugging
+    void debugValues(char * buffer);
 
 
 };

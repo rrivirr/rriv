@@ -91,11 +91,13 @@ class SensorDriver {
 
 class AnalogSensorDriver : public SensorDriver {
   public:
+    ~AnalogSensorDriver();
     virtual void setup();
 };
 
 class I2CSensorDriver : public SensorDriver {
   public:
+    ~I2CSensorDriver();
     virtual void setup(TwoWire * wire);
 };
 

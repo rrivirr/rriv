@@ -22,6 +22,7 @@ void setup(void)
   startSerial2();
   Monitor::instance()->debugToSerial=true;
 
+
   startCustomWatchDog();
   printWatchDogStatus();
 

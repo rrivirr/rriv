@@ -34,6 +34,7 @@ class GenericAnalog : public AnalogSensorDriver
   public: 
     // Constructor
     GenericAnalog();
+    ~GenericAnalog();
     void configureFromJSON(cJSON * json);
 
     // Interface
