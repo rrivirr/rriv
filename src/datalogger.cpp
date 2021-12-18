@@ -153,6 +153,7 @@ void Datalogger::loop()
       }
 
       // go to sleep
+      fileSystemWriteCache->flushCache();
       SLEEP: stopAndAwaitTrigger();
       initializeMeasurementCycle();
       return;
@@ -393,17 +394,17 @@ void Datalogger::writeStatusFieldsToLogFile()
   }
   deploymentUUIDString[2*16] = '\0';
 
-  filesystem->writeString(settings.siteName);
-  filesystem->writeString((char *) ",");
-  filesystem->writeString(deploymentUUIDString);
-  filesystem->writeString((char *) ",");
-  char buffer[10]; sprintf(buffer, "%ld,", settings.deploymentTimestamp); filesystem->writeString(buffer);  
-  filesystem->writeString(uuidString);
-  filesystem->writeString((char *)",");
-  filesystem->writeString(currentTimeString);
-  filesystem->writeString((char *)",");
-  filesystem->writeString(humanTimeString);
-  filesystem->writeString((char *)",");
+  fileSystemWriteCache->writeString(settings.siteName);
+  fileSystemWriteCache->writeString((char *) ",");
+  fileSystemWriteCache->writeString(deploymentUUIDString);
+  fileSystemWriteCache->writeString((char *) ",");
+  char buffer[10]; sprintf(buffer, "%ld,", settings.deploymentTimestamp); fileSystemWriteCache->writeString(buffer);  
+  fileSystemWriteCache->writeString(uuidString);
+  fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(currentTimeString);
+  fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(humanTimeString);
+  fileSystemWriteCache->writeString((char *)",");
   
 }
 
@@ -425,7 +426,7 @@ bool Datalogger::writeMeasurementToLogFile()
   int batteryValue = analogRead(PB0);
   char buffer[100];
   sprintf(buffer, "%d,", batteryValue);
-  filesystem->writeString(buffer);   debugValues(buffer);
+  fileSystemWriteCache->writeString(buffer);   debugValues(buffer);
 
   // and write out the sensor data
   debug(F("Write out sensor data"));
@@ -433,19 +434,19 @@ bool Datalogger::writeMeasurementToLogFile()
   {
     // get values from the sensor
     char * dataString = drivers[i]->getDataString();
-    filesystem->writeString(dataString);   debugValues(dataString);
+    fileSystemWriteCache->writeString(dataString);   debugValues(dataString);
     if(i < sensorCount - 1)
     {
-      filesystem->writeString((char *)",");   debugValues(",");
+      fileSystemWriteCache->writeString((char *)",");   debugValues(",");
     }
   }
   sprintf(buffer, ",%s,", userNote);
-  filesystem->writeString(buffer);   debugValues(buffer);
+  fileSystemWriteCache->writeString(buffer);   debugValues(buffer);
   if(userValue != INT_MIN){
     sprintf(buffer, "%d", userValue);
-    filesystem->writeString(buffer);   debugValues(buffer);
+    fileSystemWriteCache->writeString(buffer);   debugValues(buffer);
   }
-  filesystem->endOfLine();
+  fileSystemWriteCache->endOfLine();
   return true;
 }
 
@@ -682,7 +683,7 @@ void Datalogger::deploy()
   setDeploymentIdentifier();
   setDeploymentTimestamp(timestamp());
   strcpy(loggingFolder, settings.siteName);
-  filesystem->closeFileSystem(); 
+  fileSystem->closeFileSystem(); 
   initializeFilesystem();
   changeMode(logging);
   storeMode(logging);
@@ -696,9 +697,9 @@ void Datalogger::initializeFilesystem()
 {
   SdFile::dateTimeCallback(dateTime);
 
-  filesystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
-  Monitor::instance()->filesystem = filesystem;
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
+  fileSystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
+  Monitor::instance()->filesystem = fileSystem;
+  debug(F("Filesystem started OK"));
 
   time_t setupTime = timestamp();
   char setupTS[21];
@@ -718,7 +719,14 @@ void Datalogger::initializeFilesystem()
   }
   strcat(header, ",user_note,user_value");
 
-  filesystem->setNewDataFile(setupTime, header); // name file via epoch timestamps
+  fileSystem->setNewDataFile(setupTime, header); // name file via epoch timestamps
+
+  if(fileSystemWriteCache != NULL)
+  {
+    delete(fileSystemWriteCache);
+  }
+  debug("make a new write cache");
+  fileSystemWriteCache = new WriteCache(fileSystem);
 }
 
 
@@ -736,13 +744,19 @@ void powerUpSwitchableComponents()
   digitalWrite(PC5,HIGH);
   delay(100); // Wait for ADC to start up
   
-  Monitor::instance()->writeDebugMessage(F("Set up external ADC"));
-  externalADC = new AD7091R();
-  externalADC->configure();
-  externalADC->enableChannel(0);
-  externalADC->enableChannel(1);
-  externalADC->enableChannel(2);
-  externalADC->enableChannel(3);
+  bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
+  if(externalADCInstalled)
+  {
+    debug(F("Set up external ADC"));
+    externalADC = new AD7091R();
+    externalADC->configure();
+    externalADC->enableChannel(0);
+    externalADC->enableChannel(1);
+    externalADC->enableChannel(2);
+    externalADC->enableChannel(3);
+  } else {
+    debug(F("external ADC not enabled"));
+  }
 
   if(USE_EC_OEM){
     enableI2C2();
@@ -955,7 +969,7 @@ void Datalogger::stopAndAwaitTrigger()
 
 
   powerDownSwitchableComponents();
-  filesystem->closeFileSystem(); // close file, filesystem
+  fileSystem->closeFileSystem(); // close file, filesystem
   disableSwitchedPower();
 
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
@@ -1004,7 +1018,7 @@ void Datalogger::stopAndAwaitTrigger()
   powerUpSwitchableComponents();
    /////turn components back on
   componentsBurstMode();
-  filesystem->reopenFileSystem();
+  fileSystem->reopenFileSystem();
 
 
   if(awakenedByUser == true)

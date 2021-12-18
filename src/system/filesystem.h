@@ -4,8 +4,9 @@
 // #include "Arduino.h"
 #include "SdFat.h"
 #include "DS3231.h"
+#include "write_cache.h"
 
-class WaterBear_FileSystem
+class WaterBear_FileSystem : public OutputDevice
 {
 
 private:
@@ -30,7 +31,7 @@ public:
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
   void reopenFileSystem(); // reopen filesystem after wakeup
-  void writeString(char * dataString);
+  void writeString(char * string);
   void endOfLine();
 
   // deprecated

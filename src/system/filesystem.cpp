@@ -10,9 +10,10 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
   strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
+  debug("initlizated filesystem");
  
   this->setLoggingFolder(loggingFolder);
-  Serial2.println(F("Set deployment identifier"));
+  debug("set the logging folder");
 }
 
 void WaterBear_FileSystem::initializeSDCard(){
@@ -48,9 +49,12 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
-void WaterBear_FileSystem::writeString(char * dataString)
+void WaterBear_FileSystem::writeString(char * string)
 {
-  this->logfile.print(dataString);
+  // notify("printing to log file");
+  // notify((int)strlen(string));
+  // notify(string);
+  this->logfile.print(string);
 }
 
 void WaterBear_FileSystem::endOfLine()
@@ -183,7 +187,8 @@ void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
   strcpy(loggingFolder, newLoggingFolder);
 }
 
-bool WaterBear_FileSystem::openFile(char * filename){
+bool WaterBear_FileSystem::openFile(char * filename)
+{
   this->sd.chdir("/");
   printCurrentDirListing();
   Serial2.println("OK in root");
@@ -196,7 +201,6 @@ bool WaterBear_FileSystem::openFile(char * filename){
 
   if(!this->sd.chdir(dataDirectory))
   {
-    //Serial2.println("OK");
     Serial2.println(F("failed: /Data."));
   }
   else
@@ -210,7 +214,6 @@ bool WaterBear_FileSystem::openFile(char * filename){
     Serial2.write("mkdir:");
     Serial2.println(loggingFolder);
     this->sd.mkdir(loggingFolder);
-     //delay(10);
   }
 
   if(!this->sd.chdir(this->loggingFolder))
@@ -223,13 +226,14 @@ bool WaterBear_FileSystem::openFile(char * filename){
     Serial2.print("cd:");
     Serial2.println(loggingFolder);
   }
-  //delay(10);
+
 
   Serial2.print("Opening file ");
   Serial2.println(filename);
   Serial2.flush();
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
-  //delay(10);
+  Serial2.println("opened file");
+  Serial2.flush();
 
   //sd.chdir();
   if(!logfile)

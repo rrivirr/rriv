@@ -494,6 +494,17 @@ void doScanIC2(int arg_cnt, char**args)
   // scanIC2(&Wire2);
 }
 
+void go(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_go();
+}
+
+void CommandInterface::_go()
+{
+  this->datalogger->changeMode(logging);
+}
+
+
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
@@ -529,6 +540,7 @@ void CommandInterface::setup(){
   // qos commands
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
+  cmdAdd("go", go);
 
 }
 

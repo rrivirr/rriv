@@ -19,6 +19,7 @@
 #include "system/monitor.h"
 #include "system/switched_power.h"
 #include "system/adc.h"
+#include "system/write_cache.h"
 
 #include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
@@ -101,7 +102,8 @@ public:
 
 private:
     // modules
-    WaterBear_FileSystem *filesystem;
+    WaterBear_FileSystem *fileSystem;
+    WriteCache * fileSystemWriteCache = NULL;
 
     // state
     mode_type mode = interactive;
