@@ -13,6 +13,8 @@ void clearRTCAlarmInterrupt();
 void disableRTCAlarmInterrupt();
 
 void enableUserInterrupt();
+
+void enableUserInterrupt();
 void clearUserInterrupt();
 void disableUserInterrupt();
 void handleClockInterrupt();
