@@ -5,26 +5,21 @@
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
 
 /*
- * Partition scheme (24LC01B 1Kbit)
- * 000-099 Waterbear Device Info
- * 100-199
- * 200-249
- * 250-299 Waterbear Device Calibration / Significant Values
- * 300-399
- * 400-499
- * 500-549 Sensor 1 Calibration
- * 550-599 Sensor 2 Calibration
- * 600-649 Sensor 3 Calibration
- * 650-699 Sensor 4 Calibration
- * 700-749 Sensor 5 Calibration
- * 750-799 Sensor 6 Calibration
- * 800-849 Sensor 7 Calibration
- * 850-899 Sensor 8 Calibration
- * 900-949 Sensor 9 Calibration
- * 950-999 Sensor 10 Calibration
+ * EEPROM Partition scheme (24LC01B 1Kbit)
+ * 000-359 Waterbear Device Info, Calibration, Significant Values
+ * 360-423 Sensor Calibration Block 1
+ * 424-487 Sensor Calibration Block 2
+ * 488-551 Sensor Calibration Block 3
+ * 552-615 Sensor Calibration Block 4
+ * 616-679 Sensor Calibration Block 5
+ * 680-743 Sensor Calibration Block 6
+ * 744-807 Sensor Calibration Block 7
+ * 808-873 Sensor Calibration Block 8
+ * 872-936 Sensor Calibration Block 9
+ * 936-999 Sensor Calibration Block 10
 */
 
-#define EEPROM_I2C_ADDRESS 0x50 // this is weird
+#define EEPROM_I2C_ADDRESS 0x50
 
 #define EEPROM_RESET_VALUE 255 // max value of a byte
 
@@ -55,50 +50,17 @@
  * 4 to serial: send debug messages to the serial interface
 */
 
-#define DEBUG_SETTINGS_ADDRESS 404 // 8 booleans {measurements, loop, short sleep, to file, to serial}
-
-/*
- * Sensor General Register Map:
- * 0 sensor type
- * 1 ADC/Digital sensor type
- * 2 calibrated boolean (1 yes, 0 no) could be a bit?
- * 3-29 calibration variables:
- * Pin if ADC
- * i2c address?
-*/
-#define SENSOR_ADDRESS_LENGTH 50
-#define SENSOR_1_ADDRESS_START 500
-#define SENSOR_2_ADDRESS_START 550
-#define SENSOR_3_ADDRESS_START 600
-#define SENSOR_4_ADDRESS_START 650
-#define SENSOR_5_ADDRESS_START 700
-#define SENSOR_6_ADDRESS_START 750
-#define SENSOR_7_ADDRESS_START 800
-#define SENSOR_8_ADDRESS_START 850
-#define SENSOR_9_ADDRESS_START 900
-#define SENSOR_10_ADDRESS_START 950
-
-// Sensor Types
-#define NO_SENSOR 0; // or 255?
-#define SENSOR_TYPE_THERMISTOR 1
-
-
-#define SENSOR_CALIBRATED 1
-
-/*
- * Thermistor Register Map
- * 0 sensor type = 1
- * 1 ADC
- * 2 calibrated boolean (1 yes, 0 no)
- * 3 sensor pin
- * 4-5 c1
- * 6-7 v1
- * 8-9 c2
- * 10-11 v2
- * 12-13 m
- * 14-17 b
- * 18-21 calibration timestamp
-*/
+//Sensor slot addresses (64bytes each, 360-999)
+#define SENSOR_SLOT_1_ADDRESS 360
+#define SENSOR_SLOT_2_ADDRESS 424
+#define SENSOR_SLOT_3_ADDRESS 488
+#define SENSOR_SLOT_4_ADDRESS 552
+#define SENSOR_SLOT_5_ADDRESS 616
+#define SENSOR_SLOT_6_ADDRESS 680
+#define SENSOR_SLOT_7_ADDRESS 744
+#define SENSOR_SLOT_8_ADDRESS 808
+#define SENSOR_SLOT_9_ADDRESS 872
+#define SENSOR_SLOT_10_ADDRESS 936
 
 //Thermistor Calibration Block
 #define TEMPERATURE_C1_ADDRESS_START 64
@@ -132,17 +94,20 @@
 #define TEMPERATURE_SCALER 100 // applies to C1 C2 M B values for storage
 #define TEMPERATURE_BLOCK_LENGTH 18//for resetting 64-81
 
-void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data );
-byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress );
+void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data );
+byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress );
 
 void readDeploymentIdentifier(char * deploymentIdentifier);
 void writeDeploymentIdentifier(char * deploymentIdentifier);
 
 void readUniqueId(unsigned char * uuid); // uuid must point to char[UUID_LENGTH]
 
-void writeEEPROMBytes(byte address, unsigned char * data, uint8_t size);
-void readEEPROMBytes(byte address, unsigned char * data, uint8_t size);
+void writeEEPROMBytes(short address, unsigned char * data, uint8_t size);
+void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
-void clearEEPROMAddress(byte address, uint8_t length);
+void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian
+void writeEEPROMBytesMem(short address, void * source, uint8_t size);
+
+void clearEEPROMAddress(short address, uint8_t length);
 
 #endif

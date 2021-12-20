@@ -2,7 +2,7 @@
 #include "monitor.h"
 #include "utilities/STM32-UID.h"
 
-void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
+void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data )
 {
   wire->beginTransmission(deviceaddress);
   wire->write(eeaddress);
@@ -12,7 +12,7 @@ void writeEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress, byte data )
   delay(5);
 }
 
-byte readEEPROM(TwoWire * wire, int deviceaddress, byte eeaddress )
+byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress )
 {
   byte rdata = 0xFF;
 
@@ -104,7 +104,7 @@ void readUniqueId(unsigned char * uuid)
 
 }
 
-void writeEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little Endian
+void writeEEPROMBytes(short address, unsigned char * data, uint8_t size) // Little Endian
 {
   for (uint8_t i = 0; i < size; i++)
   {
@@ -112,7 +112,7 @@ void writeEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Littl
   }
 }
 
-void readEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little Endian
+void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Little Endian
 {
   for (uint8_t i = 0; i < size; i++)
   {
@@ -121,7 +121,47 @@ void readEEPROMBytes(byte address, unsigned char * data, uint8_t size) // Little
   data[size] = '\0';
 }
 
-void clearEEPROMAddress(byte address, uint8_t length)
+void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
+{
+  Serial2.println("readEEPROMBytesMem");
+  Serial2.flush();
+  char buffer[size];
+  for (uint8_t i = 0; i < size; i++)
+  {
+    // read everything from address into buffer
+    Serial2.print(address+i);
+    Serial2.print(",");
+    Serial2.flush(); 
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+  }
+  Serial2.println();
+  memcpy(destination, &buffer, size); // copy buffer to destination
+}
+
+void writeEEPROMBytesMem(short address, void * source, uint8_t size)
+{
+  Serial2.println("writeEEPROMBytesMem");
+  Serial2.flush();
+  char buffer[size];
+  //read everything from source into buffer
+  memcpy(&buffer, source, size);
+  for (uint8_t i = 0; i < size; i++)
+  {
+    // write everything from buffer to address
+    // note: output will look weird because 
+    // serial print doesn't distinguish between char and ints
+    // Serial2.print(buffer[i]);
+    Serial2.print(address+i);
+    Serial2.print(",");
+    Serial2.flush();
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
+  }
+  Serial2.println();
+  Serial2.println("\nfinish writeEEPROMBytesMem");
+  Serial2.flush();
+}
+
+void clearEEPROMAddress(short address, uint8_t length)
 {
   for (uint8_t i = 0; i < length; i++)
   {
