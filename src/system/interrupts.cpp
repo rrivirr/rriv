@@ -32,8 +32,9 @@ void enableRTCAlarmInterrupt(){
 }
 
 void clearRTCAlarmInterrupt(){
+  // this clear method looks pretty wack to me
   *bb_perip(&EXTI_BASE->PR, EXTI_RTC_ALARM_BIT) = 1; // this clears the interrupt on exti line
-  *bb_perip(&NVIC_BASE->ICPR, EXTI_RTC_ALARM_BIT) = 1; 
+  *bb_perip(&NVIC_BASE->ICPR, EXTI_RTC_ALARM_BIT) = 1;// FIX: wrong bit define here
 }
 
 void disableRTCAlarmInterrup(){

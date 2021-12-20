@@ -384,6 +384,7 @@ void stopAndAwaitTrigger()
 
   clearAllInterrupts();
   clearAllPendingInterrupts();
+  // clearUserInterrupt(); // no longer used
 
   enableClockInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
                             // Wake button and DS3231 can both access this interrupt on v0.2
