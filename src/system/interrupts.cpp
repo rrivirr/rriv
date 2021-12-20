@@ -2,13 +2,13 @@
 #include <RTClock.h>
 
 bool awakenedByUser = false;
-void clearClockInterrupt()
+void clearManualWakeInterrupt()
 {
   EXTI_BASE->PR = 0x00000080; // this clear the interrupt on exti line
   NVIC_BASE->ICPR[0] = 1 << NVIC_EXTI_9_5;
 }
 
-void disableClockInterrupt()
+void disableManualWakeInterrupt()
 {
   NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
 }
@@ -62,8 +62,8 @@ void disableUserInterrupt()
 void handleClockInterrupt()
 {
   // Serial2.println("handleMain EXTI Interrupt");
-  disableClockInterrupt();
-  clearClockInterrupt();
+  disableManualWakeInterrupt();
+  clearManualWakeInterrupt();
 }
 
 void setupWakeInterrupts()

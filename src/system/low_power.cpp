@@ -27,16 +27,6 @@ void enterStopMode(){
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
-  Serial2.println("hi2");
-    Serial2.flush();
-
-  componentsStopMode();
-    Serial2.println("hi");
-
-  //hardwarePinsStopMode(); // switch to input mode
-  Serial2.println("hi");
-  Serial2.flush();
-
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
   rcc_turn_off_clk(RCC_CLK_PLL);
   rcc_turn_off_clk(RCC_CLK_LSI);
@@ -54,9 +44,6 @@ void enterStopMode(){
   //Finally, switch to the now-ready PLL as the main clock source.
   rcc_switch_sysclk(RCC_CLKSRC_PLL);
 
-  /////turn stuff back on (components, hardware pins)
-  componentsBurstMode();
-  setupHardwarePins(); // used from setup steps in datalogger
 
 }
 
@@ -95,31 +82,38 @@ void componentsAlwaysOff()
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
 
+return;
 
   rcc_clk_disable( RCC_ADC1);
   rcc_clk_disable( RCC_ADC2);
   rcc_clk_disable( RCC_ADC3);
-  rcc_clk_disable( RCC_AFIO);
-  rcc_clk_disable( RCC_BKP);
-  rcc_clk_disable( RCC_CRC);
+    
+
+  //rcc_clk_disable( RCC_AFIO);
+  
+  // rcc_clk_disable( RCC_BKP);
+  // rcc_clk_disable( RCC_CRC);
   rcc_clk_disable( RCC_DAC);
   rcc_clk_disable( RCC_DMA1);
   rcc_clk_disable( RCC_DMA2);
   rcc_clk_disable( RCC_FLITF);
   rcc_clk_disable( RCC_FSMC);
-  rcc_clk_disable( RCC_GPIOA);
-  rcc_clk_disable( RCC_GPIOB);
-  rcc_clk_disable( RCC_GPIOC);
-  rcc_clk_disable( RCC_GPIOD);
-  rcc_clk_disable( RCC_GPIOE);
-  rcc_clk_disable( RCC_GPIOF);
-  rcc_clk_disable( RCC_GPIOG);
-  rcc_clk_disable( RCC_I2C1);
-  rcc_clk_disable( RCC_I2C2);
-  rcc_clk_disable( RCC_PWR);
-  rcc_clk_disable( RCC_SDIO);
-  rcc_clk_disable( RCC_SPI1);
-  rcc_clk_disable( RCC_SPI2);
+
+
+
+  // rcc_clk_disable( RCC_GPIOA); // ??
+  // rcc_clk_disable( RCC_GPIOB);
+  // rcc_clk_disable( RCC_GPIOC);
+  // rcc_clk_disable( RCC_GPIOD);
+  // rcc_clk_disable( RCC_GPIOE);
+  // rcc_clk_disable( RCC_GPIOF);
+  // rcc_clk_disable( RCC_GPIOG);
+  //rcc_clk_disable( RCC_I2C1); // these clocks are needed during normal run
+  //rcc_clk_disable( RCC_I2C2);
+  // rcc_clk_disable( RCC_PWR); // ??
+  // rcc_clk_disable( RCC_SDIO); // ??
+  // rcc_clk_disable( RCC_SPI1);
+  // rcc_clk_disable( RCC_SPI2);
   rcc_clk_disable( RCC_SPI3);
   rcc_clk_disable( RCC_SRAM);
   rcc_clk_disable( RCC_TIMER1);
@@ -142,6 +136,7 @@ void componentsAlwaysOff()
   rcc_clk_disable( RCC_UART4);
   rcc_clk_disable( RCC_UART5);
   rcc_clk_disable( RCC_USB);
+  
 }
 
 void hardwarePinsAlwaysOff()
@@ -185,8 +180,7 @@ void hardwarePinsAlwaysOff()
 
   pinMode(PC4, INPUT);
   pinMode(PC5, INPUT);
-  pinMode(PC6, INPUT);
-
+  //  pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
@@ -201,7 +195,7 @@ void componentsStopMode()
 {
   pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
   digitalWrite(PC8, LOW);
-  //usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+ 
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
@@ -217,6 +211,7 @@ void componentsStopMode()
 
 void hardwarePinsStopMode()
 {
+  return;
   // check pins again on new board //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
@@ -232,15 +227,37 @@ void hardwarePinsStopMode()
 
 void componentsBurstMode()
 {
+
+  Monitor::instance()->writeDebugMessage(F("turn on components"));
+
   //pinmode?
-  usart_enable(Serial2.c_dev());
-  i2c_master_enable(I2C1, I2C_BUS_RESET);
-  i2c_master_enable(I2C2, I2C_BUS_RESET);
+  rcc_clk_enable( RCC_I2C1); // these clocks are needed during normal run
+  rcc_clk_enable( RCC_I2C2);
+  // i2c_master_enable(I2C1, I2C_BUS_RESET);
+  // i2c_master_enable(I2C2, I2C_BUS_RESET);
+  i2c_master_enable(I2C1, 0);
+  i2c_master_enable(I2C2, 0);
   
   spi_peripheral_enable(SPI1);
   adc_enable(ADC1);
+
+  Monitor::instance()->writeDebugMessage(F("turned on components"));
+
 }
 
+void disableSerialLog()
+{
+  Serial2.end();
+  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+}
+
+void enableSerialLog()
+{
+  usart_enable(Serial2.c_dev());
+  Serial2.begin(SERIAL_BAUD);
+}
+
+// Not Used
 void restorePinDefaults()
 {
 

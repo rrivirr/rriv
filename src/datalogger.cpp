@@ -30,6 +30,26 @@ bool tempCalMode = false;
 bool tempCalibrated = false;
 short controlFlag = 0;
 
+
+void enableI2C1()
+{
+  
+  i2c_disable(I2C1);
+  i2c_master_enable(I2C1, 0);
+  Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
+
+  delay(1000);
+  //i2c_bus_reset(I2C1); // hangs here if this is called
+  Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
+
+  Wire.begin();
+  delay(1000);
+
+  Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
+
+  scanIC2(&Wire);
+}
+
 void enableI2C2()
 {
   i2c_disable(I2C2);
@@ -41,14 +61,22 @@ void enableI2C2()
   delay(1000);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
+
+  Monitor::instance()->writeDebugMessage(F("Scanning"));
+
   scanIC2(&Wire2);
 }
 
-void powerUpSwitchableComponents()
+void powerUpSwitchableComponents()  
 {
   cycleSwitchablePower();
-  enableI2C2();
-  setupEC_OEM(&Wire2);
+  enableI2C1();
+  if(USE_EC_OEM){
+    enableI2C2();
+    setupEC_OEM(&Wire2);
+  }
+  Monitor::instance()->writeDebugMessage(F("Skipped EC_OEM"));
+
   Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
 }
 
@@ -367,53 +395,53 @@ void stopAndAwaitTrigger()
   int iser1, iser2, iser3;
   storeAllInterrupts(iser1, iser2, iser3);
 
-
-  clearClockInterrupt();
-
-  ///
-  /// Junk code
-  ///
-  // clearUserInterrupt(); // no longer used
-  // enableClockInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
-                            // Wake button and DS3231 can both access this interrupt on v0.2
-  // printInterruptStatus(Serial2);
-  // enableRTCAlarmInterrupt(); // The internal RTC Alarm interrupt, in the backup domain, wrong code though
-
+  clearManualWakeInterrupt();
+  interval = 1;
   setNextAlarmInternalRTC(interval); // close to the right code
+
+  powerDownSwitchableComponents();
+  disableSwitchedPower();
+
+  awakenedByUser = false; // Don't go into sleep mode with any interrupt state
+
+ // filesystem->closeFileSystem();
+//  WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard
+
+  Serial2.println("hi2");
   Serial2.flush();
 
+  componentsStopMode();
+
+  disableSerialLog(); // TODO
+  hardwarePinsStopMode(); // switch to input mode
+  
   clearAllInterrupts();
   clearAllPendingInterrupts();
 
   enableManualWakeInterrupt(); // The DS3231, which is not powered during stop mode on v0.2 hardware
-  nvic_irq_enable(NVIC_RTCALARM);
-
-  // while(1){
-  //   Serial2.println("here in the loop");
-  //   delay(2000);
-  // }
+  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
 
-  awakenedByUser = false; // Don't go into sleep mode with any interrupt state
-
-  Serial2.end();
-
-  /////WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard?
 
   enterStopMode();
   //enterSleepMode();
 
-  Serial2.begin(SERIAL_BAUD);
+  //reopen sd card file (save file name? or use variable that has it already)
+  //filesystem->openFileForAppend();
 
   reenableAllInterrupts(iser1, iser2, iser3);
+  disableManualWakeInterrupt();
+  nvic_irq_disable(NVIC_RTCALARM);
+
+  setupHardwarePins(); // used from setup steps in datalogger
+  enableSerialLog(); // TODO
+  
   Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
 
-  disableClockInterrupt();
-  // disableRTCAlarmInterrupt(); // this code hangs
-  disableUserInterrupt();
+  /////turn stuff back on (components, hardware pins)
+  componentsBurstMode();
 
   // We have woken from the interrupt
-  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
   printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
@@ -679,10 +707,12 @@ void takeNewMeasurement()
 
   // OEM EC
   float ecValue = -1;
-  bool newDataAvailable = readECDataIfAvailable(&ecValue);
-  if (!newDataAvailable)
-  {
-    Monitor::instance()->writeDebugMessage(F("New EC data not available"));
+  if(USE_EC_OEM){
+    bool newDataAvailable = readECDataIfAvailable(&ecValue);
+    if (!newDataAvailable)
+    {
+      Monitor::instance()->writeDebugMessage(F("New EC data not available"));
+    }
   }
 
   //Serial2.print(F("Got EC value: "));

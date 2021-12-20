@@ -29,7 +29,6 @@ void setup(void)
 
   // delay(20000);
 
-
   allocateMeasurementValuesMemory();
 
   setupWakeInterrupts();
@@ -38,19 +37,8 @@ void setup(void)
   delay(2000);
 
    // Don't respond to interrupts during setup
-  disableClockInterrupt();
-  // disableUserInterrupt();
-
-  clearClockInterrupt();
-  // clearUserInterrupt();
-
-  //  Prepare I2C
-  i2c_bus_reset(I2C1);
-  //i2c_disable(I2C1);
-  //i2c_master_enable(I2C1, 0);
-  Wire.begin();
-  delay(1000);
-  scanIC2(&Wire);
+  disableManualWakeInterrupt();
+  clearManualWakeInterrupt();
 
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();

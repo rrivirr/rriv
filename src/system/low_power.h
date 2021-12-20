@@ -17,4 +17,7 @@
   void componentsBurstMode(); // wake up components
 // }
 
+void disableSerialLog();
+void enableSerialLog();
+
 #endif

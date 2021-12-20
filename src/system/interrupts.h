@@ -1,8 +1,8 @@
 #ifndef WATERBEAR_INTERRUPTS
 #define WATERBEAR_INTERRUPTS
 
-void clearClockInterrupt();
-void disableClockInterrupt();
+void clearManualWakeInterrupt();
+void disableManualWakeInterrupt();
 
 void enableManualWakeInterrupt();
 
