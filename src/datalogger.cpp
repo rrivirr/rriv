@@ -427,6 +427,11 @@ void stopAndAwaitTrigger()
   disableManualWakeInterrupt();
   nvic_irq_disable(NVIC_RTCALARM);  
 
+   if(awakenedByUser == true){
+    Monitor::instance()->writeDebugMessage("USER TRIGGERED INTERRUPT");
+    awakeTime = timestamp();
+   }
+
   enableSerialLog(); 
   setupHardwarePins(); // used from setup steps in datalogger
   

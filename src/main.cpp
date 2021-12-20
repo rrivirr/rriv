@@ -31,7 +31,7 @@ void setup(void)
 
   allocateMeasurementValuesMemory();
 
-  setupWakeInterrupts();
+  setupManualWakeInterrupts();
 
   powerUpSwitchableComponents();
   delay(2000);

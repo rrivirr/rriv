@@ -3,23 +3,15 @@
 
 void clearManualWakeInterrupt();
 void disableManualWakeInterrupt();
-
 void enableManualWakeInterrupt();
+void handleManualWakeInterrupt();
+void setupManualWakeInterrupts();
+
 
 void enableRTCAlarmInterrupt();
-
 void clearRTCAlarmInterrupt();
-
 void disableRTCAlarmInterrupt();
 
-void enableUserInterrupt();
-
-void enableUserInterrupt();
-void clearUserInterrupt();
-void disableUserInterrupt();
-void handleClockInterrupt();
-void setupWakeInterrupts();
-void userTriggeredInterrupt();
 void clearAllInterrupts();
 void clearAllPendingInterrupts();
 void storeAllInterrupts(int& iser1, int& iser2, int& iser3);
