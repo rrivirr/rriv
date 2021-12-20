@@ -17,6 +17,8 @@ extern DS3231 Clock;
 #define ALRM2_MATCH_HR_MIN     0b100   // when hours and minutes match
 //byte ALRM2_SET = ALRM2_ONCE_PER_MIN;
 
+
+void setNextAlarmInternalRTC(short interval);
 void setNextAlarm(short interval);
 void dateTime(uint16_t* date, uint16_t* time);
 void clearAllAlarms();
