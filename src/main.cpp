@@ -10,6 +10,11 @@
 
 void setup(void)
 {
+
+  startSerial2();
+
+  startCustomWatchDog();
+
   // disable unused components and hardware pins //
   componentsAlwaysOff();
   hardwarePinsAlwaysOff();
@@ -68,7 +73,6 @@ void setup(void)
 
   print_debug_status();
 
-  startCustomWatchDog();
  
 }
 
