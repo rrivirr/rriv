@@ -74,13 +74,13 @@ void setup(void)
   disableManualWakeInterrupt();
   clearManualWakeInterrupt();
 
-
-  // Setup RGB Sensor
   AtlasRGB::instance()->start(&Wire2);
-  AtlasRGB::instance()->singleMode();
+  
+  // Setup RGB Sensor
+  AtlasRGB::instance()->deviceInformation();
   AtlasRGB::instance()->sendCommand();
   Serial2.println(AtlasRGB::instance()->receiveResponse());
- 
+
   // Clear the alarms so they don't go off during setup
   clearAllAlarms();
 
@@ -89,7 +89,6 @@ void setup(void)
   //initBLE();
 
   readUniqueId(uuid);
-
 
   setNotBursting(); // prevents bursting during first loop
 
@@ -124,25 +123,10 @@ void loop(void)
   startCustomWatchDog();
   printWatchDogStatus();
 
-  // Prints RGB sensor information (check)
-  // AtlasRGB::instance()->deviceInformation();
-  
-
-  // Switch to I2C mode on default address
-  //AtlasRGB::instance()->setI2C(112);
-
-  // Prints sensor output for RGB values
-  while (true) {
-    AtlasRGB::instance()->run();
-  }  
-
-  // // Prints CO2 sensor information (check)
-  // AtlasCO2::instance()->deviceInformation();
-
-  // // Prints sensor output for RGB values
-  // while (true) {
-  //   AtlasCO2::instance()->run();
-  // }  
+  // Get reading from RGB Sensor
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  Serial2.println(AtlasRGB::instance()->receiveResponse());
 
   // calculate and print free memory
   // reset the system if we are running out of memory
@@ -154,7 +138,6 @@ void loop(void)
     Monitor::instance()->Monitor::instance()->writeSerialMessage(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
-*/
 
   // allocate and free the ram to test if there is enough?
   //nvic_sys_reset - what does this do?
