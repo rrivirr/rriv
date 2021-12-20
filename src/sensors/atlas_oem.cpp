@@ -37,6 +37,7 @@ void setupEC_OEM(TwoWire *wire)
 void hibernateEC_OEM()
 {
   oem_ec->setHibernate();
+  delete  oem_ec;
 }
 
 void clearECCalibrationData()

@@ -7,7 +7,7 @@ class Monitor
 {
 
 public:
-    bool logToFile = false;
+    bool logToFile = true;
     bool logToSerial = true;
     WaterBear_FileSystem * filesystem = NULL;
 
