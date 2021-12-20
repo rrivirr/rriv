@@ -759,9 +759,9 @@ void stopAndAwaitTrigger()
 
 void handleControlCommand()
 {
-  Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
-  awakeTime = timestamp(); // Push awake time forward
-  int command = WaterBear_Control::processControlCommands(Serial2);
+  // Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
+  // awakeTime = timestamp(); // Push awake time forward
+  // int command = WaterBear_Control::processControlCommands(Serial2);
   
   Serial2.println(command);
   switch (command)
