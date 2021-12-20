@@ -20,16 +20,6 @@ void setup(void)
 
   //blinkTest();
 
-
-  // Set up the internal RTC
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
-  PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-  
-
-  // delay(20000);
-
-
   allocateMeasurementValuesMemory();
 
   setupWakeInterrupts();
@@ -61,8 +51,11 @@ void setup(void)
 
   readUniqueId(uuid);
 
+<<<<<<< HEAD
 
   setNotBursting(); // prevents bursting during first loop
+=======
+>>>>>>> 19e5e94 (Reorder setup to account for changes in power circuitry)
 
   //awakeTime = timestamp(); // Push awake time forward and provide time for user interation during setup()
 
