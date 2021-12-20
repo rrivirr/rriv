@@ -87,6 +87,7 @@ void setupHardwarePins()
 
   pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   pinMode(PA3, OUTPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
+  pinMode(PA4, INPUT_PULLDOWN);
 }
 
 void blinkTest()
