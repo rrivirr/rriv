@@ -8,9 +8,9 @@
 #include "configuration.h"
 #include "utilities/utilities.h"
 
-#include "system/ble.h"
+// #include "system/ble.h"
 #include "system/clock.h"
-#include "system/control.h"
+#include "system/command.h"
 #include "system/eeprom.h"
 #include "system/filesystem.h"
 #include "system/hardware.h"
@@ -18,26 +18,40 @@
 #include "system/low_power.h"
 #include "system/monitor.h"
 #include "system/switched_power.h"
+#include "system/adc.h"
+#include "system/write_cache.h"
 
 #include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
 
+#define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
-
-typedef struct datalogger_settings {
-    short interval;  // 2 bytes
-    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger)
-    char padding[61];        // padded  
+typedef struct datalogger_settings { // 64 bytes
+    byte deploymentIdentifier[16];
+    unsigned short interval;  // 2 bytes
+    unsigned short reserved; // 2 bytes, unused
+    unsigned short burstNumber; // 2 bytes
+    unsigned short startUpDelay; // 2 bytes
+    unsigned short interBurstDelay; // 2 bytes
+    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
+    char siteName[8];
+    unsigned long deploymentTimestamp;
+    byte externalADCEnabled : 1;
+    byte debug_values : 1;
+    byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
+    byte reserved2 : 5;
+    char unused[20];        // padding
 } datalogger_settings_type;
 
-typedef enum mode { interactive, debug, logging, deploy_on_trigger } mode_type;
+typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
+
+// Forward declaration of class
+class CommandInterface;
 
 class Datalogger
 {
 
 public:
-    // configuration
-    short interval = 15;
 
     // sensors
     int sensorCount = 0;
@@ -45,25 +59,66 @@ public:
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
     SensorDriver ** drivers = NULL;
+    datalogger_settings_type settings;
 
+    static void readConfiguration(datalogger_settings_type * settings);
     Datalogger(datalogger_settings_type * settings);
 
     void setup();
     void loop();
 
-    void processCLI();
+    void changeMode(mode_type mode);
     bool inMode(mode_type mode);
+    void storeMode(mode_type mode);
     void deploy();
-    void initializeFilesystem();
+
+    void processCLI();
+
+    // settings
+    void setSiteName(char * siteName);
+    void setDeploymentIdentifier();
+    void setDeploymentTimestamp(int timestamp);
+
+    void setInterval(int interval);
+    void setBurstSize(int size);
+    void setBurstNumber(int number);
+    void setStartUpDelay(int delay);
+    void setIntraBurstDelay(int delay);
+
+    void getConfiguration(datalogger_settings_type * dataloggerSettings);
+    cJSON ** getSensorConfigurations();
+
+    void setSensorConfiguration(char * type, cJSON * json);
+    void clearSlot(unsigned short slot);
+    void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
+    void setExternalADCEnabled(bool enabled);
+
+    void setUserNote(char * note);
+    void setUserValue(int value);
+
+    void toggleTraceValues();
+    void stopLogging();
+    void startLogging();
 
 private:
+    // modules
+    WaterBear_FileSystem *fileSystem;
+    WriteCache * fileSystemWriteCache = NULL;
+
     // state
-    char mode = 'i';
+    mode_type mode = interactive;
     bool powerCycle = true;
     bool interactiveModeLogging = false;
-    char deploymentIdentifier[25];
     time_t currentEpoch;
     uint32 offsetMillis;
+    char loggingFolder[26];
+    int completedBursts;
+    int awakeTime;
+
+    // user
+    char userNote[100] = "\0";
+    int userValue = INT_MIN;
+    int lastInteractiveLogTime = 0;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
@@ -72,38 +127,57 @@ private:
     void writeDebugFieldsToLogFile();
     bool configurationIsDirty();
     void storeConfiguration();
-    void stopLogging();
-    void startLogging();
+    void initializeBurst();
     bool shouldContinueBursting();
+
+    // CLI
+    CommandInterface * cli;
+    
+    void setUpCLI();
 
     // utility
     void writeStatusFieldsToLogFile();
-    void initializeBurst();
+    void initializeMeasurementCycle();
+
+    void storeDataloggerConfiguration();
+    void storeSensorConfiguration(generic_config * configuration);
+
+ 
+    // run loop
+    void initializeFilesystem();
+    void stopAndAwaitTrigger();
+    void writeStatusFields();
+    void prepareForUserInteraction();
+
+    // utility
+    SensorDriver * getDriver(unsigned short slot);
+
+    // debugging
+    void debugValues(char * buffer);
 
 
 };
 
-// Settings
-
-extern short burstLength; // how many readings in a burst
-
-extern short fieldCount; // number of fields to be logged to SDcard file
-
 // State
-extern WaterBear_FileSystem *filesystem;
 extern unsigned char uuid[UUID_LENGTH];
-extern char **values;
+extern char uuidString[25]; // 2 * UUID_LENGTH + 1
 
-extern unsigned long lastMillis;
-extern uint32_t awakeTime;
-extern uint32_t lastTime;
-extern short burstCount;
-extern bool configurationMode;
-extern bool debugValuesMode;
-extern bool clearModes;
-extern bool tempCalMode;
+
+// extern unsigned long lastMillis;
+// extern uint32_t awakeTime;
+// extern uint32_t lastTime;
+// extern short burstCount;
+// extern bool configurationMode;
+// extern bool debugValuesMode;
+// extern bool clearModes;
+// extern bool tempCalMode;
 // extern AtlasRGB rgbSensor;   
 //extern bool thermistorCalibrated;
+
+
+
+
+void enableI2C1();
 
 void enableI2C1();
 
@@ -119,21 +193,15 @@ void setupHardwarePins();
 
 void blinkTest();
 
-void initializeFilesystem();
 
 void setupSensors();
 
 void allocateMeasurementValuesMemory();
 
-void prepareForTriggeredMeasurement();
-
-void prepareForUserInteraction();
 
 void setNotBursting();
 
 void measureSensorValues();
-
-bool shouldContinueBursting();
 
 bool checkDebugLoop();
 
@@ -141,15 +209,12 @@ bool checkAwakeForUserInteraction(bool debugLoop);
 
 bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction);
 
-void stopAndAwaitTrigger();
 
 void handleControlCommand();
 
 void monitorConfiguration();
 
-void takeNewMeasurement();
 
-void trackBurst(bool bursting);
 
 void monitorValues();
 

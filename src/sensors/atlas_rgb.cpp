@@ -62,7 +62,7 @@ void AtlasRGB::start(TwoWire * wire)
 }
 
 void AtlasRGB::sendCommand() {
-  Serial2.print("In send command: ");
+  Monitor::instance()->writeDebugMessage("In send command: ");
   Monitor::instance()->writeDebugMessage(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
@@ -176,47 +176,6 @@ int AtlasRGB::setBaudRate(int value) {
       default:
         return -1;
     }
-  }
-}
-
-// Setting proximity detection: 3 methods
-
-// Sets custom distance: 250 - 1023
-int AtlasRGB::proximityDetection(int value) {
-  if (value < 0) {
-    strcpy(this->inputString, "P,?");
-    return 0;
-  }
-  if (value >= 250 && value <= 1023) {
-    sprintf(this->inputString, "P,%d", value);
-    return 0;
-  }
-  return -1;
-}
-
-// Sets I2C address and reboots into I2C mode
-void AtlasRGB::setI2C(int value)  {
-  sprintf(this->inputString, "I2C,%d", value);
-}
-
-// Sets predefined value: high (H), medium (M), low (L)
-int AtlasRGB::proximityDetection(char value) {
-  switch(value) {
-    case 'H': case 'M': case 'L': 
-      sprintf(this->inputString, "P,%c", value);
-      return 0;
-    default: 
-      return -1;
-  }
-}
-
-// Toggles proximity detection
-void AtlasRGB::proximityDetection(bool power) {
-  if (power) {
-    strcpy(this->inputString, "P,1");
-  }
-  else {
-    strcpy(this->inputString, "P,0");
   }
 }
 

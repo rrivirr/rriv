@@ -17,22 +17,36 @@ void setNextAlarmInternalRTC(short interval){
   //Serial2.println(Clock.getMinute(), DEC);
   //Serial2.println(minutes);
   short seconds = Clock.getSecond();
-  //Serial2.println("seconds");
-  //Serial2.println(seconds);
-  // // short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+  Serial2.println("seconds");
+  Serial2.println(seconds);
+  // an example of the math
+  // time = 10:48:12 (current time)
+  // minutes = 48 ( current minutes)
+  // seconds = 12 ( current seconds)
+  // interval = 15
+  // nextMinutes = 48 + 15 - (3) = 60
+  // minutesDiff = 60 - 48 = 12
+  // minutesDiffSeconds = 12 * 60 = 720
+  // secondsUntilWake = 720 - 12 = 708
+  Serial2.println("interval");
+  Serial2.println(interval);
+  Serial2.println("minutes");
+  Serial2.println(minutes);
   short nextMinutes = (minutes + interval - (minutes % interval));
-  // Serial2.println("next minutes");
-  // Serial2.println(nextMinutes);
+  Serial2.println("next minutes");
+  Serial2.println(nextMinutes);
   short minutesDiff = nextMinutes - minutes;
   short minutesDiffSeconds = minutesDiff * 60;
-  short secondsUntilWake = minutesDiffSeconds - seconds;
-  // Serial2.println("seconds until wake");
-  // Serial2.println(secondsUntilWake);
+  short secondsUntilWake = minutesDiffSeconds - seconds; // -offset.  Offset would allow for some startup time.
+  Serial2.println("seconds until wake");
+  Serial2.println(secondsUntilWake);
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
+  Serial2.println("made clock");  Serial2.flush();
+
   char message[100];
-  // sprintf(message, "Got clock value (current): %i", clock->getTime());
-  // Monitor::instance()->writeDebugMessage(message);
+  sprintf(message, "Got clock value (current): %i", clock->getTime());
+  Monitor::instance()->writeDebugMessage(message);
     
   clock->setTime(0);
   sprintf(message, "Got clock value (reset): %i", clock->getTime());
@@ -44,14 +58,15 @@ void setNextAlarmInternalRTC(short interval){
   clock->createAlarm(handleInterrupt, secondsUntilWake);
   delete clock;
 
-  Serial2.println("set alarm time to wake");
-  Serial2.println(secondsUntilWake);
+  sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
+  Monitor::instance()->writeDebugMessage(message);
+
 }
 
 
 
-void setNextAlarm(short interval){
-
+void setNextAlarm(short interval)
+{
   Clock.turnOffAlarm(1); // Clear the Control Register
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
@@ -69,7 +84,7 @@ void setNextAlarm(short interval){
     short seconds = Clock.getSecond();
     short debugSleepSeconds = 30;
     short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
-    char message[200];
+    char message[100];
     sprintf(message, "Next Alarm, with seconds: %i, now seconds: %i", nextSeconds, seconds);
     Monitor::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
@@ -84,7 +99,7 @@ void setNextAlarm(short interval){
     AlarmBits |= ALRM1_MATCH_MIN_SEC;
     short minutes = Clock.getMinute();
     short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
-    char message[200];
+    char message[100];
     sprintf(message, "Next Alarm, with minutes: %i", nextMinutes);
     Monitor::instance()->writeDebugMessage(message);
     Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);

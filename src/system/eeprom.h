@@ -27,13 +27,33 @@
 #define EEPROM_UUID_ADDRESS_END 15
 #define UUID_LENGTH 12 // STM32 has a 12 byte UUID, leave extra space for the future 16
 
-#define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START 16
-#define EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_END 43
-#define DEPLOYMENT_IDENTIFIER_LENGTH 25 // out of 28
+#define EEPROM_DATALOGGER_CONFIGURATION_START 16
+#define EEPROM_DATALOGGER_CONFIGURATION_SIZE 64
+#define EEPROM_DATALOGGER_SENSORS_START 80
+#define EEPROM_DATALOGGER_SENSOR_SIZE 64
 
-#define DEVICE_SERIAL_NUMBER_ADDRESS_START 44
-#define DEVICE_SERIAL_NUMBER_ADDRESS_END 63
-#define DEVICE_SERIAL_NUMBER_LENGTH 16 // out of 20
+#define USER_WAKE_TIMEOUT_ADDRESS 252 // timeout after wakeup from user interaction, seconds->min?
+
+// Debug settings bit register map {outdated with various serial command modes?}
+/*
+ * 0 measurements: enable log messages related to measurements & bursts
+ * 1 loop: don't sleep
+ * 2 short sleep: sleep for a hard coded short amount of time
+ * 3 to file: also send debug messages to the output file
+ * 4 to serial: send debug messages to the serial interface
+*/
+
+//Sensor slot addresses (64bytes each, 360-999)
+// #define SENSOR_SLOT_1_ADDRESS 360
+// #define SENSOR_SLOT_2_ADDRESS 424
+// #define SENSOR_SLOT_3_ADDRESS 488
+// #define SENSOR_SLOT_4_ADDRESS 552
+// #define SENSOR_SLOT_5_ADDRESS 616
+// #define SENSOR_SLOT_6_ADDRESS 680
+// #define SENSOR_SLOT_7_ADDRESS 744
+// #define SENSOR_SLOT_8_ADDRESS 808
+// #define SENSOR_SLOT_9_ADDRESS 872
+// #define SENSOR_SLOT_10_ADDRESS 936
 
 // Waterbear Device Calibration / Significant Values
 #define BURST_INTERVAL_ADDRESS 250
@@ -97,17 +117,22 @@
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data );
 byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress );
 
-void readDeploymentIdentifier(char * deploymentIdentifier);
-void writeDeploymentIdentifier(char * deploymentIdentifier);
+// void readDeploymentIdentifier(char * deploymentIdentifier);
+// void writeDeploymentIdentifier(char * deploymentIdentifier);
 
 void readUniqueId(unsigned char * uuid); // uuid must point to char[UUID_LENGTH]
 
 void writeEEPROMBytes(short address, unsigned char * data, uint8_t size);
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
+void writeDataloggerSettingsToEEPROM(void * dataloggerSettings);
+void writeSensorConfigurationToEEPROM(short slot, void * configuration);
+
 void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian
 void writeEEPROMBytesMem(short address, void * source, uint8_t size);
 
 void clearEEPROMAddress(short address, uint8_t length);
+
+void readEEPROMObject(short address, void * data, uint8_t size); // Little Endian
 
 #endif

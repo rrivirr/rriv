@@ -1,50 +1,71 @@
 #include "eeprom.h"
 #include "monitor.h"
 #include "utilities/STM32-UID.h"
+#include "utilities/i2c.h"
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data )
 {
-  wire->beginTransmission(deviceaddress);
-  wire->write(eeaddress);
-  wire->write(data);
-  wire->endTransmission();
-
+  i2cSendTransmission(deviceaddress, eeaddress, &data, 1);
   delay(5);
 }
 
 byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress )
 {
   byte rdata = 0xFF;
+  i2cSendTransmission(deviceaddress, eeaddress, 0, 0);
+  delay(5);
 
-  wire->beginTransmission(deviceaddress);
-  wire->write(eeaddress);
-  wire->endTransmission();
+  short numBytes = wire->requestFrom(deviceaddress,1);
+  // char debugMessage[100];
+  // sprintf(debugMessage, "ee got %i bytes", numBytes);
+  // debug(debugMessage);
 
-  wire->requestFrom(deviceaddress,1);
-
-  if(wire->available()) rdata = wire->read();
+  while(!wire->available()){} 
+  rdata = wire->read();
 
   return(rdata);
 }
 
-void readDeploymentIdentifier(char * deploymentIdentifier)
+// void readDeploymentIdentifier(char * deploymentIdentifier)
+// {
+//   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+//   {
+//     short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+//     deploymentIdentifier[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+//   }
+//   deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH] = '\0';
+// }
+
+// void writeDeploymentIdentifier(char * deploymentIdentifier)
+// {
+//   for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+//   {
+//     short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
+//     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
+//   }
+// }
+
+
+void writeObjectToEEPROM(int baseAddress, void * source, int size)
 {
-  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
+  byte * bytes = (byte *) source;
+  for(short i=0; i < size; i++)
   {
-    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
-    deploymentIdentifier[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
+    short address = baseAddress + i;
+    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, bytes[i]);
   }
-  deploymentIdentifier[DEPLOYMENT_IDENTIFIER_LENGTH] = '\0';
 }
 
-void writeDeploymentIdentifier(char * deploymentIdentifier)
+void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
 {
-  for(short i=0; i < DEPLOYMENT_IDENTIFIER_LENGTH; i++)
-  {
-    short address = EEPROM_DEPLOYMENT_IDENTIFIER_ADDRESS_START + i;
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, deploymentIdentifier[i]);
-  }
+  writeObjectToEEPROM(EEPROM_DATALOGGER_CONFIGURATION_START, dataloggerSettings, EEPROM_DATALOGGER_CONFIGURATION_SIZE);
 }
+
+void writeSensorConfigurationToEEPROM(short slot, void * configuration)
+{
+  writeObjectToEEPROM(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+}
+
 
 void readUniqueId(unsigned char * uuid)
 {
@@ -112,13 +133,21 @@ void writeEEPROMBytes(short address, unsigned char * data, uint8_t size) // Litt
   }
 }
 
+void readEEPROMObject(short address, void * data, uint8_t size) // Little Endian
+{
+  byte * buffer = (byte *) data;
+  for (uint8_t i = 0; i < size; i++)
+  {
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+  }
+}
+
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Little Endian
 {
   for (uint8_t i = 0; i < size; i++)
   {
     data[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
   }
-  data[size] = '\0';
 }
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
@@ -140,7 +169,6 @@ void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Litt
 void writeEEPROMBytesMem(short address, void * source, uint8_t size)
 {
   Monitor::instance()->writeDebugMessage(F("writeEEPROMBytesMem"));
-  Serial2.flush();
   char buffer[size];
   //read everything from source into buffer
   memcpy(&buffer, source, size);
@@ -155,9 +183,7 @@ void writeEEPROMBytesMem(short address, void * source, uint8_t size)
     // Serial2.flush();
     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
   }
-  Serial2.println();
   Monitor::instance()->writeDebugMessage(F("\nfinish writeEEPROMBytesMem"));
-  Serial2.flush();
 }
 
 void clearEEPROMAddress(short address, uint8_t length)

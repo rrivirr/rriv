@@ -4,8 +4,9 @@
 // #include "Arduino.h"
 #include "SdFat.h"
 #include "DS3231.h"
+#include "write_cache.h"
 
-class WaterBear_FileSystem
+class WaterBear_FileSystem : public OutputDevice
 {
 
 private:
@@ -14,22 +15,23 @@ private:
   File logfile;
   int chipSelectPin;
   char filename[15];
-  char deploymentIdentifier[29];
+  char loggingFolder[29];
+  char header[200];
 
   void printCurrentDirListing();
   bool openFile(char * filename);
 
 
 public:
-  WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin);
+  WaterBear_FileSystem(char * loggingFolder, int chipSelectPin);
   void initializeSDCard();
   void writeDebugMessage(const char* message);
-  void setDeploymentIdentifier(char * deploymentIdentifier);
-  void setNewDataFile(long unixtime);
+  void setLoggingFolder(char * loggingFolder);
+  void setNewDataFile(long unixtime, char * header);
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
   void reopenFileSystem(); // reopen filesystem after wakeup
-  void writeString(char * dataString);
+  void writeString(char * string);
   void endOfLine();
 
   // deprecated

@@ -1,5 +1,5 @@
 #include "sensor_map.h"
-#include "generic_analog.h"
+#include "sensor_types.h"
 
 map_type sensorTypeMap;
 

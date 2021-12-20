@@ -5,14 +5,15 @@
 char dataDirectory[6] = "/Data";
 
 
-WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin)
+WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectPin)
 {
-  strcpy(this->deploymentIdentifier, deploymentIdentifier);
+  strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
+  debug("initlizated filesystem");
  
-  this->setDeploymentIdentifier(deploymentIdentifier);
-  Serial2.println(F("Set deployment identifier"));
+  this->setLoggingFolder(loggingFolder);
+  debug("set the logging folder");
 }
 
 void WaterBear_FileSystem::initializeSDCard(){
@@ -26,7 +27,21 @@ void WaterBear_FileSystem::initializeSDCard(){
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
     Serial2.println(F(">Card fail<"));
-    while(1);
+    // one way to handle a failure:
+    // flash the led in an alert like fashion
+    // go to sleep for a short period of time
+    // then wake up and reset
+    //
+    // another way to handle a failure:
+    // somehow latch on an error led and power everything else down.
+    // errored out mode
+    //
+    // another way to handle a failure:
+    // just go to sleep and wait for the next cycle
+    // also produce some kind of check engine light.
+    // can we do a very low current blink LED or something.
+    delay(6000);
+    nvic_sys_reset();
   }
   else
   {
@@ -34,9 +49,12 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
-void WaterBear_FileSystem::writeString(char * dataString)
+void WaterBear_FileSystem::writeString(char * string)
 {
-  this->logfile.print(dataString);
+  // notify("printing to log file");
+  // notify((int)strlen(string));
+  // notify(string);
+  this->logfile.print(string);
 }
 
 void WaterBear_FileSystem::endOfLine()
@@ -49,7 +67,7 @@ void WaterBear_FileSystem::endOfLine()
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)
   {
-    //Serial2.println(values[i]);
+    // Serial2.println(values[i]);  Serial2.flush();
     this->logfile.print(values[i]);
     if(i+1 < fieldCount)
     {
@@ -164,12 +182,13 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
 */
 }
 
-void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier)
+void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
 {
-  strcpy(deploymentIdentifier, newDeploymentIdentifier);
+  strcpy(loggingFolder, newLoggingFolder);
 }
 
-bool WaterBear_FileSystem::openFile(char * filename){
+bool WaterBear_FileSystem::openFile(char * filename)
+{
   this->sd.chdir("/");
   printCurrentDirListing();
   Serial2.println("OK in root");
@@ -182,7 +201,6 @@ bool WaterBear_FileSystem::openFile(char * filename){
 
   if(!this->sd.chdir(dataDirectory))
   {
-    //Serial2.println("OK");
     Serial2.println(F("failed: /Data."));
   }
   else
@@ -190,32 +208,32 @@ bool WaterBear_FileSystem::openFile(char * filename){
     //Serial2.println(F("cd /Data."));
   }
 
-  if(!this->sd.exists(deploymentIdentifier))
+  if(!this->sd.exists(loggingFolder))
   {
     // printCurrentDirListing();
     Serial2.write("mkdir:");
-    Serial2.println(deploymentIdentifier);
-    this->sd.mkdir(deploymentIdentifier);
-     //delay(10);
+    Serial2.println(loggingFolder);
+    this->sd.mkdir(loggingFolder);
   }
 
-  if(!this->sd.chdir(this->deploymentIdentifier))
+  if(!this->sd.chdir(this->loggingFolder))
   {
     Serial2.print("failed:");
-    Serial2.println(deploymentIdentifier);
+    Serial2.println(loggingFolder);
   }
   else
   {
     Serial2.print("cd:");
-    Serial2.println(deploymentIdentifier);
+    Serial2.println(loggingFolder);
   }
-  //delay(10);
+
 
   Serial2.print("Opening file ");
   Serial2.println(filename);
   Serial2.flush();
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
-  //delay(10);
+  Serial2.println("opened file");
+  Serial2.flush();
 
   //sd.chdir();
   if(!logfile)
@@ -228,7 +246,7 @@ bool WaterBear_FileSystem::openFile(char * filename){
 
 }
 
-void WaterBear_FileSystem::setNewDataFile(long unixtime)
+void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
 {
 
   char uniquename[11] = "NEWFILE";
@@ -242,11 +260,10 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
   this->sd.chdir("/");
   delay(1);
 
-  char header[200] = "duuid,uuid,time.s,time.h,battery.V,A2-PB1.V,A3-PC0.V,A4-PC1.V,A5-PC2.V,A6-PC3.V,conductivity.mS,time.TC,C1,V1,C2,V2,M,B,temperature.C,Burst,UserValue,UserNote";
-
   Serial2.print(F(">log:"));
   Serial2.println(header);
   
+  strcpy(this->header, header);
 
   bool success = this->openFile(filename);
   if( !success )
@@ -263,7 +280,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime)
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
-  Serial2.println("printCurrentDirListing");
+  debug("printCurrentDirListing");
 
   this->sd.vwd()->rewind();
   SdFile dirFile;
@@ -271,7 +288,7 @@ void WaterBear_FileSystem::printCurrentDirListing()
   while (dirFile.openNext(sd.vwd(), O_READ))
   {
     dirFile.getName(sdFilename, 30);
-    Serial2.println(sdFilename);
+    debug(sdFilename);
     dirFile.close();
   }
 }
@@ -296,7 +313,7 @@ void WaterBear_FileSystem::reopenFileSystem()
     char setupTS[21];
     sprintf(setupTS, "unixtime: %lld", setupTime);
     Monitor::instance()->writeDebugMessage(setupTS);
-    setNewDataFile(setupTime); // open a new file via epoch timestamp
+    setNewDataFile(setupTime, this->header); // open a new file via epoch timestamp
   }
   else 
   {

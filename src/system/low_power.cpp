@@ -1,29 +1,35 @@
 #include "low_power.h"
 
+#include <Arduino.h>
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 #include <libmaple/systick.h>
 #include <libmaple/usb.h>
+#include <libmaple/timer.h>
+#include <libmaple/adc.h>
+#include <libmaple/dac.h>
+#include <libmaple/usart.h>
 
-void enterStopMode(){
-    
-    // Clear PDDS and LPDS bits
-    PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
-    
-    // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
-    PWR_BASE->CR |= PWR_CR_CWUF;
-    // PWR_BASE->CR |= PWR_CR_PDDS; // Enter standy mode when cpu goes into deep sleep
-    // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
-    
-    //  Unset Power down deepsleep bit.
-    PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
-    
-    // set Low-power deepsleep.
-    PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.
-    
-    SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
-    SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
+
+void enterStopMode()
+{
+  // Clear PDDS and LPDS bits
+  PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+
+  // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
+  PWR_BASE->CR |= PWR_CR_CWUF;
+  //??PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
+
+  // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
+
+  //Unset Power down deepsleep bit.
+  PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
+  // set Low-power deepsleep.
+  PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  
+  
+  SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
+  //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
@@ -66,7 +72,6 @@ void componentsAlwaysOff()
 
   spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
-  timer_disable(&timer1);
   timer_disable(&timer2);
   timer_disable(&timer3);
   timer_disable(&timer4);
@@ -84,7 +89,7 @@ void componentsAlwaysOff()
 
 return;
 
-  rcc_clk_disable( RCC_ADC1);
+  // rcc_clk_disable( RCC_ADC1);
   rcc_clk_disable( RCC_ADC2);
   rcc_clk_disable( RCC_ADC3);
     
@@ -116,7 +121,7 @@ return;
   // rcc_clk_disable( RCC_SPI2);
   rcc_clk_disable( RCC_SPI3);
   rcc_clk_disable( RCC_SRAM);
-  // rcc_clk_disable( RCC_TIMER1); // this clock is needed
+  // rcc_clk_disable( RCC_TIMER1); // this clock is needed by the custom watchdog
   rcc_clk_disable( RCC_TIMER2);
   rcc_clk_disable( RCC_TIMER3);
   rcc_clk_disable( RCC_TIMER4);
@@ -131,7 +136,7 @@ return;
   rcc_clk_disable( RCC_TIMER13);
   rcc_clk_disable( RCC_TIMER14);
   rcc_clk_disable( RCC_USART1);
-  rcc_clk_disable( RCC_USART2);
+  //rcc_clk_disable( RCC_USART2); // needed for USART2 
   rcc_clk_disable( RCC_USART3);
   rcc_clk_disable( RCC_UART4);
   rcc_clk_disable( RCC_UART5);
@@ -139,7 +144,7 @@ return;
   
 }
 
-void hardwarePinsAlwaysOff()
+void hardwarePinsAlwaysOff() // not currently used
 {
 // any pins changed need to be set back to the right modes when we wake
 // need to find out what pinModes are default or how to reset them
@@ -179,8 +184,8 @@ void hardwarePinsAlwaysOff()
   pinMode(PB15, INPUT);
 
   pinMode(PC4, INPUT);
-  pinMode(PC5, INPUT);
-  //  pinMode(PC6, INPUT); // this is the switch power pin
+  // pinMode(PC5, INPUT); // external ADC reset
+  // pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
@@ -193,13 +198,14 @@ void hardwarePinsAlwaysOff()
 
 void componentsStopMode()
 {
-  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
-  digitalWrite(PC8, LOW);
- 
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
+  rcc_clk_disable( RCC_I2C1); // these clocks are needed during normal run
+  rcc_clk_disable( RCC_I2C2);
 
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, LOW);
   spi_peripheral_disable(SPI1);  // this one is used by the SD card
 
   // this might be redundant
@@ -235,11 +241,15 @@ void componentsBurstMode()
   rcc_clk_enable( RCC_I2C2);
   // i2c_master_enable(I2C1, I2C_BUS_RESET);
   // i2c_master_enable(I2C2, I2C_BUS_RESET);
-  i2c_master_enable(I2C1, 0, 0);
-  i2c_master_enable(I2C2, 0, 0);
+  // i2c_master_enable(I2C1, 0, 0);
+  // i2c_master_enable(I2C2, 0, 0);
   
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, HIGH);
   spi_peripheral_enable(SPI1);
+  
   adc_enable(ADC1);
+  ADC1->regs->CR2 |= ADC_CR2_TSVREFE; // temperature sensor inside ADC
 
   Monitor::instance()->writeDebugMessage(F("turned on components"));
 
@@ -302,7 +312,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // ADC12_IN15
+  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);

@@ -54,15 +54,18 @@ void blink(int times, int duration)
 void printDS3231Time()
 {
   char testTime[11]; // timestamp responses
-  Serial2.print(F("TS:"));
-  sprintf(testTime, "%lld", timestamp()); // convert time_t value into string
-  Serial2.println(testTime);
-  Serial2.flush();
+  sprintf(testTime, "TS: %lld", timestamp()); // convert time_t value into string
+  Monitor::instance()->writeDebugMessage(testTime);
 }
 
-void printNVICStatus(){
+void printNVICStatus()
+{
   char  message[100];
   sprintf(message, "1: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
   Monitor::instance()->writeSerialMessage(F(message));
+}
 
+const char * reinterpretCharPtr(const __FlashStringHelper *string)
+{
+  return reinterpret_cast<const char *>(string);
 }
