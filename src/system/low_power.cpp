@@ -6,32 +6,24 @@
 #include <libmaple/systick.h>
 #include <libmaple/usb.h>
 
-#include <Arduino.h>
-#include <libmaple/usart.h>
-#include <libmaple/spi.h>
-#include <libmaple/i2c.h>
-#include <libmaple/timer.h>
-#include <libmaple/adc.h>
-#include <libmaple/dac.h>
-
-void enterStopMode()
-{
-  // Clear PDDS and LPDS bits
-  PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
-
-  // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
-  PWR_BASE->CR |= PWR_CR_CWUF;
-  //??PWR_BASE->CR |= PWR_CR_PDDS; // Enter stop/standby mode when cpu goes into deep sleep
-
-  // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
-
-  //Unset Power down deepsleep bit.
-  PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
-  // set Low-power deepsleep.
-  PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
-
-  SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
-  //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
+void enterStopMode(){
+    
+    // Clear PDDS and LPDS bits
+    PWR_BASE->CR &= PWR_CR_LPDS | PWR_CR_PDDS | PWR_CR_CWUF;
+    
+    // Set PDDS and LPDS bits for standby mode, and set Clear WUF flag (required per datasheet):
+    PWR_BASE->CR |= PWR_CR_CWUF;
+    // PWR_BASE->CR |= PWR_CR_PDDS; // Enter standy mode when cpu goes into deep sleep
+    // PWR_BASE->CR |=  PWR_CSR_EWUP;   // Enable wakeup pin bit.  This is for wake from the WKUP pin specifically
+    
+    //  Unset Power down deepsleep bit.
+    PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
+    
+    // set Low-power deepsleep.
+    PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.
+    
+    SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
+    SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
 

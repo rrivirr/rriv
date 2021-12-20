@@ -39,10 +39,10 @@ void setup(void)
 
    // Don't respond to interrupts during setup
   disableClockInterrupt();
-  disableUserInterrupt();
+  // disableUserInterrupt();
 
   clearClockInterrupt();
-  clearUserInterrupt();
+  // clearUserInterrupt();
 
   //  Prepare I2C
   i2c_bus_reset(I2C1);

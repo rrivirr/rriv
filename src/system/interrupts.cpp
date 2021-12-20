@@ -13,7 +13,7 @@ void disableClockInterrupt()
   NVIC_BASE->ICER[0] = 1 << NVIC_EXTI_9_5;
 }
 
-void enableClockInterrupt()
+void enableManualWakeInterrupt()
 {
   NVIC_BASE->ISER[0] = 1 << NVIC_EXTI_9_5;
 }
@@ -61,6 +61,7 @@ void disableUserInterrupt()
 // Just clears out the interrupt, control will return to loop()
 void handleClockInterrupt()
 {
+  // Serial2.println("handleMain EXTI Interrupt");
   disableClockInterrupt();
   clearClockInterrupt();
 }
