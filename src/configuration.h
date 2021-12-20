@@ -20,7 +20,7 @@
 #define BLUEFRUIT_SPI_IRQ   PB9
 #define BLUEFRUIT_SPI_RST   PC4
 
-
+#define USE_EC_OEM true
 
 
 #endif
