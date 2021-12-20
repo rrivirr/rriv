@@ -3,7 +3,8 @@
 
 void clearClockInterrupt();
 void disableClockInterrupt();
-void enableClockInterrupt();
+
+void enableManualWakeInterrupt();
 
 void enableRTCAlarmInterrupt();
 

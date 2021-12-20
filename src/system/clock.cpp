@@ -14,6 +14,7 @@ void handleInterrupt(){
 void setNextAlarmInternalRTC(short interval){
   short minutes = Clock.getMinute();
   Serial2.println("minutes");
+  Serial2.println(Clock.getMinute(), DEC);
   Serial2.println(minutes);
   short seconds = Clock.getSecond();
   Serial2.println("seconds");
@@ -133,6 +134,8 @@ time_t timestamp()
   ts.tm_wday = Clock.getDoW();
   ts.tm_hour = Clock.getHour(h24Flag, pmFlag);
   ts.tm_min = Clock.getMinute();
+  Serial2.println("timestamp mins");
+  Serial2.println(ts.tm_min);
   ts.tm_sec = Clock.getSecond();
   ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
   return (mktime(&ts)); // turn tm struct into time_t value
