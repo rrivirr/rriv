@@ -35,6 +35,10 @@ class AtlasRGB {
     void continuousMode(int value);
     void colorMatching(int value);
     int setBaudRate(int value);
+    int proximityDetection(int value);
+    void setI2C(int value);
+    int proximityDetection(char value);
+    void proximityDetection(bool power);
     int gammaCorrection(float value);
     void nameDevice(char * value);
     void deviceInformation();
