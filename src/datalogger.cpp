@@ -207,7 +207,7 @@ void Datalogger::loop()
   powerCycle = false;
 }
 
-#define TOTAL_SLOTS 1
+#define TOTAL_SLOTS 4
 
 void Datalogger::loadSensorConfigurations()
 {
@@ -738,6 +738,7 @@ void powerUpSwitchableComponents()
   delay(500);
   enableI2C1();
 
+  debug("resetting for exADC");
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(PC5,LOW); // reset is active low
   delay(1); // delay > 10ns after starting ADC reset
@@ -802,6 +803,11 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  //GPIO pin for controlling 5v booster, off at setup, on during burst
+  pinMode(GPIO_PIN_3, OUTPUT); // setup a GPIO pin
+  GPIOpinOff(GPIO_PIN_3); // disable till used
+  GPIOpinOn(GPIO_PIN_3); // enable for debugging
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 

@@ -25,7 +25,7 @@ typedef struct generic_linear_analog_type // 64 bytes
     short x2; // 2bytes for 2pt calibration
     short y2; // 2bytes for 2pt calibration
 
-    char padding[12];
+    char padding[6]; // 32-26
 } generic_linear_analog_sensor;
 
 class GenericAnalog : public AnalogSensorDriver

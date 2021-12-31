@@ -5,6 +5,7 @@
 void setupSwitchedPower()
 {
   pinMode(SWITCHED_POWER_ENABLE, OUTPUT); // enable pin on switchable boost converter
+  pinMode(EXT_MOSFET_ENABLE, OUTPUT); // enable pin on switchable external MOSFET
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 

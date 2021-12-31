@@ -10,7 +10,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
   strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
-  debug("initlizated filesystem");
+  debug("initialized filesystem");
  
   this->setLoggingFolder(loggingFolder);
   debug("set the logging folder");
@@ -18,7 +18,8 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
 
 void WaterBear_FileSystem::initializeSDCard(){
    // initialize the SD card
-  Serial2.print(F("Initializing SD card..."));
+  //Serial2.print(F("Initializing SD card..."));
+  notify("Initializing SD card...");
 
   // Make sure chip select pin is set to output
   pinMode(this->chipSelectPin, OUTPUT);
@@ -26,7 +27,8 @@ void WaterBear_FileSystem::initializeSDCard(){
   // see if the card is present and can be initialized:
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
-    Serial2.println(F(">Card fail<"));
+    //Serial2.println(F(">Card fail<"));
+    notify(">Card fail<");
     // one way to handle a failure:
     // flash the led in an alert like fashion
     // go to sleep for a short period of time

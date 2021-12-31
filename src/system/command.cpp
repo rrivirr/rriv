@@ -255,10 +255,10 @@ void CommandInterface::_getConfig()
  
   cJSON* json = cJSON_CreateObject();
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval")), dataloggerSettings.interval);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(sec)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay")), dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay")), dataloggerSettings.interBurstDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(sec)")), dataloggerSettings.startUpDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(sec)")), dataloggerSettings.interBurstDelay);
 
   char string[BUFFER_SIZE];
   cJSON_PrintPreallocated(json, string, BUFFER_SIZE, true);
@@ -504,6 +504,42 @@ void CommandInterface::_go()
   this->datalogger->changeMode(logging);
 }
 
+void help(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_help();
+}
+
+void CommandInterface::_help()
+{
+  char commands[] = "Current Commands:\n"
+  "version\n"
+  "show-warranty\n"
+  "get-config\n"
+  "set-config\n"
+  "set-slot-config\n"
+  "clear-slot\n"
+  "set-rtc\n"
+  "get-rtc\n"
+  "restart\n"
+  "set-site-name\n"
+  "set-interval\n"
+  "set-burst-number\n"
+  "set-start-up-delay\n"
+  "set-burst-delay\n"
+  "calibrate\n"
+  "set-user-note\n"
+  "set-user-value\n"
+  "trace\n"
+  "start-logging\n"
+  "deploy-now\n"
+  "interactive\n"
+  "check-memory\n"
+  "scan-ic2\n"
+  "go\n";
+
+  Serial2.println(commands);
+  Serial2.flush();
+}
 
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
@@ -541,6 +577,8 @@ void CommandInterface::setup(){
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);
+
+  cmdAdd("help", help);
 
 }
 

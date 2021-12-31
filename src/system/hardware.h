@@ -28,4 +28,14 @@
 
 #define ONBOARD_LED_PIN PA5
 
+//#define GPIO_PIN_1 PC15 // doesn't work, not sure why
+//#define GPIO_PIN_2 PA13 // doesn't work, not sure why
+#define GPIO_PIN_3 PC12 // works, CN7 3
+
+#define EXT_MOSFET_ENABLE NULL // for switched_power.cpp
+
+void GPIOpinOff(uint8 pin);
+void GPIOpinOn(uint8 pin);
+
+
 #endif
