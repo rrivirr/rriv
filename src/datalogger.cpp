@@ -36,6 +36,7 @@ void Datalogger::readConfiguration(datalogger_settings_type * settings)
   settings->debug_values = true;
 }
 
+
 Datalogger::Datalogger(datalogger_settings_type * settings)
 {
   powerCycle = true;
@@ -67,7 +68,6 @@ Datalogger::Datalogger(datalogger_settings_type * settings)
       strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
       break;
   }
-
 }
 
 
@@ -99,6 +99,7 @@ void Datalogger::setup()
   initializeFilesystem();
   setUpCLI();
 }
+
 
 void Datalogger::loop()
 {
@@ -274,10 +275,12 @@ void Datalogger::loadSensorConfigurations()
   dirtyConfigurations = (bool *) malloc(sizeof(bool) * (sensorCount + 1));
 }
 
+
 void Datalogger::startLogging()
 {
   interactiveModeLogging = true;
 }
+
 
 void Datalogger::stopLogging()
 {
@@ -305,6 +308,7 @@ bool Datalogger::shouldExitLoggingMode()
   return false;
 }
 
+
 bool Datalogger::shouldContinueBursting()
 {
   for(int i=0; i<sensorCount; i++)
@@ -319,6 +323,7 @@ bool Datalogger::shouldContinueBursting()
   return false;
 }
 
+
 void Datalogger::initializeBurst()
 {
   for(int i=0; i<sensorCount; i++)
@@ -326,6 +331,7 @@ void Datalogger::initializeBurst()
     drivers[i]->initializeBurst();
   }
 }
+
 
 void Datalogger::initializeMeasurementCycle()
 {
@@ -341,6 +347,7 @@ void Datalogger::initializeMeasurementCycle()
   delay(settings.startUpDelay);
   
 }
+
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
@@ -362,6 +369,7 @@ void Datalogger::measureSensorValues(bool performingBurst)
     }
   }
 }
+
 
 void Datalogger::writeStatusFieldsToLogFile()
 {
@@ -440,15 +448,19 @@ bool Datalogger::writeMeasurementToLogFile()
   return true;
 }
 
+
 void Datalogger::setUpCLI()
 {
   cli = CommandInterface::create(Serial2, this);
   cli->setup();
 }
+
+
 void Datalogger::processCLI()
 {
   cli->poll();
 }
+
 
 // not currently used
 // bool Datalogger::configurationIsDirty()
@@ -479,6 +491,7 @@ void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings)
 {
   memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
 }
+
 
 void Datalogger::setSensorConfiguration(char * type, cJSON * json)
 {
@@ -567,11 +580,13 @@ void Datalogger::setInterval(int interval)
   storeDataloggerConfiguration();
 }
 
+
 void Datalogger::setBurstNumber(int number)
 {
   settings.burstNumber = number;
   storeDataloggerConfiguration();
 }
+
 
 void Datalogger::setStartUpDelay(int delay)
 {
@@ -579,26 +594,31 @@ void Datalogger::setStartUpDelay(int delay)
   storeDataloggerConfiguration();
 }
 
+
 void Datalogger::setIntraBurstDelay(int delay)
 {
   settings.interBurstDelay = delay;
   storeDataloggerConfiguration();
 }
 
+
 void Datalogger::setExternalADCEnabled(bool enabled)
 {
   settings.externalADCEnabled = enabled;
 }
+
 
 void Datalogger::setUserNote(char * note)
 {
   strcpy(userNote, note);
 }
 
+
 void Datalogger::setUserValue(int value)
 {
   userValue = value;
 }
+
 
 void Datalogger::toggleTraceValues()
 {
@@ -606,6 +626,7 @@ void Datalogger::toggleTraceValues()
   storeConfiguration();
   Serial2.println(bool(settings.debug_values));
 }
+
 
 SensorDriver * Datalogger::getDriver(unsigned short slot)
 {
@@ -618,6 +639,7 @@ SensorDriver * Datalogger::getDriver(unsigned short slot)
   }
   return NULL;
 }
+
 
 void Datalogger::calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args)
 {
@@ -632,7 +654,6 @@ void Datalogger::calibrate(unsigned short slot, char * subcommand, int arg_cnt, 
     driver->calibrationStep(subcommand, atoi(args[0]));
   }
 }
-
 
 
 void Datalogger::storeMode(mode_type mode)
@@ -682,8 +703,6 @@ void Datalogger::deploy()
 }
 
 
-
-
 void Datalogger::initializeFilesystem()
 {
   SdFile::dateTimeCallback(dateTime);
@@ -721,10 +740,8 @@ void Datalogger::initializeFilesystem()
 }
 
 
-
 void Datalogger::powerUpSwitchableComponents()  
 {
-
   cycleSwitchablePower();
   delay(500);
   enableI2C1();
@@ -748,25 +765,15 @@ void Datalogger::powerUpSwitchableComponents()
   } else {
     debug(F("external ADC not installed"));
   }
-
-  // if(USE_EC_OEM){
-  //   enableI2C2();
-  //   setupEC_OEM(&WireTwo);
-  // } else {
-    debug(F("Skipped EC_OEM"));
-  // }
   
   debug(F("Switchable components powered up"));
-
 }
 
 void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
-  if(USE_EC_OEM){
-    // hibernateEC_OEM();
-    i2c_disable(I2C2);
-    debug(F("Switchable components powered down"));
-  }
+  //TODO: hook for sensors that need to be powered down?
+  i2c_disable(I2C2);
+  debug(F("Switchable components powered down"));
 }
 
 

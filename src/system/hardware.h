@@ -28,6 +28,14 @@
 
 #define ONBOARD_LED_PIN PA5
 
+// Bluefruit on SPI
+#define BLUEFRUIT_SPI_SCK   PB13
+#define BLUEFRUIT_SPI_MISO  PB14
+#define BLUEFRUIT_SPI_MOSI  PB15
+#define BLUEFRUIT_SPI_CS    PB8  // Pullup
+#define BLUEFRUIT_SPI_IRQ   PB9
+#define BLUEFRUIT_SPI_RST   PC4
+
 void startSerial2();
 void setupInternalRTC();
 void setupHardwarePins();

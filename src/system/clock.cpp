@@ -45,11 +45,11 @@ void setNextAlarmInternalRTC(short interval){
   Serial2.println("made clock");  Serial2.flush();
 
   char message[100];
-  sprintf(message, "Got clock value (current): %li", clock->getTime());
+  sprintf(message, "Got clock value (current): %lli", clock->getTime());
   debug(message);
     
   clock->setTime(0);
-  sprintf(message, "Got clock value (reset): %li", clock->getTime());
+  sprintf(message, "Got clock value (reset): %lli", clock->getTime());
   debug(message);
 
   clock->removeAlarm();
@@ -71,39 +71,35 @@ void setNextAlarm(short interval)
   Clock.turnOffAlarm(2);
   Clock.checkIfAlarm(1); // Clear the Status Register
   Clock.checkIfAlarm(2);
+  
+  //
+  // Alarm every interval minutes
+  //
+  int AlarmBits = ALRM2_ONCE_PER_MIN;
+  AlarmBits <<= 4;
+  AlarmBits |= ALRM1_MATCH_MIN_SEC;
+  short minutes = Clock.getMinute();
+  short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
+  char message[100];
+  sprintf(message, "Next Alarm, with minutes: %i", nextMinutes);
+  debug(message);
+  Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
 
   //
   // Alarm every 10 seconds for debugging
   //
-  if(DEBUG_USING_SHORT_SLEEP == true)
-  {
-    debug(F("Using short sleep"));
-    int AlarmBits = ALRM2_ONCE_PER_MIN;
-    AlarmBits <<= 4;
-    AlarmBits |= ALRM1_MATCH_SEC;
-    short seconds = Clock.getSecond();
-    short debugSleepSeconds = 30;
-    short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
-    char message[100];
-    sprintf(message, "Next Alarm, with seconds: %i, now seconds: %i", nextSeconds, seconds);
-    debug(message);
-    Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
-  }
-  //
-  // Alarm every interval minutes for the real world
-  //
-  else
-  {
-    int AlarmBits = ALRM2_ONCE_PER_MIN;
-    AlarmBits <<= 4;
-    AlarmBits |= ALRM1_MATCH_MIN_SEC;
-    short minutes = Clock.getMinute();
-    short nextMinutes = (minutes + interval - (minutes % interval)) % 60;
-    char message[100];
-    sprintf(message, "Next Alarm, with minutes: %i", nextMinutes);
-    debug(message);
-    Clock.setA1Time(0b0, 0b0, nextMinutes, 0b0, AlarmBits, true, false, false);
-  }
+    // debug(F("Using short sleep"));
+    // int AlarmBits = ALRM2_ONCE_PER_MIN;
+    // AlarmBits <<= 4;
+    // AlarmBits |= ALRM1_MATCH_SEC;
+    // short seconds = Clock.getSecond();
+    // short debugSleepSeconds = 30;
+    // short nextSeconds = (seconds + debugSleepSeconds - (seconds % debugSleepSeconds)) % 60;
+    // char message[100];
+    // sprintf(message, "Next Alarm, with seconds: %i, now seconds: %i", nextSeconds, seconds);
+    // debug(message);
+    // Clock.setA1Time(0b0, 0b0, 0b0, nextSeconds, AlarmBits, true, false, false);
+
   // set both alarms to :00 and :30 seconds, every minute
       // Format: .setA*Time(DoW|Date, Hour, Minute, Second, 0x0, DoW|Date, 12h|24h, am|pm)
       //                    |                                    |         |        |
@@ -112,6 +108,8 @@ void setNextAlarm(short interval)
       //                    |                                    +--> true if you're setting DoW, false for absolute date
       //                    +--> INTEGER representing day of the week, 1 to 7 (Monday to Sunday)
       //
+
+
   Clock.turnOnAlarm(1);
 }
 
