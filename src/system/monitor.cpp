@@ -1,13 +1,14 @@
 #include "monitor.h"
+#include "utilities/utilities.h"
 
 void debug(const char* message)
 {
-  debug(message);
+  Monitor::instance()->writeDebugMessage(message);
 }
 
 void debug(const __FlashStringHelper * message)
 {
-  debug(message);
+  debug(reinterpretCharPtr(message));
 }
 
 void debug(int number)
@@ -33,12 +34,12 @@ void debug(short number)
 
 void notify(const char* message)
 {
-  notify(message);
+  Monitor::instance()->writeSerialMessage(message);
 }
 
 void notify(const __FlashStringHelper * message)
 {
-  notify(message);
+  notify(reinterpretCharPtr(message));
 }
 
 void notify(int number)
