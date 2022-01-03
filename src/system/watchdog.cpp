@@ -6,7 +6,7 @@
 void timerFired()
 {
   timer_pause(TIMER1);
-  Serial2.println("TF!");
+  notify("TF");
   // Serial2.flush(); // causes crash
   delay(5000);
   nvic_sys_reset();
@@ -27,16 +27,14 @@ void startCustomWatchDog()
   timer_generate_update(TIMER1);
 
   timer_resume(TIMER1);
-  Monitor::instance()->writeDebugMessage(F("Resumed timer"));
+  debug(F("Resumed timer"));
 
   timer_attach_interrupt(TIMER1, TIMER_CC1_INTERRUPT, timerFired);
-  Monitor::instance()->writeDebugMessage(F("Attached interrupt!"));
+  debug(F("Attached interrupt!"));
 }
 
 void disableCustomWatchDog()
 {
-  // Serial2.println("skipped disable custom watchdog!");
-  // return;
   timer_detach_interrupt(TIMER1, TIMER_CC1_INTERRUPT);
   // timer_pause(TIMER1);
   // timer_cc_disable(TIMER1, TIMER_CH1);
@@ -56,5 +54,5 @@ void printWatchDogStatus(){
   char message[50];
   int timerCount = timer_get_count(TIMER1);
   sprintf(message, reinterpret_cast<const char *> F("Timer Count: %d"), timerCount);
-  Monitor::instance()->writeDebugMessage(timerCount);
+  debug(timerCount);
 }

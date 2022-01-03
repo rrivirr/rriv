@@ -39,14 +39,14 @@ void Datalogger::readConfiguration(datalogger_settings_type * settings)
 Datalogger::Datalogger(datalogger_settings_type * settings)
 {
   powerCycle = true;
-  Serial2.println("creating datalogger");
-  Serial2.println("got mode");
-  Serial2.println(settings->mode);
+  debug("creating datalogger");
+  debug("got mode");
+  debug(settings->mode);
 
   // defaults
   if(settings->interval < 1) 
   {
-    Serial2.println("Setting interval to 1 by default");
+    debug("Setting interval to 1 by default");
     settings->interval = 1;
   }
 
@@ -120,7 +120,7 @@ void Datalogger::loop()
 
     if(shouldExitLoggingMode())
     {
-      Monitor::instance()->writeSerialMessage("Should exit logging mode");
+      notify("Should exit logging mode");
       changeMode(interactive);
       return;
     }
@@ -189,8 +189,8 @@ void Datalogger::loop()
   else
   {
     // invalid mode!
-    Monitor::instance()->writeSerialMessage(F("Invalid Mode!"));
-    Serial2.println(mode);
+    notify(F("Invalid Mode!"));
+    notify(mode);
     mode = interactive;
     delay(1000);
   }
@@ -657,7 +657,7 @@ void Datalogger::changeMode(mode_type mode)
 {
   char message[50];
   sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
-  Monitor::instance()->writeSerialMessage(message);
+  notify(message);
   this->mode = mode;
 }
 
@@ -669,7 +669,7 @@ bool Datalogger::inMode(mode_type mode)
 
 void Datalogger::deploy()
 {
-  Monitor::instance()->writeSerialMessage(F("Deploying now!"));
+  notify(F("Deploying now!"));
 
   setDeploymentIdentifier();
   setDeploymentTimestamp(timestamp());
@@ -695,7 +695,7 @@ void Datalogger::initializeFilesystem()
   time_t setupTime = timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
-  Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
+  notify(setupTS);
 
 
   char header[200];

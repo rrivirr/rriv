@@ -43,12 +43,12 @@ void GenericAnalog::configureFromJSON(cJSON * json)
     }
     else
     {
-      Serial2.println(F("Invalid adc select"));
+      notify(F("Invalid adc select"));
     }
   } 
   else 
   {
-    Serial2.println(F("Invalid adc select"));
+    notify(F("Invalid adc select"));
   }
  
 
@@ -57,7 +57,7 @@ void GenericAnalog::configureFromJSON(cJSON * json)
   {
     configuration.sensor_port = (byte) sensorPortJSON->valueint;
   } else {
-    Serial2.println(F("Invalid sensor port"));
+    notify(F("Invalid sensor port"));
   }
 
   this->configureCSVColumns();
@@ -245,7 +245,7 @@ void GenericAnalog::calibrationStep(char * step, int trueValue)
     {
       notify("Failed to print json.");
     }
-    Serial2.println(string);
+    notify(string);
     free(json);
     
   }
@@ -286,11 +286,4 @@ void GenericAnalog::addCalibrationParametersToJSON(cJSON * json)
   cJSON_AddNumberToObject(json, "y2", configuration.y2);
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
-
-
-//     {
-//       readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
-//       readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
-//       temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-//     }
 

@@ -26,7 +26,7 @@ void AtlasRGB::setup(TwoWire * wire)
   AtlasRGB::instance()->start(wire);
   AtlasRGB::instance()->deviceInformation();
   AtlasRGB::instance()->sendCommand();
-  Monitor::instance()->writeDebugMessage(AtlasRGB::instance()->receiveResponse());
+  debug(AtlasRGB::instance()->receiveResponse());
 }
 
 void AtlasRGB::stop(){
@@ -42,13 +42,13 @@ void AtlasRGB::takeMeasurement(char * data)
 {
   AtlasRGB::instance()->singleMode();
   AtlasRGB::instance()->sendCommand();
-  Monitor::instance()->writeDebugMessage(AtlasRGB::instance()->receiveResponse());
+  debug(AtlasRGB::instance()->receiveResponse());
 }
 
 // Constructor/Starter
 void AtlasRGB::start(TwoWire * wire)
 {
-  Monitor::instance()->writeDebugMessage(F("In RGB constructor"));
+  debug(F("In RGB constructor"));
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
   this->wire = wire;
@@ -58,12 +58,12 @@ void AtlasRGB::start(TwoWire * wire)
   this->blue = 0;
   this->address = 112; // Default address for RGB sensor 0x70
   this->time = 300; // Response delay time in ms
-  Monitor::instance()->writeDebugMessage(F("RGB Constructor"));
+  debug(F("RGB Constructor"));
 }
 
 void AtlasRGB::sendCommand() {
-  Monitor::instance()->writeDebugMessage("In send command: ");
-  Monitor::instance()->writeDebugMessage(this->inputString);
+  debug("In send command: ");
+  debug(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
@@ -85,16 +85,16 @@ char * AtlasRGB::receiveResponse() {
     
     switch (this->code) {                  
       case 1:              
-        Monitor::instance()->writeDebugMessage(F("Success"));
+        debug(F("Success"));
         break;                         
       case 2:              
-        Monitor::instance()->writeDebugMessage(F("Failed"));             
+        debug(F("Failed"));             
         break;                         
       case 254:              
-        Monitor::instance()->writeDebugMessage(F("Pending"));            
+        debug(F("Pending"));            
         break;                         
       case 255:              
-        Monitor::instance()->writeDebugMessage(F("No Data"));
+        debug(F("No Data"));
         break;                         
     }
 

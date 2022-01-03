@@ -18,7 +18,7 @@
 
 //   if(true)
 //   {
-//     Monitor::instance()->writeDebugMessage(F("BLE First Run"));
+//     debug(F("BLE First Run"));
 //   }
 
 //   //ble.setMode(BLUEFRUIT_MODE_COMMAND);
@@ -27,27 +27,27 @@
 //   ble.println(F("AT"));
 //   if(ble.waitForOK())
 //   {
-//     Monitor::instance()->writeDebugMessage(F("BLE OK"));
+//     debug(F("BLE OK"));
 //   }
 //   else
 //   {
-//     Monitor::instance()->writeDebugMessage(F("BLE Not OK"));
+//     debug(F("BLE Not OK"));
 //   }
 
 //   // Send command
 //   ble.println(F("AT+GAPDEVNAME=WaterBear3"));
 //   if(ble.waitForOK())
 //   {
-//     Monitor::instance()->writeDebugMessage(F("Got OK"));
+//     debug(F("Got OK"));
 //   }
 //   else
 //   {
-//     Monitor::instance()->writeDebugMessage(F("BLE Error"));
+//     debug(F("BLE Error"));
 //     while(1);
 //   }
 //   ble.println(F("ATZ"));
 //   ble.waitForOK();
-//   Monitor::instance()->writeDebugMessage(F("Got OK"));
+//   debug(F("Got OK"));
 // //  ble.setMode(BLUEFRUIT_MODE_DATA);
 // }
 
@@ -56,7 +56,7 @@
 //   bool debugBLE = true;
 //   if(debugBLE)
 //   {
-//     Monitor::instance()->writeDebugMessage(F("Initializing the Bluefruit LE module: "));
+//     debug(F("Initializing the Bluefruit LE module: "));
 //   }
 //   bleActive = ble.begin(true, true);
 
@@ -64,25 +64,25 @@
 //   {
 //     if(bleActive)
 //     {
-//       Monitor::instance()->writeDebugMessage(F("Tried to init - BLE active"));
+//       debug(F("Tried to init - BLE active"));
 //     }
 //     else
 //     {
-//       Monitor::instance()->writeDebugMessage(F("Tried to init - BLE NOT active"));
+//       debug(F("Tried to init - BLE NOT active"));
 //     }
 //   }
 //   if ( !bleActive )
 //   {
 //     if(debugBLE)
 //     {
-//       Monitor::instance()->writeDebugMessage(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
+//       debug(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
 //     }
 //     return;
 //     // error
 //   }
 //   else
 //   {
-//     Monitor::instance()->writeDebugMessage(F("Performing a factory reset: "));
+//     debug(F("Performing a factory reset: "));
 //     if ( ! ble.factoryReset() )
 //     {
 //       Monitor::instance()->error(F("Couldn't factory reset"));
@@ -90,17 +90,17 @@
 //     ble.println(F("AT"));
 //     if(ble.waitForOK())
 //     {
-//       Monitor::instance()->writeDebugMessage(F("AT OK"));
+//       debug(F("AT OK"));
 //     }
 //     else
 //     {
-//       Monitor::instance()->writeDebugMessage(F("AT NOT OK"));
+//       debug(F("AT NOT OK"));
 //     }
 //     bleFirstRun();
 //   }
 //   if(debugBLE)
 //   {
-//     Monitor::instance()->writeDebugMessage(F("BLE OK!") );
+//     debug(F("BLE OK!") );
 //   }
 // /*
 //   if ( FACTORYRESET_ENABLE )

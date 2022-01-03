@@ -23,7 +23,7 @@ AtlasCO2::AtlasCO2(){}
 
 // Constructor/Starter
 void AtlasCO2::start(TwoWire * wire) {
-  Monitor::instance()->writeDebugMessage(F("In CO2 constructor"));
+  debug(F("In CO2 constructor"));
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
   this->wire = wire;
@@ -31,12 +31,12 @@ void AtlasCO2::start(TwoWire * wire) {
   this->data = 0;
   this->address = 105; // Default address for CO2 sensor 0x69
   this->time = 300; // Response delay time in ms
-  Monitor::instance()->writeDebugMessage(F("CO2 Constructor"));
+  debug(F("CO2 Constructor"));
 }
 
 void AtlasCO2::sendCommand() {
-  Monitor::instance()->writeDebugMessage("In send command: ");
-  Monitor::instance()->writeDebugMessage(this->inputString);
+  debug("In send command: ");
+  debug(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
@@ -58,23 +58,23 @@ char * AtlasCO2::receiveResponse() {
     
     switch (this->code) {                  
       case 1:              
-        Monitor::instance()->writeDebugMessage(F("Success"));
+        debug(F("Success"));
         break;                         
       case 2:              
-        Monitor::instance()->writeDebugMessage(F("Failed"));             
+        debug(F("Failed"));             
         break;                         
       case 254:              
-        Monitor::instance()->writeDebugMessage(F("Pending"));            
+        debug(F("Pending"));            
         break;                         
       case 255:              
-        Monitor::instance()->writeDebugMessage(F("No Data"));
+        debug(F("No Data"));
         break;                         
     }
 
     // Constructing response array
     while (this->wire->available()) {
       char res = this->wire->read();
-      Monitor::instance()->writeDebugMessage(res);
+      debug(res);
       this->sensorString[i++] = res;   
       if (res == 0) {                
         i = 0;            

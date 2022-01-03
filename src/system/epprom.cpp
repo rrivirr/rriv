@@ -156,7 +156,6 @@ void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Litt
     // Serial2.flush(); 
     buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
   }
-  // Serial2.println();
   memcpy(destination, &buffer, size); // copy buffer to destination
 }
 

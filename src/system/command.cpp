@@ -97,26 +97,26 @@ void CommandInterface::_startLogging()
 {
   this->datalogger->settings.debug_values = true;
   this->datalogger->startLogging();
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void CommandInterface::_toggleDebug()
 {
   this->datalogger->changeMode(debugging);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void printVersion(int arg_cnt, char **args)
 {
   char message[100];
   sprintf(message, "Firmware Version: %s", WATERBEAR_FIRMWARE_VERSION);
-  Serial2.println(message);
+  notify(message);
 }
 
 void invalidArgumentsMessage(const __FlashStringHelper * message)
 {
-  Serial2.println(F("Invalid arguments"));
-  Serial2.println(message);
+  notify(F("Invalid arguments"));
+  notify(message);
   return;
 }
 
@@ -135,7 +135,7 @@ void setSiteName(int arg_cnt, char **args)
 void CommandInterface::_setSiteName(char * siteName)
 {
   this->datalogger->setSiteName(siteName);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setInterval(int arg_cnt, char **args)
@@ -153,7 +153,7 @@ void setInterval(int arg_cnt, char **args)
 void CommandInterface::_setInterval(int size)
 {
   this->datalogger->setInterval(size);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstSize(int arg_cnt, char **args)
@@ -171,7 +171,7 @@ void setBurstSize(int arg_cnt, char **args)
 void CommandInterface::_setBurstSize(int size)
 {
   this->datalogger->setBurstSize(size);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstNumber(int arg_cnt, char **args)
@@ -189,7 +189,7 @@ void setBurstNumber(int arg_cnt, char **args)
 void CommandInterface::_setBurstNumber(int number)
 {
   this->datalogger->setBurstNumber(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 
@@ -208,7 +208,7 @@ void setStartUpDelay(int arg_cnt, char **args)
 void CommandInterface::_setStartUpDelay(int number)
 {
   this->datalogger->setStartUpDelay(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstDelay(int arg_cnt, char **args)
@@ -226,13 +226,13 @@ void setBurstDelay(int arg_cnt, char **args)
 void CommandInterface::_setBurstDelay(int number)
 {
   this->datalogger->setIntraBurstDelay(number);
-  Serial2.println(F("OK"));
+  notify(F("OK"));
 }
 
 
 void printWarranty(int arg_cnt, char **args)
 {
-  Serial2.println(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
+  notify(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
 }
 
 void getConfig(int arg_cnt, char **args)
@@ -267,7 +267,7 @@ void CommandInterface::_getConfig()
     fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
     return;
   }
-  Serial2.println(string);
+  notify(string);
   Serial2.flush();
   
   cJSON_Delete(json);
@@ -282,7 +282,7 @@ void CommandInterface::_getConfig()
       fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
       return;
     }
-    Serial2.println(string);
+    notify(string);
     Serial2.flush();
 
     cJSON_Delete(sensorConfigurations[i]);
@@ -306,7 +306,7 @@ void CommandInterface::_setConfig(char * config)
 {
   cJSON *json = cJSON_Parse(config);
   char * printString = cJSON_Print(json);
-  Serial2.println(printString);
+  notify(printString);
 
   cJSON_Delete(json);
 }
@@ -336,7 +336,7 @@ void CommandInterface::_setSlotConfig(char * config)
   debug(F("printing json"));
 
   const char * printString = cJSON_Print(json);
-  Serial2.println(printString);
+  notify(printString);
   delete(printString);
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
@@ -383,7 +383,7 @@ void clearSlot(int arg_cnt, char **args)
 void CommandInterface::_clearSlot(int number)
 {
   this->datalogger->clearSlot(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setRTC(int arg_cnt, char **args)
@@ -395,7 +395,7 @@ void setRTC(int arg_cnt, char **args)
 
   int timestamp = atoi(args[1]);
   setTime(timestamp);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void getRTC(int arg_cnt, char **args)
@@ -403,7 +403,7 @@ void getRTC(int arg_cnt, char **args)
   int time = timestamp();
   char message[100];
   sprintf(message, "current timestamp: %i", time);
-  Serial2.println(message);
+  notify(message);
 }
 
 void restart(int arg_cnt, char **args)
@@ -467,7 +467,7 @@ void setUserNote(int arg_cnt, char **args)
 void CommandInterface::_setUserNote(char * note)
 {
   this->datalogger->setUserNote(note);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setUserValue(int arg_cnt, char **args)
@@ -484,7 +484,7 @@ void setUserValue(int arg_cnt, char **args)
 void CommandInterface::_setUserValue(int value)
 {
   this->datalogger->setUserValue(value);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void checkMemory(int arg_cnt, char **args)

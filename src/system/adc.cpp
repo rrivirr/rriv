@@ -133,7 +133,7 @@ void AD7091R::convertEnabledChannels()
 
 configuration_register AD7091R::readConfigurationRegister()
 {
-  Monitor::instance()->writeDebugMessage(F("reading configuration register"));
+  debug(F("reading configuration register"));
   struct configuration_register configurationRegister; // 2 bytes
   this->sendTransmission(ADC_CONFIGURATION_REGISTER_ADDRESS);
   this->requestBytes((byte *)&configurationRegister, 2);
@@ -142,7 +142,7 @@ configuration_register AD7091R::readConfigurationRegister()
 
 void AD7091R::writeConfigurationRegister(configuration_register configurationRegister)
 {
-  Monitor::instance()->writeDebugMessage(F("writing configuration register"));
+  debug(F("writing configuration register"));
   printConfigurationRegister(configurationRegister);
   Serial2.println(  *((byte *) &configurationRegister+1), BIN);
   Serial2.println(  *((byte *) &configurationRegister), BIN);
@@ -151,7 +151,7 @@ void AD7091R::writeConfigurationRegister(configuration_register configurationReg
 
 channel_register AD7091R::readChannelRegister()
 {
-  Monitor::instance()->writeDebugMessage(F("reading channel register"));
+  debug(F("reading channel register"));
   struct channel_register channelRegister;
   this->sendTransmission(ADC_CHANNEL_REGISTER_ADDRESS);
   this->requestBytes((byte *)&channelRegister, 1);
@@ -160,15 +160,15 @@ channel_register AD7091R::readChannelRegister()
 
 void AD7091R::writeChannelRegister(channel_register channelConfiguration)
 {
-  Monitor::instance()->writeDebugMessage(F("writing channel register"));
-  // Monitor::instance()->writeDebugMessage( *(byte*) &channelConfiguration);
+  debug(F("writing channel register"));
+  // debug( *(byte*) &channelConfiguration);
   // Serial2.println(*(byte*) &channelConfiguration );
   this->sendTransmission(ADC_CHANNEL_REGISTER_ADDRESS, (byte *)&channelConfiguration, 1);
 }
 
 conversion_result_register AD7091R::readConversionResultRegister()
 {
-  Monitor::instance()->writeDebugMessage(F("reading conversion result register"));
+  debug(F("reading conversion result register"));
   struct conversion_result_register conversionResult;
   this->sendTransmission(ADC_CONVERSION_RESULT_REGISTER_ADDRESS);
   this->requestBytes((byte *)&conversionResult, 2);
@@ -292,7 +292,7 @@ short AD7091R::channel3Value()
 
 void AD7091R::printConfigurationRegister(configuration_register configurationRegister)
 {
-  Monitor::instance()->writeDebugMessage(F("Printing configuration register"));
+  debug(F("Printing configuration register"));
   char buffer[100];
   sprintf(buffer,
           "%d %d %d %d %d %d %d %d %d %d %d %d %d",
@@ -309,5 +309,5 @@ void AD7091R::printConfigurationRegister(configuration_register configurationReg
           configurationRegister.ALERT_POL_OR_GPO0,
           configurationRegister.GPO1,
           configurationRegister.P_DOWN);
-  Monitor::instance()->writeDebugMessage(buffer);
+  debug(buffer);
 }

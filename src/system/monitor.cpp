@@ -2,51 +2,66 @@
 
 void debug(const char* message)
 {
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
 }
 
 void debug(const __FlashStringHelper * message)
 {
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
 }
 
 void debug(int number)
 {
   char message[10];
   sprintf(message, "%d", number);
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
+}
+
+void debug(uint32 number)
+{
+  char message[10];
+  sprintf(message, "%ld", number);
+  debug(message);
 }
 
 void debug(short number)
 {
   char message[10];
   sprintf(message, "%d", number);
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
 }
 
 void notify(const char* message)
 {
-  Monitor::instance()->writeSerialMessage(message);
+  notify(message);
 }
 
 void notify(const __FlashStringHelper * message)
 {
-  Monitor::instance()->writeSerialMessage(message);
+  notify(message);
 }
 
 void notify(int number)
 {
   char message[10];
   sprintf(message, "%d", number);
-  Monitor::instance()->writeSerialMessage(message);
+  notify(message);
 }
 
 void notify(short number)
 {
   char message[10];
   sprintf(message, "%d", number);
-  Monitor::instance()->writeSerialMessage(message);
+  notify(message);
 }
+
+void notify(uint32 number)
+{
+  char message[10];
+  sprintf(message, "%ld", number);
+  notify(message);
+}
+
 
 Monitor * monitor = new Monitor();
 

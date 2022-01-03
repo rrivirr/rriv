@@ -9,11 +9,12 @@
 
 void printInterruptStatus(HardwareSerial &serial)
 {
-  debug("NVIC->ISER:");
-  debug(NVIC_BASE->ISER[0], BIN);
-  debug(NVIC_BASE->ISER[1], BIN);
-  debug(NVIC_BASE->ISER[2], BIN);
-  debug(EXTI_BASE->PR, BIN);
+  serial.println("NVIC->ISER:");
+  serial.println(NVIC_BASE->ISER[0], BIN);
+  serial.println(NVIC_BASE->ISER[1], BIN);
+  serial.println(NVIC_BASE->ISER[2], BIN);
+  serial.println(EXTI_BASE->PR, BIN);
+  serial.flush();
 }
 
 void printDateTime(HardwareSerial &serial, DateTime now)

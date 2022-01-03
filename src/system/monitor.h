@@ -8,11 +8,14 @@ void debug(const char*);
 void debug(const __FlashStringHelper * message);
 void debug(short number);
 void debug(int number);
+void debug(uint32 number);
+
 
 void notify(const char*);
 void notify(const __FlashStringHelper * message);
 void notify(short number);
 void notify(int number);
+void notify(uint32 number);
 
 class Monitor
 {
