@@ -1,9 +1,9 @@
 #include "generic_analog.h"
 #include "system/monitor.h"
-#include "sensor_types.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
+#include "sensors/sensor_types.h"
 
 int ADC_PINS[5] = {
   ANALOG_INPUT_1_PIN, 
@@ -260,8 +260,6 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
 {
   //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  unsigned short slope;
-  unsigned int intercept;
 
   int m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
   int b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points

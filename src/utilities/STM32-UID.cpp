@@ -1,4 +1,5 @@
 #include "STM32-UID.h"
+#include "Arduino.h"
 
 /*
 void foobar()
@@ -21,4 +22,14 @@ void getSTM32UUID(unsigned char * uuid)
   memcpy((void *)uuid, &stmUUID[0], 12);
 
   free(stmUUID);
+}
+
+void decodeUniqueId(unsigned char * uuid, char * uuidString, int uuidLength)
+{
+  uuidString[2 * uuidLength] = '\0';
+  for (short i = 0; i < uuidLength; i++)
+  {
+    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
+  }
+  Serial2.println(uuidString);
 }

@@ -14,4 +14,6 @@ void printDS3231Time();
 
 const char * reinterpretCharPtr(const __FlashStringHelper *string);
 
+void blinkTest();
+
 #endif

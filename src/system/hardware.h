@@ -28,4 +28,8 @@
 
 #define ONBOARD_LED_PIN PA5
 
+void startSerial2();
+void setupInternalRTC();
+void setupHardwarePins();
+
 #endif

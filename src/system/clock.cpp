@@ -45,11 +45,11 @@ void setNextAlarmInternalRTC(short interval){
   Serial2.println("made clock");  Serial2.flush();
 
   char message[100];
-  sprintf(message, "Got clock value (current): %i", clock->getTime());
+  sprintf(message, "Got clock value (current): %li", clock->getTime());
   Monitor::instance()->writeDebugMessage(message);
     
   clock->setTime(0);
-  sprintf(message, "Got clock value (reset): %i", clock->getTime());
+  sprintf(message, "Got clock value (reset): %li", clock->getTime());
   Monitor::instance()->writeDebugMessage(message);
 
   clock->removeAlarm();

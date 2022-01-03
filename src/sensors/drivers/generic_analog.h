@@ -1,4 +1,4 @@
-#include "sensor.h"
+#include "sensors/sensor.h"
 
 #define ADC_SELECT_INTERNAL 0b00
 #define ADC_SELECT_EXTERNAL 0b01

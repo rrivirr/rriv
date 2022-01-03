@@ -25,4 +25,7 @@
 
 void getSTM32UUID(unsigned char * uuid);
 
+void decodeUniqueId(unsigned char * uuid, char * uuidString, int uuidLength);
+
+
 #endif //__UUID_H

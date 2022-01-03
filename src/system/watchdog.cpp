@@ -55,6 +55,6 @@ void disableCustomWatchDog()
 void printWatchDogStatus(){
   char message[50];
   int timerCount = timer_get_count(TIMER1);
-  sprintf(message, reinterpret_cast<const char *> F("Timer Count: %d\0"), timerCount);
+  sprintf(message, reinterpret_cast<const char *> F("Timer Count: %d"), timerCount);
   Monitor::instance()->writeDebugMessage(timerCount);
 }

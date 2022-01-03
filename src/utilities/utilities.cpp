@@ -9,12 +9,11 @@
 
 void printInterruptStatus(HardwareSerial &serial)
 {
-  serial.println("NVIC->ISER:");
-  serial.println(NVIC_BASE->ISER[0], BIN);
-  serial.println(NVIC_BASE->ISER[1], BIN);
-  serial.println(NVIC_BASE->ISER[2], BIN);
-  serial.println(EXTI_BASE->PR, BIN);
-  serial.flush();
+  debug("NVIC->ISER:");
+  debug(NVIC_BASE->ISER[0], BIN);
+  debug(NVIC_BASE->ISER[1], BIN);
+  debug(NVIC_BASE->ISER[2], BIN);
+  debug(EXTI_BASE->PR, BIN);
 }
 
 void printDateTime(HardwareSerial &serial, DateTime now)
@@ -69,3 +68,10 @@ const char * reinterpretCharPtr(const __FlashStringHelper *string)
 {
   return reinterpret_cast<const char *>(string);
 }
+
+void blinkTest()
+{
+  debug(F("blink test:"));
+  blink(10,250);
+}
+

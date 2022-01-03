@@ -34,7 +34,7 @@ void AtlasRGB::stop(){
 }
 
 char * AtlasRGB::mallocDataMemory(){
-  malloc(sizeof(char) * this->dataMemorySize);
+  return (char * ) malloc(sizeof(char) * this->dataMemorySize);
 }
 
 

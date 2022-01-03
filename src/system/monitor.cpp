@@ -94,7 +94,6 @@ void Monitor::writeDebugMessage(int number, int base)
 {
   unsigned char buf[CHAR_BIT * sizeof(long long)];
   unsigned long i = 0;
-  size_t s = 0;
   if (number == 0)
   {
     this->writeDebugMessage('0');
