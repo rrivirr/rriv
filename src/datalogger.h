@@ -32,7 +32,7 @@ typedef struct datalogger_settings { // 64 bytes
     unsigned short burstNumber; // 2 bytes
     unsigned short startUpDelay; // 2 bytes
     unsigned short interBurstDelay; // 2 bytes
-    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
+    char mode;       // i(interactive), d(debug), l(logging), t(deploy on trigger) 1 byte
     char siteName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
     byte externalADCEnabled : 1;

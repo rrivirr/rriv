@@ -1,18 +1,18 @@
 #include "hardware.h"
-
-void GPIOpinOff(uint8 pin)
-{
-    digitalWrite(pin, LOW);
-}
-
-void GPIOpinOn(uint8 pin)
-{
-    digitalWrite(pin, HIGH);
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h>
 #include "configuration.h"
 #include "system/monitor.h"
 
+void gpioPinOff(uint8 pin)
+{
+    digitalWrite(pin, LOW);
+}
+
+void gpioPinOn(uint8 pin)
+{
+    digitalWrite(pin, HIGH);
+}
 
 void startSerial2()
 {
@@ -23,9 +23,10 @@ void startSerial2()
   {
     delay(100);
   }
-  Serial2.println("Hello world");
-  notify(F("Begin Setup"));
-  Serial2.println("ya");
+  notify(F("Began Serial 2"));
+  //Serial2.println("Hello world");
+  //notify(F("Begin Setup"));
+  //Serial2.println("ya");
 }
 
 void setupInternalRTC()
@@ -48,6 +49,11 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  //GPIO pin for 5v booster, off at setup, on during warmup or burst
+  pinMode(GPIO_PIN_3, OUTPUT); // setup a GPIO pin
+  gpioPinOff(GPIO_PIN_3); // diable till used
+  gpioPinOn(GPIO_PIN_3); // enable for debugging
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 
