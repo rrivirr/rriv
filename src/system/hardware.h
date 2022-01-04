@@ -34,8 +34,18 @@
 
 #define EXT_MOSFET_ENABLE NULL // for switched_power.cpp
 
+// Bluefruit on SPI
+#define BLUEFRUIT_SPI_SCK   PB13
+#define BLUEFRUIT_SPI_MISO  PB14
+#define BLUEFRUIT_SPI_MOSI  PB15
+#define BLUEFRUIT_SPI_CS    PB8  // Pullup
+#define BLUEFRUIT_SPI_IRQ   PB9
+#define BLUEFRUIT_SPI_RST   PC4
+
 void GPIOpinOff(uint8 pin);
 void GPIOpinOn(uint8 pin);
-
+void startSerial2();
+void setupInternalRTC();
+void setupHardwarePins();
 
 #endif

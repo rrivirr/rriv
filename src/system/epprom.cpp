@@ -69,39 +69,25 @@ void writeSensorConfigurationToEEPROM(short slot, void * configuration)
 
 void readUniqueId(unsigned char * uuid)
 {
-
   for(int i=0; i < UUID_LENGTH; i++)
   {
     unsigned int address = EEPROM_UUID_ADDRESS_START + i;
     uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
 
-  Monitor::instance()->writeDebugMessage(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash
-  // Log uuid and time
-  // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
-  char uuidString[2 * UUID_LENGTH + 1];
-  uuidString[2 * UUID_LENGTH] = '\0';
-  for(short i=0; i < UUID_LENGTH; i++)
-  {
-    sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
-  }
-  Monitor::instance()->writeDebugMessage(uuidString);
+  debug(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash  
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+  char uuidString[2 * UUID_LENGTH + 1];
 
   if(memcmp(uuid, uninitializedEEPROM, UUID_LENGTH) == 0)
   {
-    Monitor::instance()->writeDebugMessage(F("Generate or Retrieve UUID"));
+    debug(F("Retrieve UUID"));
     getSTM32UUID(uuid);
 
-    Monitor::instance()->writeDebugMessage(F("UUID to Write:"));
-    char uuidString[2 * UUID_LENGTH + 1];
-    uuidString[2 * UUID_LENGTH] = '\0';
-    for(short i=0; i < UUID_LENGTH; i++)
-    {
-      sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
-    }
-    Monitor::instance()->writeDebugMessage(uuidString);
+    debug(F("UUID to Write:"));
+    decodeUniqueId(uuid, uuidString, UUID_LENGTH);
+    debug(uuidString);
     
     for(int i=0; i < UUID_LENGTH; i++)
     {
@@ -115,13 +101,20 @@ void readUniqueId(unsigned char * uuid)
       uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
     }
 
-    Monitor::instance()->writeDebugMessage(F("UUID in EEPROM:"));
+    debug(F("UUID in EEPROM:"));
     for(short i=0; i < UUID_LENGTH; i++)
     {
         sprintf(&uuidString[2*i], "%02X", (byte) uuid[i]);
     }
-    Monitor::instance()->writeDebugMessage(uuidString);
-   }
+    debug(uuidString);
+  } 
+  else 
+  {
+    // TODO: this is confused.  each byte is 00-FF, which means 12 bytes = 24 chars in hex
+    char uuidString[2 * UUID_LENGTH + 1];
+    decodeUniqueId(uuid, uuidString, UUID_LENGTH);
+    debug(uuidString);
+  }
 
 }
 
@@ -153,7 +146,7 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Littl
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
 {
-  Monitor::instance()->writeDebugMessage(F("readEEPROMBytesMem"));
+  debug(F("readEEPROMBytesMem"));
   char buffer[size];
   for (uint8_t i = 0; i < size; i++)
   {
@@ -163,13 +156,12 @@ void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Litt
     // Serial2.flush(); 
     buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
   }
-  // Serial2.println();
   memcpy(destination, &buffer, size); // copy buffer to destination
 }
 
 void writeEEPROMBytesMem(short address, void * source, uint8_t size)
 {
-  Monitor::instance()->writeDebugMessage(F("writeEEPROMBytesMem"));
+  debug(F("writeEEPROMBytesMem"));
   char buffer[size];
   //read everything from source into buffer
   memcpy(&buffer, source, size);
@@ -184,7 +176,7 @@ void writeEEPROMBytesMem(short address, void * source, uint8_t size)
     // Serial2.flush();
     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
   }
-  Monitor::instance()->writeDebugMessage(F("\nfinish writeEEPROMBytesMem"));
+  debug(F("\nfinish writeEEPROMBytesMem"));
 }
 
 void clearEEPROMAddress(short address, uint8_t length)

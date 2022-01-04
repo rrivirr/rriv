@@ -236,7 +236,7 @@ void componentsBurstMode()
 {
 
 
-  Monitor::instance()->writeDebugMessage(F("turn on components"));
+  debug(F("turn on components"));
 
   //pinmode?
   rcc_clk_enable( RCC_I2C1); // these clocks are needed during normal run
@@ -253,7 +253,7 @@ void componentsBurstMode()
   adc_enable(ADC1);
   ADC1->regs->CR2 |= ADC_CR2_TSVREFE; // temperature sensor inside ADC
 
-  Monitor::instance()->writeDebugMessage(F("turned on components"));
+  debug(F("turned on components"));
 
 }
 

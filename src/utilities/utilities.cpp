@@ -69,3 +69,10 @@ const char * reinterpretCharPtr(const __FlashStringHelper *string)
 {
   return reinterpret_cast<const char *>(string);
 }
+
+void blinkTest()
+{
+  debug(F("blink test:"));
+  blink(10,250);
+}
+

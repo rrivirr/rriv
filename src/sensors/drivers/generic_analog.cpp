@@ -1,9 +1,9 @@
 #include "generic_analog.h"
 #include "system/monitor.h"
-#include "sensor_types.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
+#include "sensors/sensor_types.h"
 
 int ADC_PINS[5] = {
   ANALOG_INPUT_1_PIN, 
@@ -43,12 +43,12 @@ void GenericAnalog::configureFromJSON(cJSON * json)
     }
     else
     {
-      Serial2.println(F("Invalid adc select"));
+      notify(F("Invalid adc select"));
     }
   } 
   else 
   {
-    Serial2.println(F("Invalid adc select"));
+    notify(F("Invalid adc select"));
   }
  
 
@@ -57,7 +57,7 @@ void GenericAnalog::configureFromJSON(cJSON * json)
   {
     configuration.sensor_port = (byte) sensorPortJSON->valueint;
   } else {
-    Serial2.println(F("Invalid sensor port"));
+    notify(F("Invalid sensor port"));
   }
 
   this->configureCSVColumns();
@@ -245,7 +245,7 @@ void GenericAnalog::calibrationStep(char * step, int trueValue)
     {
       notify("Failed to print json.");
     }
-    Serial2.println(string);
+    notify(string);
     free(json);
     
   }
@@ -260,8 +260,6 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
 {
   //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  unsigned short slope;
-  unsigned int intercept;
 
   int m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
   int b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points
@@ -288,11 +286,4 @@ void GenericAnalog::addCalibrationParametersToJSON(cJSON * json)
   cJSON_AddNumberToObject(json, "y2", configuration.y2);
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
-
-
-//     {
-//       readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
-//       readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
-//       temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-//     }
 

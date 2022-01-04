@@ -6,8 +6,8 @@ EC_OEM *oem_ec;
 void setupEC_OEM(TwoWire *wire)
 {
   // note: this function needs to be cleaned up, debug code not necessary anymore
-  Monitor::instance()->writeDebugMessage(F("EC I2C setup"));
-  Monitor::instance()->writeDebugMessage(F("Setting up board"));
+  debug(F("EC I2C setup"));
+  debug(F("Setting up board"));
 
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
   
@@ -17,16 +17,16 @@ void setupEC_OEM(TwoWire *wire)
   char message[300];
   sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
           oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
 
   oem_ec->singleReading();
   struct param_OEM_EC parameter;
   parameter = oem_ec->getAllParam();
 
-  Monitor::instance()->writeDebugMessage(F("test:"));
+  debug(F("test:"));
   sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
           parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
-  Monitor::instance()->writeDebugMessage(message);
+  debug(message);
   */
 
   oem_ec->setLedOn(true);
@@ -34,7 +34,7 @@ void setupEC_OEM(TwoWire *wire)
   //oem_ec->setLedOn(true);
   oem_ec->setProbeType(1.0);
 
-  Monitor::instance()->writeDebugMessage(F("Done with EZO I2C setup"));
+  debug(F("Done with EZO I2C setup"));
 }
 
 void hibernateEC_OEM()

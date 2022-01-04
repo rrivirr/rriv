@@ -11,19 +11,19 @@ void setupSwitchedPower()
 
 void enableSwitchedPower()
 {
-  Monitor::instance()->writeDebugMessage(F("Enabling switched power"));
+  debug(F("Enabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
 }
 
 void disableSwitchedPower()
 {
-  Monitor::instance()->writeDebugMessage(F("Disabling switched power"));
+  debug(F("Disabling switched power"));
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 
 void cycleSwitchablePower()
 {
-  Monitor::instance()->writeDebugMessage(F("Cycle switched power"));
+  debug(F("Cycle switched power"));
   disableSwitchedPower();
   delay(500);
   enableSwitchedPower();

@@ -59,4 +59,4 @@ typedef struct dbgmcu_reg_map {
 #define DBGMCU_CR_SLEEP                      (1U << DBGMCU_CR_SLEEP_BIT)
 
 
-void print_debug_status();
+void printDebugStatus();

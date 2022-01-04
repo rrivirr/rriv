@@ -30,7 +30,7 @@ void handleManualWakeInterrupt()
 void setupManualWakeInterrupts()
 {
 
-  Monitor::instance()->writeDebugMessage("setupManualWakeInterrupts");
+  debug("setupManualWakeInterrupts");
 
   // Set up interrupts
   awakenedByUser = false;

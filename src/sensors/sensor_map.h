@@ -4,7 +4,7 @@
 #include "sensor.h"
 #include <map>
 #include <string>
-#include "generic_analog.h"
+#include "drivers/generic_analog.h"
 
 
 template<typename T> SensorDriver * createInstance() { return new T; }

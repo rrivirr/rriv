@@ -33,7 +33,7 @@ void i2cError(int transmissionCode)
 void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * data, int numBytes)
 {
   // char debugMessage[100];
-  // sprintf(debugMessage, "i2c %d %d %d", i2cAddress, registerAddress, numBytes);
+  // sprintf(debugMessage, "i2c %X %X %d", i2cAddress, registerAddress, numBytes);
   // debug(debugMessage);
 
   short rval = -1;
@@ -43,14 +43,10 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * dat
     Wire.write(registerAddress);
 
     for(int i=numBytes-1; i>=0; i--){ // correct order
-    // for(int i=0; i<numBytes; i++){
-      // Serial2.println(i);
-      // Serial2.println( *( ((byte *) data) +i), BIN );
       Wire.write( ((byte *) data) +i, 1);
     }
 
     rval = Wire.endTransmission();
-    // Serial2.println(rval);
 
     if(rval != 0){
       i2cError(rval);

@@ -3,7 +3,7 @@
 
 
 
-#include "sensor.h"
+#include "sensors/sensor.h"
 
 //split into drivers
 typedef struct fig_e13_methane_type{

@@ -21,7 +21,6 @@
 #include "system/adc.h"
 #include "system/write_cache.h"
 
-#include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
@@ -106,6 +105,7 @@ private:
     WriteCache * fileSystemWriteCache = NULL;
 
     // state
+    char uuidString[25]; // 2 * UUID_LENGTH + 1
     mode_type mode = interactive;
     bool powerCycle = true;
     bool interactiveModeLogging = false;
@@ -148,6 +148,8 @@ private:
     void stopAndAwaitTrigger();
     void writeStatusFields();
     void prepareForUserInteraction();
+    void powerUpSwitchableComponents();
+    void powerDownSwitchableComponents();
 
     // utility
     SensorDriver * getDriver(unsigned short slot);
@@ -158,74 +160,6 @@ private:
 
 };
 
-// State
-extern unsigned char uuid[UUID_LENGTH];
-extern char uuidString[25]; // 2 * UUID_LENGTH + 1
 
-
-// extern unsigned long lastMillis;
-// extern uint32_t awakeTime;
-// extern uint32_t lastTime;
-// extern short burstCount;
-// extern bool configurationMode;
-// extern bool debugValuesMode;
-// extern bool clearModes;
-// extern bool tempCalMode;
-// extern AtlasRGB rgbSensor;   
-//extern bool thermistorCalibrated;
-
-
-
-
-void enableI2C1();
-
-void enableI2C2();
-
-void powerUpSwitchableComponents();
-
-void powerDownSwitchableComponents();
-
-void startSerial2();
-
-void setupHardwarePins();
-
-void blinkTest();
-
-
-void setupSensors();
-
-void allocateMeasurementValuesMemory();
-
-
-void setNotBursting();
-
-void measureSensorValues();
-
-bool checkDebugLoop();
-
-bool checkAwakeForUserInteraction(bool debugLoop);
-
-bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction);
-
-
-void handleControlCommand();
-
-void monitorConfiguration();
-
-
-
-void monitorValues();
-
-void calibrateThermistor();
-
-void monitorTemperature();
-
-bool checkThermistorCalibration();
-
-void clearThermistorCalibration();
-
-float calculateTemperature();
-
-void processControlFlag(char *flag);
 
 #endif

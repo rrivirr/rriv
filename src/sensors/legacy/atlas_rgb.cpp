@@ -1,49 +1,76 @@
 /**
- * @file   atlas_co2.cpp
+ * @file   atlas_rgb.cpp
  * @author Shayne Marques marques.shayne24@gmail.com
- * @brief  Class declaration to interface with AtlasScientific EZO-CO2 Embedded NDIR Carbon Dioxide Sensor in i2C mode
- * https://atlas-scientific.com/probes/co2-sensor/
+ * @brief  Class declaration to interface with AtlasScientific EZO-RGB Color Sensor in i2C mode
+ * https://atlas-scientific.com/probes/color-sensor/
  */
 
-#include "atlas_co2.h"
+#include "atlas_rgb.h"
 #include <Wire_slave.h>
 #include "system/monitor.h"
 
 // Reference object
-AtlasCO2 * co2Sensor = new AtlasCO2();
+AtlasRGB * rgbSensor = new AtlasRGB();
 
 
 // Returns instance
-AtlasCO2 * AtlasCO2::instance() {
-  return co2Sensor;
+AtlasRGB * AtlasRGB::instance() {
+  return rgbSensor;
 }
 
 // Dummy constructor
-AtlasCO2::AtlasCO2(){}
+AtlasRGB::AtlasRGB(){}
+
+void AtlasRGB::setup(TwoWire * wire)
+{
+  AtlasRGB::instance()->start(wire);
+  AtlasRGB::instance()->deviceInformation();
+  AtlasRGB::instance()->sendCommand();
+  debug(AtlasRGB::instance()->receiveResponse());
+}
+
+void AtlasRGB::stop(){
+  // hibernate
+}
+
+char * AtlasRGB::mallocDataMemory(){
+  return (char * ) malloc(sizeof(char) * this->dataMemorySize);
+}
+
+
+void AtlasRGB::takeMeasurement(char * data)
+{
+  AtlasRGB::instance()->singleMode();
+  AtlasRGB::instance()->sendCommand();
+  debug(AtlasRGB::instance()->receiveResponse());
+}
 
 // Constructor/Starter
-void AtlasCO2::start(TwoWire * wire) {
-  Monitor::instance()->writeDebugMessage(F("In CO2 constructor"));
+void AtlasRGB::start(TwoWire * wire)
+{
+  debug(F("In RGB constructor"));
   strcpy(this->inputString, "");
   strcpy(this->sensorString, "");
   this->wire = wire;
   this->code = 0;
-  this->data = 0;
-  this->address = 105; // Default address for CO2 sensor 0x69
+  this->red = 0;
+  this->green = 0;
+  this->blue = 0;
+  this->address = 112; // Default address for RGB sensor 0x70
   this->time = 300; // Response delay time in ms
-  Monitor::instance()->writeDebugMessage(F("CO2 Constructor"));
+  debug(F("RGB Constructor"));
 }
 
-void AtlasCO2::sendCommand() {
-  Monitor::instance()->writeDebugMessage("In send command: ");
-  Monitor::instance()->writeDebugMessage(this->inputString);
+void AtlasRGB::sendCommand() {
+  debug("In send command: ");
+  debug(this->inputString);
   this->wire->beginTransmission(this->address);
   this->wire->write(this->inputString);
   this->wire->endTransmission();
   strcpy(this->inputString, "");
 }
 
-char * AtlasCO2::receiveResponse() {
+char * AtlasRGB::receiveResponse() {
   static int i = 0;
   if (strcmp(this->inputString, "sleep") != 0) {
     
@@ -58,23 +85,22 @@ char * AtlasCO2::receiveResponse() {
     
     switch (this->code) {                  
       case 1:              
-        Monitor::instance()->writeDebugMessage(F("Success"));
+        debug(F("Success"));
         break;                         
       case 2:              
-        Monitor::instance()->writeDebugMessage(F("Failed"));             
+        debug(F("Failed"));             
         break;                         
       case 254:              
-        Monitor::instance()->writeDebugMessage(F("Pending"));            
+        debug(F("Pending"));            
         break;                         
       case 255:              
-        Monitor::instance()->writeDebugMessage(F("No Data"));
+        debug(F("No Data"));
         break;                         
     }
 
     // Constructing response array
     while (this->wire->available()) {
       char res = this->wire->read();
-      Monitor::instance()->writeDebugMessage(res);
       this->sensorString[i++] = res;   
       if (res == 0) {                
         i = 0;            
@@ -87,7 +113,7 @@ char * AtlasCO2::receiveResponse() {
 }
 
 // Sends most recent command and receives latest response from sensor
-char * AtlasCO2::run() {
+char * AtlasRGB::run() {
   if (strcmp(this->inputString, "")) {
     sendCommand();
   }
@@ -102,7 +128,7 @@ char * AtlasCO2::run() {
 *****************************************************************************************/
 
 // Setting LED Brightness
-int AtlasCO2::setLEDBrightness(int value, bool powerSaving) {
+int AtlasRGB::setLEDBrightness(int value, bool powerSaving) {
   if (value < 0) {
     strcpy(this->inputString, "L,");
     strcat(this->inputString, "?");
@@ -120,7 +146,7 @@ int AtlasCO2::setLEDBrightness(int value, bool powerSaving) {
 }
 
 // Setting Indicator LED on/off
-void AtlasCO2::setIndicatorLED(bool status, bool power) {
+void AtlasRGB::setIndicatorLED(bool status, bool power) {
   strcpy(this->inputString, "iL,");
   if (status) {
     strcat(this->inputString, "?");
@@ -137,7 +163,7 @@ void AtlasCO2::setIndicatorLED(bool status, bool power) {
 
 // Switches back to UART Mode
 // Sets baud rate: 300, 1200, 2400, 9600, 19200, 38400, 57600, 115200
-int AtlasCO2::setBaudRate(int value) {
+int AtlasRGB::setBaudRate(int value) {
   if (value < 0) {
     strcpy(this->inputString, "Baud,?");
     return 0;
@@ -154,9 +180,9 @@ int AtlasCO2::setBaudRate(int value) {
 }
 
 // Sets gamma correction: 0.01 - 4.99
-int AtlasCO2::gammaCorrection(float value) {
+int AtlasRGB::gammaCorrection(float value) {
   if (value < 0) {
-    strcpy(this->inputString, reinterpret_cast<const char *> F("G,?"));
+    strcpy(this->inputString, "G,?");
     return 0;
   }
   if (value >= 0.01 && value <= 4.99) {
@@ -167,46 +193,46 @@ int AtlasCO2::gammaCorrection(float value) {
 }
 
 // Sets custom name for sensor
-void AtlasCO2::nameDevice(char * value) {
+void AtlasRGB::nameDevice(char * value) {
   if (!strcmp(value, "")) {
-    strcpy(this->inputString, reinterpret_cast<const char *> F("Name,?"));
+    strcpy(this->inputString, "Name,?");
   }
   else {
-    sprintf(this->inputString, reinterpret_cast<const char *> F("Name,%s"), value);
+    sprintf(this->inputString, "Name,%s", value);
   }
 }
 
 // Returns device information 
-void AtlasCO2::deviceInformation() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("i"));
+void AtlasRGB::deviceInformation() {
+  strcpy(this->inputString, "i");
 }
 
 // Enters sleep mode
-void AtlasCO2::sleepSensor() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("Sleep"));
+void AtlasRGB::sleepSensor() {
+  strcpy(this->inputString, "Sleep");
 }
 
 // Performs a factory reset
-void AtlasCO2::factoryReset() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("Factory"));
+void AtlasRGB::factoryReset() {
+  strcpy(this->inputString, "Factory");
 }
 
 // Takes a single reading
-void AtlasCO2::singleMode() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("R"));
+void AtlasRGB::singleMode() {
+  strcpy(this->inputString, "R");
 }
 
 // Calibrates sensor
-void AtlasCO2::calibrateSensor() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("Cal"));
+void AtlasRGB::calibrateSensor() {
+  strcpy(this->inputString, "Cal");
 }
 
 // Flashes LED to find sensor
-void AtlasCO2::findSensor() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("Find"));
+void AtlasRGB::findSensor() {
+  strcpy(this->inputString, "Find");
 }
 
 // Returns device status
-void AtlasCO2::getStatus() {
-  strcpy(this->inputString, reinterpret_cast<const char *> F("Status"));
+void AtlasRGB::getStatus() {
+  strcpy(this->inputString, "Status");
 }

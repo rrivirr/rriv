@@ -59,7 +59,7 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
   {
     common->slot = slotJSON->valueint;
   } else {
-    Serial2.println("Invalid slot");
+    notify("Invalid slot");
   }
 
   const cJSON * tagJSON = cJSON_GetObjectItemCaseSensitive(json, "tag");
@@ -67,7 +67,7 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
   {
     strcpy(common->tag, tagJSON->valuestring);
   } else {
-    Serial2.println("Invalid tag");
+    notify("Invalid tag");
   }
 
   const cJSON * burstSizeJson = cJSON_GetObjectItemCaseSensitive(json, "burst_size");
@@ -75,7 +75,7 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
   {
     common->burst_size = (byte) burstSizeJson->valueint;
   } else {
-    Serial2.println("Invalid burst size");
+    notify("Invalid burst size");
   }
 }
 

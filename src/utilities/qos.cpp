@@ -8,8 +8,8 @@ extern "C" char* _sbrk(int incr);
 int freeMemory()
 {
   char top;
-  Monitor::instance()->Monitor::instance()->writeDebugMessage((int) &top );
-  Monitor::instance()->Monitor::instance()->writeDebugMessage((int) reinterpret_cast<char*>(_sbrk(0)) );
+  debug((int) &top );
+  debug((int) reinterpret_cast<char*>(_sbrk(0)) );
 
   return &top - reinterpret_cast<char*>(_sbrk(0));
 }
@@ -18,7 +18,7 @@ void intentionalMemoryLeak()
 {
   // cause a memory leak
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(mem); // use it so compiler doesn't remove the leak
+  debug(mem); // use it so compiler doesn't remove the leak
 }
 
 
@@ -29,9 +29,9 @@ void checkMemory()
   char freeMemoryMessage[21];
   int freeMemoryAmount = freeMemory();
   sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(freeMemoryMessage);
+  debug(freeMemoryMessage);
   if(freeMemoryAmount < 500){
-    Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Low memory, resetting!"));
+    debug(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
 }
