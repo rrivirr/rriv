@@ -148,7 +148,7 @@ bool GenericAnalog::takeMeasurement(){
     case ADC_SELECT_EXTERNAL:
     {
       debug("getting external ADC measurement");
-      this->value = externalADC->getChannelValue(this->configuration.sensor_port);
+      this->value = externalADC->getChannelValue(this->configuration.sensor_port - 1);
     }
       break;
 
