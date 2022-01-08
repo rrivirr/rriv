@@ -19,7 +19,7 @@ typedef struct generic_linear_analog_type // 64 bytes
     short reserved: 1;
     unsigned short m; // 2bytes, slope
     int b; // 4bytes, y-intercept
-    unsigned int cal_timestamp; // 4byte epoch timestamp at calibration
+    unsigned long long cal_timestamp; // 8 byte epoch timestamp at calibration
     short x1; // 2bytes for 2pt calibration
     short y1; // 2bytes for 2pt calibration
     short x2; // 2bytes for 2pt calibration
@@ -35,12 +35,12 @@ class GenericAnalog : public AnalogSensorDriver
     // Constructor
     GenericAnalog();
     ~GenericAnalog();
-    void configureFromJSON(cJSON * json);
 
     // Interface
     void setup();
-    void configure(generic_config * configuration);
-    void setDefaults();
+    void setConfiguration(generic_config configuration);
+    void setDriverDefaults();
+    void configureDriverFromJSON(cJSON * json);
     generic_config getConfiguration();
     cJSON * getConfigurationJSON(); // returns unprotected pointer
     void stop();
@@ -54,6 +54,8 @@ class GenericAnalog : public AnalogSensorDriver
     void calibrationStep(char * step, int value);
     void addCalibrationParametersToJSON(cJSON * json);
 
+  protected:
+    void configureFromJSON(cJSON * json);
 
   private:
     generic_linear_analog_sensor configuration;

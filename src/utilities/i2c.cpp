@@ -77,7 +77,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.println(F("I2C2: I2C device found at address 0x"));
+      Serial.println(F("I2C: I2C device found at address 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);

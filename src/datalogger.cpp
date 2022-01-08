@@ -247,18 +247,18 @@ void Datalogger::loadSensorConfigurations()
 
     drivers[j] = driver;
     j++;
-    switch(driver->getProtocol()){
-      case analog:
-        ((AnalogSensorDriver*) driver)->setup();
-        break;
-      case i2c:
-        ((I2CSensorDriver*) driver)->setup(&WireTwo);
-        break;
-      default:
-        break;
+
+    if(driver->getProtocol() == i2c)
+    {
+      debug("got i2c sensor");
+      ((I2CSensorDriver*) driver)->setWire(&WireTwo);
+      debug("set wire");
     }
+    debug("do setup");
+    driver->setup();
+
     debug("configure sensor driver");
-    driver->configure(configs[i]);  //pass configuration struct to the driver
+    driver->configure(*configs[i]);  //pass configuration struct to the driver
     debug("configured sensor driver");
   }
 
@@ -495,10 +495,31 @@ void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings)
 
 void Datalogger::setSensorConfiguration(char * type, cJSON * json)
 {
+
+  SensorDriver * driver = NULL;
+
   if(strcmp(type, "generic_analog") == 0) // make generic for all types
   {
-    SensorDriver * driver = new GenericAnalog();
+    driver = new GenericAnalog();
+  } 
+  else if(strcmp(type, "generic_atlas") == 0)
+  {
+    driver = new GenericAtlas();
+  }
+
+  if(driver != NULL)
+  {
+    notify("configure from json");
     driver->configureFromJSON(json);
+    if(driver->getProtocol() == i2c)
+    {
+      notify("got i2c sensor");
+      ((I2CSensorDriver*) driver)->setWire(&WireTwo);
+      notify("set wire");
+    }
+    notify("do setup");
+    driver->setup();
+    notify("done setup");
     generic_config configuration = driver->getConfiguration();
     storeSensorConfiguration(&configuration);
 
@@ -532,7 +553,6 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
       drivers = driverAugmentation;
     }
     notify(F("OK"));
-
   }
 }
 
@@ -745,7 +765,9 @@ void Datalogger::powerUpSwitchableComponents()
   cycleSwitchablePower();
   delay(500);
   enableI2C1();
+  enableI2C2();
 
+  // Reset external ADC (if it's installed)
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(PC5,LOW); // reset is active low
   delay(1); // delay > 10ns after starting ADC reset

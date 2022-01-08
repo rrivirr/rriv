@@ -20,15 +20,9 @@ GenericAnalog::GenericAnalog()
 
 GenericAnalog::~GenericAnalog(){}
 
-// TODO: place common routines in SensorDriver base class
-void GenericAnalog::configureFromJSON(cJSON * json)
+void GenericAnalog::configureDriverFromJSON(cJSON * json)
 {
-  common_config_sensor common;
-  this->configureCommonFromJSON(json, &common);
-  this->setDefaults();
-  configuration.common = common;
-  
-  configuration.common.sensor_type = GENERIC_ANALOG_SENSOR;
+  configuration.common.sensor_type = GENERIC_ANALOG_SENSOR; // redundant?
 
   const cJSON * adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
   if(adcSelectJSON != NULL && cJSON_IsString(adcSelectJSON)) 
@@ -69,18 +63,9 @@ void GenericAnalog::setup()
   debug("setup GenericAnalog");
 }
 
-void GenericAnalog::configure(generic_config * configuration)
-{
-  memcpy(&this->configuration, configuration, sizeof(generic_linear_analog_sensor));
-  this->setDefaults();
-  this->configureCSVColumns();
-}
 
-// this class: setDriverSpecificDefaults
-// base class: setDefaults()
-void GenericAnalog::setDefaults()
+void GenericAnalog::setDriverDefaults()
 {
-  this->setCommonDefaults(&configuration.common);
   if(configuration.adc_select != ADC_SELECT_EXTERNAL && configuration.adc_select != ADC_SELECT_INTERNAL)
   {
     configuration.adc_select = ADC_SELECT_INTERNAL;
@@ -92,6 +77,7 @@ void GenericAnalog::setDefaults()
   }
 }
 
+
 // base class
 generic_config GenericAnalog::getConfiguration()
 {
@@ -99,6 +85,13 @@ generic_config GenericAnalog::getConfiguration()
   memcpy(&configuration, &this->configuration, sizeof(generic_linear_analog_sensor));
   return configuration;
 }
+
+
+void GenericAnalog::setConfiguration(generic_config configuration)
+{
+  memcpy(&this->configuration, &configuration, sizeof(generic_config));
+}
+
 
 // split between base class and this class
 // getConfigurationJSON: base class

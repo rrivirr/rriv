@@ -43,21 +43,27 @@ void SensorDriver::configureCSVColumns()
   strcpy(this->csvColumnHeaders, csvColumnHeaders);
 }
 
-void SensorDriver::setCommonDefaults(common_config_sensor * common)
+void SensorDriver::setDefaults()
 {
-  if(common->burst_size <= 0 || common->burst_size > 100)
+  generic_config configuration = this->getConfiguration();
+
+  if(configuration.common.burst_size <= 0 || configuration.common.burst_size > 100)
   {
-    common->burst_size = 10;
+    configuration.common.burst_size = 10;
   }
+  this->setConfiguration(configuration);
+  this->setDriverDefaults();
 }
 
 
-void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * common)
+void SensorDriver::configureFromJSON(cJSON * json)
 {
+  generic_config configuration = this->getConfiguration();
+
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON))
   {
-    common->slot = slotJSON->valueint;
+    configuration.common.slot = slotJSON->valueint;
   } else {
     notify("Invalid slot");
   }
@@ -65,7 +71,7 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
   const cJSON * tagJSON = cJSON_GetObjectItemCaseSensitive(json, "tag");
   if(tagJSON != NULL && cJSON_IsString(tagJSON) && strlen(tagJSON->valuestring) <= 5)
   {
-    strcpy(common->tag, tagJSON->valuestring);
+    strcpy(configuration.common.tag, tagJSON->valuestring);
   } else {
     notify("Invalid tag");
   }
@@ -73,10 +79,27 @@ void SensorDriver::configureCommonFromJSON(cJSON * json, common_config_sensor * 
   const cJSON * burstSizeJson = cJSON_GetObjectItemCaseSensitive(json, "burst_size");
   if(burstSizeJson != NULL && cJSON_IsNumber(burstSizeJson) && burstSizeJson->valueint > 0)
   {
-    common->burst_size = (byte) burstSizeJson->valueint;
+    configuration.common.burst_size = (byte) burstSizeJson->valueint;
   } else {
     notify("Invalid burst size");
   }
+
+  this->setConfiguration(configuration);
+  this->setDefaults();
+  this->configureDriverFromJSON(json);
+}
+
+
+void SensorDriver::configure(generic_config configuration)
+{
+  this->setConfiguration(configuration);
+  this->setDefaults();
+  this->configureCSVColumns();
+}
+
+void I2CSensorDriver::setWire(TwoWire * wire)
+{
+  this->wire = wire;
 }
 
 // placeholder for required virtual destructors

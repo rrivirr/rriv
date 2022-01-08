@@ -519,7 +519,6 @@ void CommandInterface::setup(){
 
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
-  cmdAdd("restart", restart);
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-interval", setInterval);
@@ -541,7 +540,8 @@ void CommandInterface::setup(){
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
 
-  // qos commands
+  // qos commands / debug commands
+  cmdAdd("restart", restart);
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);

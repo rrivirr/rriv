@@ -55,13 +55,15 @@ class SensorDriver {
     // Constructor
     SensorDriver();
     virtual ~SensorDriver();
-    virtual void configureFromJSON(cJSON * json);
-
+    void configureFromJSON(cJSON * json);
+    void configure(generic_config configuration);
 
     // Interface
-    virtual void configure(generic_config * configuration); // pass block of configuration memory, read from EEPROM
     virtual generic_config getConfiguration();
+    virtual void setConfiguration(generic_config configuration);
     virtual cJSON * getConfigurationJSON(); // returns unprotected pointer
+    virtual void setup();
+    virtual void setDefaults();
     virtual void stop();
     virtual bool takeMeasurement(); // return true if measurement successful
     virtual char * getDataString();
@@ -70,7 +72,7 @@ class SensorDriver {
     virtual const char * getBaseColumnHeaders();
     
 
-    // // Calibration
+    // Calibration
     virtual void initCalibration();
     virtual void calibrationStep(char * step, int value);
 
@@ -80,9 +82,11 @@ class SensorDriver {
 
   protected:
     char csvColumnHeaders[100] = "column_header";
-    void configureCommonFromJSON(cJSON * json, common_config_sensor * common);
     void configureCSVColumns();
-    void setCommonDefaults(common_config_sensor * common);
+
+    // Implementation interface
+    virtual void configureDriverFromJSON(cJSON * json);
+    virtual void setDriverDefaults();
 
   private:
     short burstCount = 0;
@@ -92,13 +96,15 @@ class SensorDriver {
 class AnalogSensorDriver : public SensorDriver {
   public:
     ~AnalogSensorDriver();
-    virtual void setup();
 };
 
 class I2CSensorDriver : public SensorDriver {
   public:
     ~I2CSensorDriver();
-    virtual void setup(TwoWire * wire);
+    void setWire(TwoWire * wire);
+
+  protected:
+    TwoWire * wire;
 };
 
 
