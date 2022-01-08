@@ -139,7 +139,7 @@ void Datalogger::loop()
         debug(F("do another burst"));
         debug(settings.burstNumber);
         debug(completedBursts);
-        delay(settings.interBurstDelay * 1000);
+        delay(settings.interBurstDelay * 1000 * 60);
         initializeBurst();
         return;
       }
@@ -198,8 +198,6 @@ void Datalogger::loop()
 
   powerCycle = false;
 }
-
-#define TOTAL_SLOTS 4
 
 void Datalogger::loadSensorConfigurations()
 {
@@ -345,7 +343,7 @@ void Datalogger::initializeMeasurementCycle()
   completedBursts = 0;
 
   notify(F("Waiting for start up delay"));
-  delay(settings.startUpDelay);
+  delay(settings.startUpDelay * 1000 * 60);
   
 }
 
@@ -744,14 +742,19 @@ void Datalogger::initializeFilesystem()
 void Datalogger::powerUpSwitchableComponents()  
 {
   cycleSwitchablePower();
+
+  // turn on 5v booster for exADC reference voltage, needs the delay
+  // might be possible to turn off after exADC discovered, not certain.
+  gpioPinOn(GPIO_PIN_4);
+  
   delay(500);
   enableI2C1();
 
   debug("resetting for exADC");
   delay(1); // delay > 50ns before applying ADC reset
-  digitalWrite(PC5,LOW); // reset is active low
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
   delay(1); // delay > 10ns after starting ADC reset
-  digitalWrite(PC5,HIGH);
+  digitalWrite(EXADC_RESET,HIGH);
   delay(100); // Wait for ADC to start up
   
   bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
@@ -774,6 +777,8 @@ void Datalogger::powerUpSwitchableComponents()
 void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
   //TODO: hook for sensors that need to be powered down?
+  gpioPinOff(GPIO_PIN_3); //not in use currently
+  gpioPinOff(GPIO_PIN_4); //turn off 5v booster
   i2c_disable(I2C2);
   debug(F("Switchable components powered down"));
 }

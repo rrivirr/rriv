@@ -50,10 +50,8 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
-  //GPIO pin for 5v booster, off at setup, on during warmup or burst
-  pinMode(GPIO_PIN_3, OUTPUT); // setup a GPIO pin
-  gpioPinOff(GPIO_PIN_3); // diable till used
-  gpioPinOn(GPIO_PIN_3); // enable for debugging
+  pinMode(GPIO_PIN_3, OUTPUT); // GPIO pin available
+  pinMode(GPIO_PIN_4, OUTPUT); // in use for 5v booster
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 

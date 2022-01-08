@@ -37,9 +37,10 @@ typedef struct
     byte slot; // 1 byte
     byte burst_size; // 1 byte
     unsigned short int warmup; // 2 bytes, in seconds? (65535 max value/60=1092 min)
-    char tag[4]; // 4 bytes
+    char paddingOne[2]; // 2bytes
+    char tag[6]; // 6 bytes
        
-    char padding[22]; // 32-10
+    char paddingTwo[18]; // 32-14
 } common_config_sensor;
 
 typedef struct 

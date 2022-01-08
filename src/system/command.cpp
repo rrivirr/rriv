@@ -255,10 +255,10 @@ void CommandInterface::_getConfig()
  
   cJSON* json = cJSON_CreateObject();
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(sec)")), dataloggerSettings.interval);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(sec)")), dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(sec)")), dataloggerSettings.interBurstDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
 
   char string[BUFFER_SIZE];
   cJSON_PrintPreallocated(json, string, BUFFER_SIZE, true);

@@ -49,7 +49,7 @@ void setup(void)
   notify("Press return to access CLI");
   int start = timestamp();
   int now = start;
-  while(now < start + 5)
+  while(now < start + 10) // wait x seconds
   {
     startCustomWatchDog();
     datalogger->processCLI();
