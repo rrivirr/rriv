@@ -139,7 +139,17 @@ void Datalogger::loop()
         debug(F("do another burst"));
         debug(settings.burstNumber);
         debug(completedBursts);
-        delay(settings.interBurstDelay * 1000 * 60);
+        
+        notify(F("Waiting for burst delay"));
+        extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
+        
+        /*
+        pauseCustomWatchDog();
+        notify(F("Waiting for burst delay"));
+        delay(settings.interBurstDelay * 1000 * 60); //convert minutes to milliseconds
+        resumeCustomWatchDog();
+        */
+
         initializeBurst();
         return;
       }
@@ -343,8 +353,16 @@ void Datalogger::initializeMeasurementCycle()
   completedBursts = 0;
 
   notify(F("Waiting for start up delay"));
+  extendCustomWatchdog(settings.startUpDelay*60);
+
+  /*
+  pauseCustomWatchDog();
+  notify(F("Waiting for start up delay"));
   delay(settings.startUpDelay * 1000 * 60);
-  
+  resumeCustomWatchDog();
+  */
+
+  //notify(F("Done with delay"));
 }
 
 
