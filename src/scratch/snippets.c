@@ -1,3 +1,13 @@
+/* 
+ *  This is the default license template.
+ *  
+ *  File: snippets.c
+ *  Author: zaven
+ *  Copyright (c) 2021-2022 zaven
+ *  
+ *  To edit this license information: Press Ctrl+Shift+P and press 'Create new License Template...'.
+ */
+
 // if DEBUG_BLE
   /*
   Serial2.print("BLE");

@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "command.h"
 #include <re.h>
 #include <Cmd.h>
@@ -9,6 +27,52 @@
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
 CommandInterface * commandInterface;
+
+const char * welcomeMessage = R"RRIV(
+____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
+ __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
+  _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
+   _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
+    _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
+     _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
+      _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
+       _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
+        _\///________\///__\///________\///__\///////////________\///________
+
+
+River Restoration Intelligence and Verification
+Copyright (C) 2020  Zaven Arra
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+This is free software, and you are welcome to redistribute it
+under certain conditions; type `show c' for details.
+
+You are connected to Little Peep
+Site name: TRAY
+Hardware version: WB2.1
+Software version: v1.3.2
+
+The river is at the center.
+Type 'help' for command list.
+CMD >> 
+)RRIV";
+
+const __FlashStringHelper * conditions = F(R"RRIV(
+RRIV - Open Source Environmental Data Logging Platform
+Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+)RRIV");
 
 CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
 {
@@ -234,6 +298,13 @@ void printWarranty(int arg_cnt, char **args)
 {
   notify(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
 }
+
+
+void printConditions(int arg_cng, char **args)
+{
+  notify(conditions);
+}
+
 
 void getConfig(int arg_cnt, char **args)
 {
@@ -512,6 +583,8 @@ void CommandInterface::_go()
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
+  cmdAdd("show-conditions", printConditions);
+
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
   cmdAdd("set-slot-config", setSlotConfig);
