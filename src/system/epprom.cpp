@@ -63,6 +63,8 @@ void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
 
 void writeSensorConfigurationToEEPROM(short slot, void * configuration)
 {
+  notify("write address");
+  notify(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE);
   writeObjectToEEPROM(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 }
 

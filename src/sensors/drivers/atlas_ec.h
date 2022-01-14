@@ -10,13 +10,13 @@ typedef struct generic_atlas_type // 64 bytes
 } generic_atlas_sensor;
 
 
-class GenericAtlas : public I2CSensorDriver
+class AtlasEC : public I2CSensorDriver
 {
 
   public: 
     // Constructor
-    GenericAtlas();
-    ~GenericAtlas();
+    AtlasEC();
+    ~AtlasEC();
 
     // Interface
     void setup();
@@ -38,7 +38,7 @@ class GenericAtlas : public I2CSensorDriver
   protected:
     // Implementatino interface
     void setDriverDefaults();
-    void configureDriverFromJSON(cJSON * json);found conf
+    void configureDriverFromJSON(cJSON * json);
 
   private:
     generic_atlas_sensor configuration;

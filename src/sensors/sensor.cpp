@@ -22,7 +22,7 @@ bool SensorDriver::burstCompleted(){
 
 void SensorDriver::configureCSVColumns()
 {
-  debug("config csv columns");
+  notify("config csv columns");
   char csvColumnHeaders[100] = "\0";
   char buffer[100];
   strcpy(buffer, this->getBaseColumnHeaders());
@@ -41,6 +41,7 @@ void SensorDriver::configureCSVColumns()
     }
   }
   strcpy(this->csvColumnHeaders, csvColumnHeaders);
+  notify("done");
 }
 
 void SensorDriver::setDefaults()
@@ -59,6 +60,7 @@ void SensorDriver::setDefaults()
 void SensorDriver::configureFromJSON(cJSON * json)
 {
   generic_config configuration = this->getConfiguration();
+  memset(&configuration, SENSOR_CONFIGURATION_SIZE, 0);
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON))
@@ -84,16 +86,22 @@ void SensorDriver::configureFromJSON(cJSON * json)
     notify("Invalid burst size");
   }
 
+  notify("set configuration");
   this->setConfiguration(configuration);
+  notify("set defaults");
   this->setDefaults();
+  notify("configure driver from JSON");
   this->configureDriverFromJSON(json);
+  notify("conf csv cols");
+  this->configureCSVColumns();
+
 }
 
 
 void SensorDriver::configure(generic_config configuration)
 {
   this->setConfiguration(configuration);
-  this->setDefaults();
+  // this->setDefaults();
   this->configureCSVColumns();
 }
 

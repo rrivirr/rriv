@@ -14,9 +14,7 @@ void startSerial2()
   {
     delay(100);
   }
-  Serial2.println("Hello world");
   notify(F("Begin Setup"));
-  Serial2.println("ya");
 }
 
 void setupInternalRTC()

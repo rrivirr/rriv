@@ -5,25 +5,6 @@
 #include <Wire_slave.h>
 #include <cJSON.h>
 
-#define SENSOR_PORT_A2 0b0001
-#define SENSOR_PORT_A3 0b0010
-#define SENSOR_PORT_A4 0b0011
-#define SENSOR_PORT_A5 0b0100
-#define SENSOR_PORT_A6 0b0101
-#define SENSOR_PORT_ADC1 0b0110
-#define SENSOR_PORT_ADC2 0b0111
-#define SENSOR_PORT_ADC3 0b1000
-#define SENSOR_PORT_ADC4 0b1001
-
-#define SENSOR_TYPE_LENGTH 2
-
-#define NTC_10K_THERMISTOR 1
-#define AS_CONDUCTIVITY 2
-#define AS_RGB 3
-#define AS_CO2 4
-#define FIG_METHANE 5
-#define AF_GPS 6
-
 typedef enum protocol { analog, i2c } protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64

@@ -22,6 +22,7 @@ GenericAnalog::~GenericAnalog(){}
 
 void GenericAnalog::configureDriverFromJSON(cJSON * json)
 {
+  notify("configure driver from..");
   configuration.common.sensor_type = GENERIC_ANALOG_SENSOR; // redundant?
 
   const cJSON * adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
@@ -38,13 +39,16 @@ void GenericAnalog::configureDriverFromJSON(cJSON * json)
     else
     {
       notify(F("Invalid adc select"));
+      return;
     }
   } 
   else 
   {
     notify(F("Invalid adc select"));
+    return;
   }
- 
+  notify("done");
+
 
   const cJSON * sensorPortJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_port");
   if(sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint < 5)
@@ -52,9 +56,9 @@ void GenericAnalog::configureDriverFromJSON(cJSON * json)
     configuration.sensor_port = (byte) sensorPortJSON->valueint;
   } else {
     notify(F("Invalid sensor port"));
+    return;
   }
-
-  this->configureCSVColumns();
+  notify("done");
 }
 
 
@@ -75,6 +79,14 @@ void GenericAnalog::setDriverDefaults()
   {
     configuration.sensor_port = 0;
   }
+
+  configuration.m = 0;
+  configuration.b = 0;
+  configuration.x1 = 0;
+  configuration.x2 = 0;
+  configuration.y1 = 0;
+  configuration.y2 = 0;
+  configuration.cal_timestamp = 0;
 }
 
 
@@ -155,7 +167,7 @@ bool GenericAnalog::takeMeasurement(){
 
 char * GenericAnalog::getDataString(){
   //   int parameterValue = (value-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-  int parameterValue = (value-(configuration.b))/(configuration.m);
+  int parameterValue = (value - (configuration.b / 100))/(configuration.m / 100);
 
   sprintf(dataString, "%d,%d", value, parameterValue);
   return dataString;
@@ -254,17 +266,17 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
   //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
   //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
 
-  int m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
-  int b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points
+  double m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
+  double b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points
 
   // slope = m * TEMPERATURE_SCALER;
   // intercept = b;
-  configuration.m = m;
-  configuration.b = b;
-  configuration.x1 = calibrate_low_reading;
-  configuration.x2 = calibrate_high_reading;
-  configuration.y1 = calibrate_low_value;
-  configuration.y2 = calibrate_high_value;
+  configuration.m = m * 100;
+  configuration.b = b * 100;
+  configuration.x1 = calibrate_low_reading * 100;
+  configuration.x2 = calibrate_high_reading * 100;
+  configuration.y1 = calibrate_low_value * 100;
+  configuration.y2 = calibrate_high_value * 100;
   configuration.cal_timestamp = timestamp();
 }
 

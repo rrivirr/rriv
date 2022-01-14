@@ -497,15 +497,9 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
 {
 
   SensorDriver * driver = NULL;
-
-  if(strcmp(type, "generic_analog") == 0) // make generic for all types
-  {
-    driver = new GenericAnalog();
-  } 
-  else if(strcmp(type, "generic_atlas") == 0)
-  {
-    driver = new GenericAtlas();
-  }
+  notify("get driver");
+  driver = driverForSensorTypeString(type);
+  notify("got driver");
 
   if(driver != NULL)
   {
@@ -543,14 +537,14 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
     if(!slotReplacement)
     {
       sensorCount = sensorCount + 1;
-      SensorDriver ** driverAugmentation = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
-      for(int i=0; i<sensorCount-2; i++)
+      SensorDriver ** updatedDrivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+      for(int i=0; i<sensorCount-1; i++)
       {
-        driverAugmentation[i] = drivers[i];
+        updatedDrivers[i] = drivers[i];
       }
-      driverAugmentation[sensorCount-1] = driver;
+      updatedDrivers[sensorCount-1] = driver;
       free(drivers);
-      drivers = driverAugmentation;
+      drivers = updatedDrivers;
     }
     notify(F("OK"));
   }
@@ -558,6 +552,21 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
 
 void Datalogger::clearSlot(unsigned short slot)
 {
+  bool slotConfigured = false;
+  for(int i=0; i<sensorCount; i++)
+  {
+    if(drivers[i]->getConfiguration().common.slot == slot)
+    {
+      slotConfigured = true;
+      break;
+    }
+  }
+  if(!slotConfigured)
+  {
+    notify("Slot not configured");
+    return;
+  }
+
   byte empty[SENSOR_CONFIGURATION_SIZE];
   for(int i=0; i<SENSOR_CONFIGURATION_SIZE; i++)
   {
@@ -568,18 +577,17 @@ void Datalogger::clearSlot(unsigned short slot)
 
   SensorDriver ** updatedDrivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
   int j=0;
-  for(int i=0; i<sensorCount+1; i++){
+  for(int i=0; i<sensorCount+1; i++)
+  {
     generic_config configuration = this->drivers[i]->getConfiguration();
     if(configuration.common.slot != slot)
     {
       updatedDrivers[j] = this->drivers[i];
       j++;
     }
-    else
-    {
-      delete(this->drivers[i]);
-    }
   }
+  free(this->drivers);
+  this->drivers = updatedDrivers;
 }
 
 

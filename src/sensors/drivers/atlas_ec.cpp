@@ -1,30 +1,28 @@
-#include "generic_atlas.h"
+#include "atlas_ec.h"
 #include "system/monitor.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
 #include "sensors/sensor_types.h"
 
-GenericAtlas::GenericAtlas()
+AtlasEC::AtlasEC()
 {
   debug("allocation GenericAtlas");
 }
 
-GenericAtlas::~GenericAtlas(){}
+AtlasEC::~AtlasEC(){}
 
-// TODO: place common routines in SensorDriver base class
-void GenericAtlas::configureDriverFromJSON(cJSON * json)
+void AtlasEC::configureDriverFromJSON(cJSON * json)
 {
   configuration.common.sensor_type = GENERIC_ATLAS_SENSOR;
-  this->configureCSVColumns();
 }
 
 
-protocol_type GenericAtlas::getProtocol(){
+protocol_type AtlasEC::getProtocol(){
   return i2c;
 }
 
-void GenericAtlas::setup()
+void AtlasEC::setup()
 {
   notify("setup GenericAtlas");
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
@@ -55,21 +53,21 @@ void GenericAtlas::setup()
 }
 
 
-void GenericAtlas::stop()
+void AtlasEC::stop()
 {
   oem_ec->setHibernate();
   delete  oem_ec;
 }
 
 
-void GenericAtlas::setDriverDefaults()
+void AtlasEC::setDriverDefaults()
 {
-  
+  configuration.cal_timestamp = 0;
 }
 
 
 // base class
-generic_config GenericAtlas::getConfiguration()
+generic_config AtlasEC::getConfiguration()
 {
   generic_config configuration;
   memcpy(&configuration, &this->configuration, sizeof(generic_atlas_sensor));
@@ -77,7 +75,7 @@ generic_config GenericAtlas::getConfiguration()
 }
 
 
-void GenericAtlas::setConfiguration(generic_config configuration)
+void AtlasEC::setConfiguration(generic_config configuration)
 {
   memcpy(&this->configuration, &configuration, sizeof(generic_config));
 }
@@ -86,11 +84,11 @@ void GenericAtlas::setConfiguration(generic_config configuration)
 // split between base class and this class
 // getConfigurationJSON: base class
 // getDriverSpecificConfigurationJSON: this class
-cJSON * GenericAtlas::getConfigurationJSON() // returns unprotected pointer
+cJSON * AtlasEC::getConfigurationJSON() // returns unprotected pointer
 {
   cJSON* json = cJSON_CreateObject();
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
-  cJSON_AddStringToObject(json, "type", "generic_atlas");
+  cJSON_AddStringToObject(json, "type", "atlas_ec");
   cJSON_AddStringToObject(json, "tag", configuration.common.tag);
   cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
   addCalibrationParametersToJSON(json);
@@ -98,13 +96,13 @@ cJSON * GenericAtlas::getConfigurationJSON() // returns unprotected pointer
 }
 
 
-const char * GenericAtlas::getBaseColumnHeaders()
+const char * AtlasEC::getBaseColumnHeaders()
 {
   return baseColumnHeaders;
 }
 
 
-bool GenericAtlas::takeMeasurement()
+bool AtlasEC::takeMeasurement()
 {
   bool waitForMeasurement = true;
   bool newDataAvailable = false;
@@ -125,40 +123,26 @@ bool GenericAtlas::takeMeasurement()
   return true;
 }
 
-char * GenericAtlas::getDataString()
+char * AtlasEC::getDataString()
 {
   sprintf(dataString, "%d", value);
   return dataString;
 }
 
-char * GenericAtlas::getCSVColumnNames()
+char * AtlasEC::getCSVColumnNames()
 {
    debug(csvColumnHeaders);
    return csvColumnHeaders;
 }
 
 
-void GenericAtlas::initCalibration()
+void AtlasEC::initCalibration()
 {
   notify("init calibration");
   oem_ec->clearCalibrationData();
 }
 
-// void GenericAtlas::printCalibrationStatus()
-// {
-//   notify(F("Calibration status:"));
-//   char buffer[50];
-//   sprintf(buffer, "calibrate_high_reading: %d", calibrate_high_reading);
-//   notify(buffer);
-//   sprintf(buffer, "calibrate_high_value: %d", calibrate_high_value);
-//   notify(buffer);
-//   sprintf(buffer, "calibrate_low_reading: %d", calibrate_low_reading);
-//   notify(buffer);
-//   sprintf(buffer, "calibrate_low_value: %d", calibrate_low_value);
-//   notify(buffer);
-// }
-
-void GenericAtlas::calibrationStep(char * step, int trueValue)
+void AtlasEC::calibrationStep(char * step, int trueValue)
 {
   takeMeasurement();
   if(strcmp(step, "dry") == 0)
@@ -185,7 +169,7 @@ void GenericAtlas::calibrationStep(char * step, int trueValue)
 
 
 
-void GenericAtlas::addCalibrationParametersToJSON(cJSON * json)
+void AtlasEC::addCalibrationParametersToJSON(cJSON * json)
 {
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
