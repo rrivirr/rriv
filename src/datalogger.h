@@ -87,7 +87,7 @@ public:
     void changeMode(mode_type mode);
     bool inMode(mode_type mode);
     void storeMode(mode_type mode);
-    void deploy();
+    bool deploy();
 
     void processCLI();
 

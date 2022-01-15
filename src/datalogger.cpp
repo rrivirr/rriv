@@ -124,7 +124,7 @@ void Datalogger::loop()
 {
 
   if(inMode(deploy_on_trigger)){
-    deploy();
+    deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
     goto SLEEP;
     return;
   }
@@ -134,8 +134,18 @@ void Datalogger::loop()
     if(powerCycle)
     {
       debug("Powercycle");
-      deploy();
+      bool deployed =  deploy();
+      if(!deployed)
+      { 
+        // what should we do here?
+        // if we are in the field and the manual power cycle got skipped, the battery will quickly drain
+        // perhaps just shut down the unit?
+        powerDownSwitchableComponents();
+        while(1); 
+      }
+      
       goto SLEEP;
+      
     }
 
     if(shouldExitLoggingMode())
@@ -735,7 +745,7 @@ bool Datalogger::inMode(mode_type mode)
 }
 
 
-void Datalogger::deploy()
+bool Datalogger::deploy()
 {
   notify(F("Deploying now!"));
   notifyDebugStatus();
@@ -743,7 +753,7 @@ void Datalogger::deploy()
   {
     notify("**** ABORTING DEPLOYMENT *****");
     notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
-    return;
+    return false;
   }
 
   setDeploymentIdentifier();
@@ -754,6 +764,7 @@ void Datalogger::deploy()
   changeMode(logging);
   storeMode(logging);
   powerCycle = false; // not a powercycle loop
+  return true;
 }
 
 
@@ -949,7 +960,7 @@ void Datalogger::stopAndAwaitTrigger()
 
   if(awakenedByUser == true)
   {
-    debug(F("USER TRIGGERED INTERRUPT"));
+    notify(F("USER TRIGGERED INTERRUPT"));
   }
 
   // We have woken from the interrupt
