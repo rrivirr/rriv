@@ -117,6 +117,8 @@ public:
     void stopLogging();
     void startLogging();
 
+    const char * getUUIDString();
+
 private:
     // modules
     WaterBear_FileSystem *fileSystem;

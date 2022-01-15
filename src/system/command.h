@@ -26,7 +26,6 @@
 #include "time.h"
 #include "datalogger.h"
 
-extern const char * welcomeMessage;
 
 // Forward declaration of class
 class Datalogger;

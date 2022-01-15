@@ -28,34 +28,6 @@
 
 CommandInterface * commandInterface;
 
-const char * welcomeMessage = R"RRIV(
-____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
- __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
-  _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
-   _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
-    _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
-     _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
-      _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
-       _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
-        _\///________\///__\///________\///__\///////////________\///________
-
-
-River Restoration Intelligence and Verification
-Copyright (C) 2020  Zaven Arra
-This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
-This is free software, and you are welcome to redistribute it
-under certain conditions; type `show c' for details.
-
-You are connected to Little Peep
-Site name: TRAY
-Hardware version: WB2.1
-Software version: v1.3.2
-
-The river is at the center.
-Type 'help' for command list.
-CMD >> 
-)RRIV";
-
 const __FlashStringHelper * conditions = F(R"RRIV(
 RRIV - Open Source Environmental Data Logging Platform
 Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
@@ -325,6 +297,8 @@ void CommandInterface::_getConfig()
   this->datalogger->getConfiguration(&dataloggerSettings);
  
   cJSON* json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
@@ -604,7 +578,6 @@ void CommandInterface::setup(){
   cmdAdd("set-user-note", setUserNote);
   cmdAdd("set-user-value", setUserValue);
 
-
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
   // cmdAdd("start-logging", toggleInteractiveLogging);
@@ -612,6 +585,7 @@ void CommandInterface::setup(){
   // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
+  cmdAdd("i", switchToInteractiveMode);
 
   // qos commands / debug commands
   cmdAdd("restart", restart);

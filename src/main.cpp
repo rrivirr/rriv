@@ -25,24 +25,26 @@
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
+#include "version.h"
 
 // Setup and Loop
-Datalogger * datalogger;
+Datalogger *datalogger;
+void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
 
 void setup(void)
 {
   startSerial2();
-  Monitor::instance()->debugToSerial=true;
+  Monitor::instance()->debugToSerial = true;
 
   startCustomWatchDog();
   printWatchDogStatus();
 
-  // disable unused components and hardware pins 
+  // disable unused components and hardware pins
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
 
   setupInternalRTC();
-  
+
   // turn on switched power to read from EEPROM
   setupSwitchedPower();
   cycleSwitchablePower();
@@ -50,28 +52,39 @@ void setup(void)
   delay(500);
 
   debug("creating datalogger");
-  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
+  datalogger_settings_type *dataloggerSettings = (datalogger_settings_type *)malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
   debug("created datalogger");
   datalogger->setup();
-  
+
   /* We're ready to go! */
   debug(F("done with setup"));
+  notifyDebugStatus();
 
   startCustomWatchDog(); // printDebugStatus delays with user message, don't want watchdog to trigger
-  printDebugStatus(); 
-  
-  Monitor::instance()->debugToSerial=false;
-  notify(welcomeMessage);
 
-  int start = timestamp();
-  int now = start;
-  while(now < start + 5)
+  Monitor::instance()->debugToSerial = false;
+
+  printWelcomeMessage(dataloggerSettings);
+
+  if (datalogger->inMode(logging))
   {
-    startCustomWatchDog();
-    datalogger->processCLI();
-    now = timestamp();
+    notify("Device will enter logging mode in 5 seconds");
+    notify("Type 'i' to exit to interactive mode");
+    Serial2.print("CMD >> ");
+    int start = timestamp();
+    int now = start;
+    while (now < start + 5)
+    {
+      startCustomWatchDog();
+      datalogger->processCLI();
+      now = timestamp();
+    }
+  }
+  else
+  {
+    Serial2.print("CMD >> ");
   }
 
 }
@@ -84,4 +97,51 @@ void loop(void)
   checkMemory();
 
   datalogger->loop();
+}
+
+void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
+{
+  // Welcome message
+
+  const __FlashStringHelper *welcomeMessage = F(R"RRIV(
+____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
+ __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
+  _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
+   _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
+    _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
+     _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
+      _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
+       _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
+        _\///________\///__\///________\///__\///////////________\///________
+
+
+River Restoration Intelligence and Verification  https://rriv.org
+Copyright (C) 2020  Zaven Arra  zaven.arra@gmail.com
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show-warranty'.
+This is free software, and you are welcome to redistribute it
+under certain conditions; type `show-conditions' for details.
+)RRIV");
+
+  // You are connected to Little Peep
+  // Site name: TRAY
+  // Hardware version: WB2.1
+  // Software version: v1.3.2
+
+  // The river is at the center.
+  // Type 'help' for command list.
+  // CMD >>
+  // )RRIV";
+
+  notify(welcomeMessage);
+  char buffer[100];
+  sprintf(buffer, "Site name: %s", dataloggerSettings->siteName);
+  notify(buffer);
+  sprintf(buffer, "Software version: %s", WATERBEAR_FIRMWARE_VERSION);
+  notify(buffer);
+
+  const __FlashStringHelper *handoff = F(R"RRIV(
+The river is at the center.
+Type 'help' for command list.
+)RRIV");
+  notify(handoff);
 }

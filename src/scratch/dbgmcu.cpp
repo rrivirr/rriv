@@ -20,6 +20,19 @@
 #include "system/monitor.h"
 #include "dbgmcu.h" 
 
+bool checkDebugSystemDisabled()
+{
+  return DBGMCU_BASE->CR == 0;
+}
+
+void notifyDebugStatus()
+{
+  if(DBGMCU_BASE->CR != 0){
+    notify("**** WARNING *****");
+    notify("**** A MANUAL POWER CYCLE IS REQUIRED TO ENABLE LOW POWER MODES *****");
+  }
+}
+
 void printDebugStatus()
 {
   notify("Setup:DBGMCU_BASE->CR=");

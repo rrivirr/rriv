@@ -28,6 +28,7 @@
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"
+#include "scratch/dbgmcu.h" 
 
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type * settings)
@@ -737,6 +738,13 @@ bool Datalogger::inMode(mode_type mode)
 void Datalogger::deploy()
 {
   notify(F("Deploying now!"));
+  notifyDebugStatus();
+  if(checkDebugSystemDisabled() == false)
+  {
+    notify("**** ABORTING DEPLOYMENT *****");
+    notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    return;
+  }
 
   setDeploymentIdentifier();
   setDeploymentTimestamp(timestamp());
@@ -892,7 +900,7 @@ void Datalogger::stopAndAwaitTrigger()
     debug(F("Alarm 1"));
   }
 
-  printInterruptStatus(Serial2);
+  // printInterruptStatus(Serial2);
   debug(F("Going to sleep"));
 
   // save enabled interrupts
@@ -995,4 +1003,9 @@ void Datalogger::setDeploymentIdentifier()
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {
   this->settings.deploymentTimestamp = timestamp;
+}
+
+const char * Datalogger::getUUIDString()
+{
+  return uuidString;
 }
