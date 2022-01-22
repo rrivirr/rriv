@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "datalogger.h"
 #include <Cmd.h>
 #include "system/measurement_components.h"
@@ -10,6 +28,7 @@
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"
+#include "scratch/dbgmcu.h" 
 
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type * settings)
@@ -105,7 +124,7 @@ void Datalogger::loop()
 {
 
   if(inMode(deploy_on_trigger)){
-    deploy();
+    deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
     goto SLEEP;
     return;
   }
@@ -115,8 +134,18 @@ void Datalogger::loop()
     if(powerCycle)
     {
       debug("Powercycle");
-      deploy();
+      bool deployed =  deploy();
+      if(!deployed)
+      { 
+        // what should we do here?
+        // if we are in the field and the manual power cycle got skipped, the battery will quickly drain
+        // perhaps just shut down the unit?
+        powerDownSwitchableComponents();
+        while(1); 
+      }
+      
       goto SLEEP;
+      
     }
 
     if(shouldExitLoggingMode())
@@ -256,18 +285,18 @@ void Datalogger::loadSensorConfigurations()
 
     drivers[j] = driver;
     j++;
-    switch(driver->getProtocol()){
-      case analog:
-        ((AnalogSensorDriver*) driver)->setup();
-        break;
-      case i2c:
-        ((I2CSensorDriver*) driver)->setup(&WireTwo);
-        break;
-      default:
-        break;
+
+    if(driver->getProtocol() == i2c)
+    {
+      debug("got i2c sensor");
+      ((I2CSensorDriver*) driver)->setWire(&WireTwo);
+      debug("set wire");
     }
+    debug("do setup");
+    driver->setup();
+
     debug("configure sensor driver");
-    driver->configure(configs[i]);  //pass configuration struct to the driver
+    driver->configure(*configs[i]);  //pass configuration struct to the driver
     debug("configured sensor driver");
   }
 
@@ -512,10 +541,25 @@ void Datalogger::getConfiguration(datalogger_settings_type * dataloggerSettings)
 
 void Datalogger::setSensorConfiguration(char * type, cJSON * json)
 {
-  if(strcmp(type, "generic_analog") == 0) // make generic for all types
+
+  SensorDriver * driver = NULL;
+  notify("get driver");
+  driver = driverForSensorTypeString(type);
+  notify("got driver");
+
+  if(driver != NULL)
   {
-    SensorDriver * driver = new GenericAnalog();
+    notify("configure from json");
     driver->configureFromJSON(json);
+    if(driver->getProtocol() == i2c)
+    {
+      notify("got i2c sensor");
+      ((I2CSensorDriver*) driver)->setWire(&WireTwo);
+      notify("set wire");
+    }
+    notify("do setup");
+    driver->setup();
+    notify("done setup");
     generic_config configuration = driver->getConfiguration();
     storeSensorConfiguration(&configuration);
 
@@ -539,22 +583,36 @@ void Datalogger::setSensorConfiguration(char * type, cJSON * json)
     if(!slotReplacement)
     {
       sensorCount = sensorCount + 1;
-      SensorDriver ** driverAugmentation = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
-      for(int i=0; i<sensorCount-2; i++)
+      SensorDriver ** updatedDrivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
+      for(int i=0; i<sensorCount-1; i++)
       {
-        driverAugmentation[i] = drivers[i];
+        updatedDrivers[i] = drivers[i];
       }
-      driverAugmentation[sensorCount-1] = driver;
+      updatedDrivers[sensorCount-1] = driver;
       free(drivers);
-      drivers = driverAugmentation;
+      drivers = updatedDrivers;
     }
     notify(F("OK"));
-
   }
 }
 
 void Datalogger::clearSlot(unsigned short slot)
 {
+  bool slotConfigured = false;
+  for(int i=0; i<sensorCount; i++)
+  {
+    if(drivers[i]->getConfiguration().common.slot == slot)
+    {
+      slotConfigured = true;
+      break;
+    }
+  }
+  if(!slotConfigured)
+  {
+    notify("Slot not configured");
+    return;
+  }
+
   byte empty[SENSOR_CONFIGURATION_SIZE];
   for(int i=0; i<SENSOR_CONFIGURATION_SIZE; i++)
   {
@@ -565,18 +623,17 @@ void Datalogger::clearSlot(unsigned short slot)
 
   SensorDriver ** updatedDrivers = (SensorDriver**) malloc(sizeof(SensorDriver*) * sensorCount);
   int j=0;
-  for(int i=0; i<sensorCount+1; i++){
+  for(int i=0; i<sensorCount+1; i++)
+  {
     generic_config configuration = this->drivers[i]->getConfiguration();
     if(configuration.common.slot != slot)
     {
       updatedDrivers[j] = this->drivers[i];
       j++;
     }
-    else
-    {
-      delete(this->drivers[i]);
-    }
   }
+  free(this->drivers);
+  this->drivers = updatedDrivers;
 }
 
 
@@ -705,9 +762,16 @@ bool Datalogger::inMode(mode_type mode)
 }
 
 
-void Datalogger::deploy()
+bool Datalogger::deploy()
 {
   notify(F("Deploying now!"));
+  notifyDebugStatus();
+  if(checkDebugSystemDisabled() == false)
+  {
+    notify("**** ABORTING DEPLOYMENT *****");
+    notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    return false;
+  }
 
   setDeploymentIdentifier();
   setDeploymentTimestamp(timestamp());
@@ -717,6 +781,7 @@ void Datalogger::deploy()
   changeMode(logging);
   storeMode(logging);
   powerCycle = false; // not a powercycle loop
+  return true;
 }
 
 
@@ -767,8 +832,10 @@ void Datalogger::powerUpSwitchableComponents()
   
   delay(500);
   enableI2C1();
+  enableI2C2();
 
   debug("resetting for exADC");
+  // Reset external ADC (if it's installed)
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(EXADC_RESET,LOW); // reset is active low
   delay(1); // delay > 10ns after starting ADC reset
@@ -869,7 +936,7 @@ void Datalogger::stopAndAwaitTrigger()
     debug(F("Alarm 1"));
   }
 
-  printInterruptStatus(Serial2);
+  // printInterruptStatus(Serial2);
   debug(F("Going to sleep"));
 
   // save enabled interrupts
@@ -918,7 +985,7 @@ void Datalogger::stopAndAwaitTrigger()
 
   if(awakenedByUser == true)
   {
-    debug(F("USER TRIGGERED INTERRUPT"));
+    notify(F("USER TRIGGERED INTERRUPT"));
   }
 
   // We have woken from the interrupt
@@ -972,4 +1039,9 @@ void Datalogger::setDeploymentIdentifier()
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {
   this->settings.deploymentTimestamp = timestamp;
+}
+
+const char * Datalogger::getUUIDString()
+{
+  return uuidString;
 }

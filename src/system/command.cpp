@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "command.h"
 #include <re.h>
 #include <Cmd.h>
@@ -9,6 +27,24 @@
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
 CommandInterface * commandInterface;
+
+const __FlashStringHelper * conditions = F(R"RRIV(
+RRIV - Open Source Environmental Data Logging Platform
+Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+)RRIV");
 
 CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
 {
@@ -235,6 +271,13 @@ void printWarranty(int arg_cnt, char **args)
   notify(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
 }
 
+
+void printConditions(int arg_cng, char **args)
+{
+  notify(conditions);
+}
+
+
 void getConfig(int arg_cnt, char **args)
 {
   // notify(F("getting config"));
@@ -254,6 +297,8 @@ void CommandInterface::_getConfig()
   this->datalogger->getConfiguration(&dataloggerSettings);
  
   cJSON* json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
@@ -548,6 +593,8 @@ void CommandInterface::_help()
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
+  cmdAdd("show-conditions", printConditions);
+
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
   cmdAdd("set-slot-config", setSlotConfig);
@@ -555,7 +602,6 @@ void CommandInterface::setup(){
 
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
-  cmdAdd("restart", restart);
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-interval", setInterval);
@@ -568,7 +614,6 @@ void CommandInterface::setup(){
   cmdAdd("set-user-note", setUserNote);
   cmdAdd("set-user-value", setUserValue);
 
-
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
   // cmdAdd("start-logging", toggleInteractiveLogging);
@@ -576,8 +621,10 @@ void CommandInterface::setup(){
   // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
+  cmdAdd("i", switchToInteractiveMode);
 
-  // qos commands
+  // qos commands / debug commands
+  cmdAdd("restart", restart);
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);
