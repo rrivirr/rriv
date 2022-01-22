@@ -70,7 +70,7 @@ class SensorDriver {
     virtual char * getCSVColumnNames();
     virtual protocol_type getProtocol();
     virtual const char * getBaseColumnHeaders();
-    
+    bool isWarmedUp();
 
     // Calibration
     virtual void initCalibration();

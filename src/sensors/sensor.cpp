@@ -123,6 +123,12 @@ void SensorDriver::configure(generic_config configuration)
   this->configureCSVColumns();
 }
 
+bool SensorDriver::isWarmedUp()
+{
+  return true;
+}
+
+
 void I2CSensorDriver::setWire(TwoWire * wire)
 {
   this->wire = wire;
