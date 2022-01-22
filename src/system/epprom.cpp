@@ -63,15 +63,34 @@ byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress )
 //   }
 // }
 
+void readObjectFromEEPROM(short i2cAddress, short address, void * data, uint8_t size)
+{
+  byte * buffer = (byte *) data;
+  for (uint8_t i = 0; i < size; i++)
+  {
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+  }
+}
 
-void writeObjectToEEPROM(int baseAddress, void * source, int size)
+
+void readObjectFromEEPROM(short address, void * data, uint8_t size) // Little Endian
+{
+  readObjectFromEEPROM(EEPROM_I2C_ADDRESS, address, data, size);
+}
+
+void writeObjectToEEPROM(int i2cAddress, int baseAddress, void * source, int size)
 {
   byte * bytes = (byte *) source;
   for(short i=0; i < size; i++)
   {
     short address = baseAddress + i;
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address, bytes[i]);
+    writeEEPROM(&Wire, i2cAddress, address, bytes[i]);
   }
+}
+
+void writeObjectToEEPROM(int baseAddress, void * source, int size)
+{
+  writeObjectToEEPROM(EEPROM_I2C_ADDRESS, baseAddress, source, size);
 }
 
 void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
@@ -81,11 +100,18 @@ void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
 
 void writeSensorConfigurationToEEPROM(short slot, void * configuration)
 {
-  notify("write address");
-  notify(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE);
-  writeObjectToEEPROM(EEPROM_DATALOGGER_SENSORS_START + slot * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+  int block = slot / 4 + 1;
+  int offset = slot % 4;
+  writeObjectToEEPROM(EEPROM_I2C_ADDRESS + block, EEPROM_DATALOGGER_SENSORS_START + offset * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 }
 
+void readSensorConfigurationFromEEPROM(short slot, void * configuration)
+{
+  int block = slot / 4 + 1;
+  int offset = slot % 4;
+  readObjectFromEEPROM(EEPROM_I2C_ADDRESS + block, EEPROM_DATALOGGER_SENSORS_START + offset * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+
+}
 
 void readUniqueId(unsigned char * uuid)
 {
@@ -146,14 +172,8 @@ void writeEEPROMBytes(short address, unsigned char * data, uint8_t size) // Litt
   }
 }
 
-void readEEPROMObject(short address, void * data, uint8_t size) // Little Endian
-{
-  byte * buffer = (byte *) data;
-  for (uint8_t i = 0; i < size; i++)
-  {
-    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
-  }
-}
+
+
 
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Little Endian
 {

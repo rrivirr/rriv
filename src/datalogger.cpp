@@ -29,7 +29,6 @@
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
-#include "lib/uuid.h"
 
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type *settings)
@@ -250,7 +249,7 @@ void Datalogger::loadSensorConfigurations()
     debug("reading slot");
     generic_config *sensorConfig = (generic_config *)malloc(sizeof(generic_config));
 
-    readEEPROMObject(EEPROM_DATALOGGER_SENSORS_START + i * EEPROM_DATALOGGER_SENSOR_SIZE, sensorConfig, EEPROM_DATALOGGER_SENSOR_SIZE);
+    readSensorConfigurationFromEEPROM(i, sensorConfig);
 
     debug(sensorConfig->common.sensor_type);
     if (sensorConfig->common.sensor_type <= MAX_SENSOR_TYPE)
@@ -1029,12 +1028,12 @@ void Datalogger::setSiteName(char *siteName)
 
 void Datalogger::setDeploymentIdentifier()
 {
-  std::string id = uuids::to_string(uuids::uuid_system_generator{}());
+  // std::string id = uuids::to_string(uuids::uuid_system_generator{}());
   // byte uuidNumber[16];
   // TODO need to generate this UUID number
   // lets use a timestamp plus the UUID of the board
   // https://www.cryptosys.net/pki/Uuid.c.html
-  memcpy(this->settings.deploymentIdentifier, id.c_str(), 16);
+  // memcpy(this->settings.deploymentIdentifier, id.c_str(), 16);
   storeDataloggerConfiguration();
 }
 
