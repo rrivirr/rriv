@@ -46,14 +46,25 @@
 
 #define ONBOARD_LED_PIN PA5
 
+//#define GPIO_PIN_1 PC15 // doesn't work, not sure why
+//#define GPIO_PIN_2 PA13 // doesn't work, not sure why
+#define GPIO_PIN_3 PC12 // works, CN7 3
+
+//using for 5v booster
+#define GPIO_PIN_4 PB8 // works, CN10 3, not using bluetooth currently
+
+#define EXADC_RESET PC5
+
 // Bluefruit on SPI
 #define BLUEFRUIT_SPI_SCK   PB13
 #define BLUEFRUIT_SPI_MISO  PB14
 #define BLUEFRUIT_SPI_MOSI  PB15
-#define BLUEFRUIT_SPI_CS    PB8  // Pullup
+//#define BLUEFRUIT_SPI_CS    PB8  // Pullup
 #define BLUEFRUIT_SPI_IRQ   PB9
 #define BLUEFRUIT_SPI_RST   PC4
 
+void gpioPinOff(uint8 pin);
+void gpioPinOn(uint8 pin);
 void startSerial2();
 void setupInternalRTC();
 void setupHardwarePins();

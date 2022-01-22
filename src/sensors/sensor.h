@@ -32,13 +32,14 @@ typedef struct
     // note needs to be 32 bytes total (multiple of 4)
     // rearrange in blocks of 4bytes for diagram
     // sensor.h
-    ushort sensor_type; // 2 bytes
+    unsigned short sensor_type; // 2 bytes
     byte slot; // 1 byte
     byte burst_size; // 1 byte
-    unsigned short int warmup; // 2 bytes, in seconds? (65535/60=1092)
-    char tag[4]; // 4 bytes
+    unsigned short int warmup; // 2 bytes, in seconds? (65535 max value/60=1092 min)
+    char paddingOne[2]; // 2bytes
+    char tag[6]; // 6 bytes
        
-    char padding[22]; // 17bytes
+    char paddingTwo[18]; // 32-14
 } common_config_sensor;
 
 typedef struct 

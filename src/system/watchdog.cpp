@@ -21,13 +21,40 @@
 #include <libmaple/libmaple.h>
 #include "monitor.h"
 
-void timerFired()
+void timerFired() // trigger a reset
 {
+  // Can only output 2 chars because interrupts can't handle more
   timer_pause(TIMER1);
-  notify("TF");
-  // Serial2.flush(); // causes crash
+  Serial2.println("TF");
+
+  //notify("TF"); // calls flush leading to a crash as well
+  //Serial2.flush(); // causes crash
   delay(5000);
   nvic_sys_reset();
+}
+
+void reloadCustomWatchdog()
+{
+  debug(F("reloadCustomWatchdog"));
+  timer_generate_update(TIMER1);
+}
+
+void extendCustomWatchdog(int seconds)
+{
+  while (seconds > 0)
+  {
+    debug(seconds);
+    reloadCustomWatchdog();
+    if (seconds > WATCHDOG_TIMEOUT_SECONDS - 1)
+    {
+      delay((WATCHDOG_TIMEOUT_SECONDS-1)*1000);
+    }
+    else
+    {
+      delay(seconds * 1000);
+    }
+    seconds = seconds - (WATCHDOG_TIMEOUT_SECONDS - 1);
+  }
 }
 
 void startCustomWatchDog()

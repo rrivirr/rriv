@@ -28,7 +28,7 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
   strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
-  debug("initlizated filesystem");
+  debug("initialized filesystem");
  
   this->setLoggingFolder(loggingFolder);
   debug("set the logging folder");
@@ -36,7 +36,8 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
 
 void WaterBear_FileSystem::initializeSDCard(){
    // initialize the SD card
-  Serial2.print(F("Initializing SD card..."));
+  //Serial2.print(F("Initializing SD card..."));
+  notify("Initializing SD card...");
 
   // Make sure chip select pin is set to output
   pinMode(this->chipSelectPin, OUTPUT);

@@ -22,6 +22,15 @@
 #include "configuration.h"
 #include "system/monitor.h"
 
+void gpioPinOff(uint8 pin)
+{
+    digitalWrite(pin, LOW);
+}
+
+void gpioPinOn(uint8 pin)
+{
+    digitalWrite(pin, HIGH);
+}
 
 void startSerial2()
 {
@@ -32,7 +41,7 @@ void startSerial2()
   {
     delay(100);
   }
-  notify(F("Begin Setup"));
+  notify(F("Begin Serail2"));
 }
 
 void setupInternalRTC()
@@ -55,6 +64,9 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  pinMode(GPIO_PIN_3, OUTPUT); // GPIO pin available
+  pinMode(GPIO_PIN_4, OUTPUT); // in use for 5v booster
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 

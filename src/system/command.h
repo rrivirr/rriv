@@ -120,6 +120,8 @@ class CommandInterface
     void _startLogging();
     void _go();
 
+    void _help();
+
 
 
 

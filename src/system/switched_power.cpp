@@ -22,7 +22,8 @@
 
 void setupSwitchedPower()
 {
-  pinMode(SWITCHED_POWER_ENABLE, OUTPUT); // enable pin on switchable boost converter
+  // enable pin on switchable integrated 3v3 boost converter
+  pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 

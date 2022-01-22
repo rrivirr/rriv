@@ -23,6 +23,10 @@
 
 void timerFired();
 
+void reloadCustomWatchdog();
+
+void extendCustomWatchdog(int seconds);
+
 void startCustomWatchDog();
 
 void disableCustomWatchDog();

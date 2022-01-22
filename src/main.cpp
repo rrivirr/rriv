@@ -140,7 +140,6 @@ under certain conditions; type `show-conditions' for details.
   notify(buffer);
 
   const __FlashStringHelper *handoff = F(R"RRIV(
-The river is at the center.
 Type 'help' for command list.
 )RRIV");
   notify(handoff);
