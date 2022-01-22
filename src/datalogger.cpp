@@ -388,9 +388,10 @@ void Datalogger::initializeMeasurementCycle()
   notify(F("Waiting for start up delay"));
   delay(settings.startUpDelay); // can be zero
 
-  while (1)
+  bool sensorsWarmedUp = false;
+  while(sensorsWarmedUp == false)
   {
-    bool sensorsWarmedUp = true;
+    sensorsWarmedUp = true;
     for (int i = 0; i < sensorCount; i++)
     {
       if (!drivers[i]->isWarmedUp())
@@ -400,11 +401,8 @@ void Datalogger::initializeMeasurementCycle()
         sensorsWarmedUp = false;
       }
     }
-    if(sensorsWarmedUp)
-    {
-      break;
-    }
   }
+
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
