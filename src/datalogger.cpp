@@ -246,15 +246,15 @@ void Datalogger::loadSensorConfigurations()
   generic_config *configs[EEPROM_TOTAL_SENSOR_SLOTS];
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    debug("reading slot");
+    notify("reading slot");
     generic_config *sensorConfig = (generic_config *)malloc(sizeof(generic_config));
 
     readSensorConfigurationFromEEPROM(i, sensorConfig);
 
-    debug(sensorConfig->common.sensor_type);
+    notify(sensorConfig->common.sensor_type);
     if (sensorConfig->common.sensor_type <= MAX_SENSOR_TYPE)
     {
-      debug("found configured sensor");
+      notify("found configured sensor");
       sensorCount++;
     }
     sensorConfig->common.slot = i;
@@ -262,18 +262,22 @@ void Datalogger::loadSensorConfigurations()
   }
   if (sensorCount == 0)
   {
-    debug("no sensor configurations found");
+    notify("no sensor configurations found");
   }
+  notify("FREE MEM");
+  printFreeMemory();
 
   // construct the drivers
-  debug("construct drivers");
+  notify("construct drivers");
   drivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
+    notify("FREE MEM");
+    printFreeMemory();
     if (configs[i]->common.sensor_type > MAX_SENSOR_TYPE)
     {
-      debug("no sensor");
+      notify("no sensor");
       continue;
     }
 
@@ -306,11 +310,28 @@ void Datalogger::loadSensorConfigurations()
   }
 
   // set up bookkeeping for dirty configurations
-  if (dirtyConfigurations != NULL)
+  // if (dirtyConfigurations != NULL)
+  // {
+  //   free(dirtyConfigurations);
+  // }
+  // dirtyConfigurations = (bool *)malloc(sizeof(bool) * (sensorCount + 1));
+}
+
+void Datalogger::reloadSensorConfigurations() // for dev & debug
+{
+  // calling this function does not deal with memory fragmentation
+  // so it's not part of the main system, only for dev & debug
+  notify("FREE MEM reload");
+  printFreeMemory();
+  // free sensor configs
+  for(int i=0; i<sensorCount; i++)
   {
-    free(dirtyConfigurations);
+    delete(drivers[i]);
   }
-  dirtyConfigurations = (bool *)malloc(sizeof(bool) * (sensorCount + 1));
+  free(drivers);
+  notify("FREE MEM reload");
+  printFreeMemory();
+  loadSensorConfigurations();
 }
 
 void Datalogger::startLogging()
@@ -596,11 +617,17 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       sensorCount = sensorCount + 1;
       SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
-      for (int i = 0; i < sensorCount - 1; i++)
+      int i = 0;
+      for (; i < sensorCount && drivers[i]->getConfiguration().common.slot < driver->getConfiguration().common.slot ; i++)
       {
         updatedDrivers[i] = drivers[i];
       }
-      updatedDrivers[sensorCount - 1] = driver;
+      updatedDrivers[i] = driver;
+      i++;
+      for (; i < sensorCount; i++)
+      {
+        updatedDrivers[i] = drivers[i-1];
+      }
       free(drivers);
       drivers = updatedDrivers;
     }
@@ -642,20 +669,19 @@ void Datalogger::clearSlot(unsigned short slot)
     {
       updatedDrivers[j] = this->drivers[i];
       j++;
+    } 
+    else 
+    {
+      delete(this->drivers[i]);
     }
   }
   free(this->drivers);
   this->drivers = updatedDrivers;
 }
 
-cJSON **Datalogger::getSensorConfigurations() // returns unprotected **
+cJSON *Datalogger::getSensorConfiguration(short index) // returns unprotected **
 {
-  cJSON **sensorConfigurationsJSON = (cJSON **)malloc(sizeof(cJSON *) * sensorCount);
-  for (int i = 0; i < sensorCount; i++)
-  {
-    sensorConfigurationsJSON[i] = drivers[i]->getConfigurationJSON();
-  }
-  return sensorConfigurationsJSON;
+  return drivers[index]->getConfigurationJSON();
 }
 
 void Datalogger::setInterval(int interval)

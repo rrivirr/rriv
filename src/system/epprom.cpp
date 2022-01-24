@@ -68,7 +68,7 @@ void readObjectFromEEPROM(short i2cAddress, short address, void * data, uint8_t 
   byte * buffer = (byte *) data;
   for (uint8_t i = 0; i < size; i++)
   {
-    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+    buffer[i] = readEEPROM(&Wire, i2cAddress, address+i);
   }
 }
 
@@ -102,14 +102,26 @@ void writeSensorConfigurationToEEPROM(short slot, void * configuration)
 {
   int block = slot / 4 + 1;
   int offset = slot % 4;
-  writeObjectToEEPROM(EEPROM_I2C_ADDRESS + block, EEPROM_DATALOGGER_SENSORS_START + offset * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+  int deviceAddress = EEPROM_I2C_ADDRESS + block;
+  int memoryAddress = offset * EEPROM_DATALOGGER_SENSOR_SIZE;
+  // notify(deviceAddress);
+  // notify(memoryAddress);
+  writeObjectToEEPROM(deviceAddress, memoryAddress, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 }
 
 void readSensorConfigurationFromEEPROM(short slot, void * configuration)
 {
+  // notify("read sensor config");
+  // notify(slot);
+
   int block = slot / 4 + 1;
   int offset = slot % 4;
-  readObjectFromEEPROM(EEPROM_I2C_ADDRESS + block, EEPROM_DATALOGGER_SENSORS_START + offset * EEPROM_DATALOGGER_SENSOR_SIZE, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+  // notify(block);
+  int deviceAddress = EEPROM_I2C_ADDRESS + block;
+  int memoryAddress = offset * EEPROM_DATALOGGER_SENSOR_SIZE;
+  // notify(deviceAddress);
+  // notify(memoryAddress);
+  readObjectFromEEPROM(deviceAddress, memoryAddress, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 
 }
 

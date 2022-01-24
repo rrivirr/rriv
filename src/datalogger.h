@@ -103,7 +103,7 @@ public:
     void setIntraBurstDelay(int delay);
 
     void getConfiguration(datalogger_settings_type * dataloggerSettings);
-    cJSON ** getSensorConfigurations();
+    cJSON * getSensorConfiguration(short index);
 
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
@@ -118,6 +118,8 @@ public:
     void startLogging();
 
     const char * getUUIDString();
+
+    void reloadSensorConfigurations(); // for dev & debug
 
 private:
     // modules
