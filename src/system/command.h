@@ -118,6 +118,7 @@ class CommandInterface
 
     void _toggleDebug();
     void _startLogging();
+    void _stopLogging();
     void _go();
     void _reloadSensorConfigurations();
 

@@ -136,6 +136,18 @@ void CommandInterface::_startLogging()
   notify("OK");
 }
 
+void stopLogging(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_stopLogging();
+}
+
+void CommandInterface::_stopLogging()
+{
+  this->datalogger->settings.debug_values = false;
+  this->datalogger->stopLogging();
+  notify("OK");
+}
+
 void CommandInterface::_toggleDebug()
 {
   this->datalogger->changeMode(debugging);
@@ -627,6 +639,8 @@ void CommandInterface::setup(){
 
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
+  cmdAdd("stop-logging", stopLogging);
+
   // cmdAdd("start-logging", toggleInteractiveLogging);
 
   // cmdAdd("debug", debugMode);

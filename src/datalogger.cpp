@@ -336,6 +336,7 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
 
 void Datalogger::startLogging()
 {
+  initializeMeasurementCycle();
   interactiveModeLogging = true;
 }
 
@@ -415,6 +416,7 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (int i = 0; i < sensorCount; i++)
     {
+      notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
