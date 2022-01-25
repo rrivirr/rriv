@@ -585,6 +585,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
   {
     notify("configure from json");
     driver->configureFromJSON(json);
+    notify("configured from json");
     if (driver->getProtocol() == i2c)
     {
       notify("got i2c sensor");
@@ -620,10 +621,17 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       sensorCount = sensorCount + 1;
       SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
       int i = 0;
-      for (; i < sensorCount && drivers[i]->getConfiguration().common.slot < driver->getConfiguration().common.slot ; i++)
+      // printFreeMemory();
+      // if(sensorCount > 1)
+      // {
+      //   notify(drivers[i]->getConfiguration().common.slot);
+      //   notify(driver->getConfiguration().common.slot);
+      // }
+      for (; i < sensorCount-1 && drivers[i]->getConfiguration().common.slot < driver->getConfiguration().common.slot ; i++)
       {
         updatedDrivers[i] = drivers[i];
       }
+
       updatedDrivers[i] = driver;
       i++;
       for (; i < sensorCount; i++)
