@@ -89,4 +89,6 @@ private:
 
   void computeCalibratedCurve();
   void printCalibrationStatus();
+  void takeBurstMeasurement(); // for calibration
+
 };

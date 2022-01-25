@@ -211,10 +211,39 @@ void Datalogger::loop()
   {
     if (interactiveModeLogging)
     {
-      if (timestamp() > lastInteractiveLogTime + 5)
+      if (timestamp() > lastInteractiveLogTime + 1)
       {
-        notify(F("interactive log"));
+        // notify(F("interactive log"));
         measureSensorValues(false);
+        if(interactiveModeLogging)
+        {
+          for (unsigned int i = 0; i < sensorCount; i++)
+          {
+            Serial2.print(drivers[i]->getCSVColumnNames());
+            if (i < sensorCount - 1)
+            {
+              Serial2.print(F(","));
+            }
+            else
+            {
+              Serial2.println("");
+            }
+          }
+
+          for (unsigned int i = 0; i < sensorCount; i++)
+          {
+            Serial2.print(drivers[i]->getDataString());
+            if (i < sensorCount - 1)
+            {
+              Serial2.print(F(","));
+            }
+            else
+            {
+              Serial2.println("");
+            }
+          }
+          Serial2.print("CMD >> ");
+        }
         writeMeasurementToLogFile();
         lastInteractiveLogTime = timestamp();
       }
@@ -382,7 +411,7 @@ bool Datalogger::shouldContinueBursting()
 
 void Datalogger::initializeBurst()
 {
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned int i = 0; i < sensorCount; i++)
   {
     drivers[i]->initializeBurst();
   }
@@ -398,7 +427,7 @@ void Datalogger::initializeMeasurementCycle()
 
   completedBursts = 0;
 
-  extendCustomWatchdog(settings.startUpDelay*60);
+  // extendCustomWatchdog(settings.startUpDelay*60);
 
   /*
   pauseCustomWatchDog();
@@ -438,7 +467,7 @@ void Datalogger::measureSensorValues(bool performingBurst)
     debug("converted enabled channels");
   }
 
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned int i = 0; i < sensorCount; i++)
   {
     if (drivers[i]->takeMeasurement())
     {
@@ -452,7 +481,7 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
 void Datalogger::writeStatusFieldsToLogFile()
 {
-  notify(F("Write status fields"));
+  debug(F("Write status fields"));
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
@@ -486,14 +515,6 @@ void Datalogger::writeStatusFieldsToLogFile()
   fileSystemWriteCache->writeString((char *)",");
 }
 
-void Datalogger::debugValues(char *buffer)
-{
-  if (settings.debug_values)
-  {
-    notify(buffer);
-  }
-}
-
 bool Datalogger::writeMeasurementToLogFile()
 {
   writeStatusFieldsToLogFile();
@@ -503,30 +524,25 @@ bool Datalogger::writeMeasurementToLogFile()
   char buffer[100];
   sprintf(buffer, "%d,", batteryValue);
   fileSystemWriteCache->writeString(buffer);
-  debugValues(buffer);
 
   // and write out the sensor data
   debug(F("Write out sensor data"));
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned int i = 0; i < sensorCount; i++)
   {
     // get values from the sensor
     char *dataString = drivers[i]->getDataString();
     fileSystemWriteCache->writeString(dataString);
-    debugValues(dataString);
     if (i < sensorCount - 1)
     {
       fileSystemWriteCache->writeString((char *)reinterpretCharPtr(F(",")));
-      debugValues((char *)reinterpretCharPtr(F(",")));
     }
   }
   sprintf(buffer, ",%s,", userNote);
   fileSystemWriteCache->writeString(buffer);
-  debugValues(buffer);
   if (userValue != INT_MIN)
   {
     sprintf(buffer, "%d", userValue);
     fileSystemWriteCache->writeString(buffer);
-    debugValues(buffer);
   }
   fileSystemWriteCache->endOfLine();
   return true;

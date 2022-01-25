@@ -570,7 +570,7 @@ void help(int arg_cnt, char**args)
 
 void CommandInterface::_help()
 {
-  char commands[] = "Current Commands:\n"
+  char commands[] = "Command List:\n"
   "version\n"
   "show-warranty\n"
   "get-config\n"
@@ -588,13 +588,13 @@ void CommandInterface::_help()
   "calibrate\n"
   "set-user-note\n"
   "set-user-value\n"
-  "trace\n"
   "start-logging\n"
   "deploy-now\n"
   "interactive\n"
+  "trace\n"
   "check-memory\n"
-  "scan-ic2\n"
-  "go\n";
+  "scan-ic2\n";
+
 
   Serial2.println(commands);
   Serial2.flush();

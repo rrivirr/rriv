@@ -32,9 +32,9 @@ void buildDriverSensorMap()
   sensorStringTypeMap[genericAnalogString] = &createInstance<GenericAnalog>;
   sensorStringTypeMap[atlasECString] = &createInstance<AtlasEC>;
 
-  Serial2.println(sensorStringTypeMap.count("atlas_ec") );
-  Serial2.println(sensorStringTypeMap.count("generic_analog") );
-  Serial2.println("done");
+  // Serial2.println(sensorStringTypeMap.count("atlas_ec") );
+  // Serial2.println(sensorStringTypeMap.count("generic_analog") );
+  // Serial2.println("done");
 }
 
 SensorDriver * driverForSensorType(short type)
