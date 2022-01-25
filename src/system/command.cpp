@@ -136,6 +136,18 @@ void CommandInterface::_startLogging()
   notify("OK");
 }
 
+void stopLogging(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_stopLogging();
+}
+
+void CommandInterface::_stopLogging()
+{
+  this->datalogger->settings.debug_values = false;
+  this->datalogger->stopLogging();
+  notify("OK");
+}
+
 void CommandInterface::_toggleDebug()
 {
   this->datalogger->changeMode(debugging);
@@ -317,11 +329,10 @@ void CommandInterface::_getConfig()
   
   cJSON_Delete(json);
   
-
-  cJSON ** sensorConfigurations = this->datalogger->getSensorConfigurations();
   for(int i=0; i<this->datalogger->sensorCount; i++)
   {
-    cJSON_PrintPreallocated(sensorConfigurations[i], string, BUFFER_SIZE, true);
+    cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
+    cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);
     if (string == NULL)
     {
       fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
@@ -330,9 +341,8 @@ void CommandInterface::_getConfig()
     notify(string);
     Serial2.flush();
 
-    cJSON_Delete(sensorConfigurations[i]);
+    cJSON_Delete(sensorConfiguration);
   }
-  free(sensorConfigurations);
 }
 
 void setConfig(int arg_cnt, char **args)
@@ -590,6 +600,19 @@ void CommandInterface::_help()
   Serial2.flush();
 }
 
+
+void reloadSensorConfigurations(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_reloadSensorConfigurations();
+}
+
+
+void CommandInterface::_reloadSensorConfigurations()
+{
+  this->datalogger->reloadSensorConfigurations();
+}
+
+
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
@@ -616,6 +639,8 @@ void CommandInterface::setup(){
 
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
+  cmdAdd("stop-logging", stopLogging);
+
   // cmdAdd("start-logging", toggleInteractiveLogging);
 
   // cmdAdd("debug", debugMode);
@@ -628,6 +653,7 @@ void CommandInterface::setup(){
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);
+  cmdAdd("reload-sensors", reloadSensorConfigurations);
 
   cmdAdd("help", help);
 

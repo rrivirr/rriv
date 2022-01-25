@@ -44,7 +44,6 @@ void AtlasEC::setup()
 {
   notify("setup GenericAtlas");
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
-  notify("did");
 
   if (true)
   {
@@ -65,7 +64,7 @@ void AtlasEC::setup()
             parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
     debug(message);
   }
-  notify("led and probe type");
+  // notify("led and probe type");
   oem_ec->setLedOn(true);
   oem_ec->setProbeType(1.0);
 }

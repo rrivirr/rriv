@@ -34,7 +34,7 @@
 #define EEPROM_DATALOGGER_CONFIGURATION_SIZE 64
 #define EEPROM_DATALOGGER_SENSORS_START 80
 #define EEPROM_DATALOGGER_SENSOR_SIZE 64
-#define EEPROM_TOTAL_SENSOR_SLOTS 4
+#define EEPROM_TOTAL_SENSOR_SLOTS 12
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data );
 byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress );
@@ -46,12 +46,16 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
 void writeDataloggerSettingsToEEPROM(void * dataloggerSettings);
 void writeSensorConfigurationToEEPROM(short slot, void * configuration);
+void readSensorConfigurationFromEEPROM(short slot, void * configuration);
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian
 void writeEEPROMBytesMem(short address, void * source, uint8_t size);
 
 void clearEEPROMAddress(short address, uint8_t length);
 
-void readEEPROMObject(short address, void * data, uint8_t size); // Little Endian
+void writeObjectToEEPROM(int i2cAddress, int baseAddress, void * source, int size);
+
+void readObjectFromEEPROM(short i2cAddress, short address, void * data, uint8_t size);
+void readObjectFromEEPROM(short address, void * data, uint8_t size); // Little Endian
 
 #endif
