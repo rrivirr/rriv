@@ -67,6 +67,14 @@ void notify(int number)
   notify(message);
 }
 
+
+void notify(unsigned int number)
+{
+  char message[10];
+  sprintf(message, "%d", number);
+  notify(message);
+}
+
 void notify(short number)
 {
   char message[10];

@@ -41,7 +41,7 @@ void startSerial2()
   {
     delay(100);
   }
-  notify(F("Begin Serail2"));
+  notify(F("Begin Serial2"));
 }
 
 void setupInternalRTC()

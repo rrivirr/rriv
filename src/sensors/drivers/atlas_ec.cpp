@@ -36,7 +36,8 @@ void AtlasEC::configureDriverFromJSON(cJSON * json)
 }
 
 
-protocol_type AtlasEC::getProtocol(){
+protocol_type AtlasEC::getProtocol()
+{
   return i2c;
 }
 

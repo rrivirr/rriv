@@ -12,7 +12,9 @@ set-slot-config {"slot":1,"type":"generic_atlas","tag":"ec","burst_size":5}
 set-slot-config {"slot":2,"type":"generic_atlas","tag":"ec","burst_size":5}
 
 set-slot-config {"slot":0,"type":"generic_analog","tag":"temp","burst_size":5,"adc_select":"external","sensor_port":1}
+
 set-slot-config {"slot":1,"type":"atlas_ec","tag":"ec","burst_size":5}
+set-slot-config {"slot":0,"type":"atlas_ec","tag":"ec","burst_size":5}
 set-slot-config {"slot":2,"type":"atlas_ec","tag":"aec","burst_size":5}
 set-slot-config {"slot":3,"type":"atlas_ec","tag":"bec","burst_size":5}
 set-slot-config {"slot":4,"type":"atlas_ec","tag":"cec","burst_size":5}

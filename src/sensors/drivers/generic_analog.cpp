@@ -24,32 +24,32 @@
 #include "sensors/sensor_types.h"
 
 int ADC_PINS[5] = {
-  ANALOG_INPUT_1_PIN, 
-  ANALOG_INPUT_2_PIN, 
-  ANALOG_INPUT_3_PIN, 
-  ANALOG_INPUT_4_PIN, 
-  ANALOG_INPUT_5_PIN
-};
+    ANALOG_INPUT_1_PIN,
+    ANALOG_INPUT_2_PIN,
+    ANALOG_INPUT_3_PIN,
+    ANALOG_INPUT_4_PIN,
+    ANALOG_INPUT_5_PIN};
+
+#define FLOATING_POINT_STORAGE_MULTIPLIER 100
 
 GenericAnalog::GenericAnalog()
 {
   debug("allocation GenericAnalog");
 }
 
-GenericAnalog::~GenericAnalog(){}
+GenericAnalog::~GenericAnalog() {}
 
-void GenericAnalog::configureDriverFromJSON(cJSON * json)
+void GenericAnalog::configureDriverFromJSON(cJSON *json)
 {
-  notify("configure driver from..");
   configuration.common.sensor_type = GENERIC_ANALOG_SENSOR; // redundant?
 
-  const cJSON * adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
-  if(adcSelectJSON != NULL && cJSON_IsString(adcSelectJSON)) 
+  const cJSON *adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
+  if (adcSelectJSON != NULL && cJSON_IsString(adcSelectJSON))
   {
-    if(strcmp(adcSelectJSON->valuestring, "internal") == 0)
+    if (strcmp(adcSelectJSON->valuestring, "internal") == 0)
     {
       configuration.adc_select = ADC_SELECT_INTERNAL;
-    } 
+    }
     else if (strcmp(adcSelectJSON->valuestring, "external") == 0)
     {
       configuration.adc_select = ADC_SELECT_EXTERNAL;
@@ -59,41 +59,40 @@ void GenericAnalog::configureDriverFromJSON(cJSON * json)
       notify(F("Invalid adc select"));
       return;
     }
-  } 
-  else 
+  }
+  else
   {
     notify(F("Invalid adc select"));
     return;
   }
   notify("done");
 
-
-  const cJSON * sensorPortJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_port");
-  if(sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint < 5)
+  const cJSON *sensorPortJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_port");
+  if (sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint < 5)
   {
-    configuration.sensor_port = (byte) sensorPortJSON->valueint;
-  } else {
+    configuration.sensor_port = (byte)sensorPortJSON->valueint;
+  }
+  else
+  {
     notify(F("Invalid sensor port"));
     return;
   }
   notify("done");
 }
 
-
 void GenericAnalog::setup()
 {
   debug("setup GenericAnalog");
 }
 
-
 void GenericAnalog::setDriverDefaults()
 {
-  if(configuration.adc_select != ADC_SELECT_EXTERNAL && configuration.adc_select != ADC_SELECT_INTERNAL)
+  if (configuration.adc_select != ADC_SELECT_EXTERNAL && configuration.adc_select != ADC_SELECT_INTERNAL)
   {
     configuration.adc_select = ADC_SELECT_INTERNAL;
   }
 
-  if(configuration.sensor_port > 5)
+  if (configuration.sensor_port > 5)
   {
     configuration.sensor_port = 0;
   }
@@ -107,7 +106,6 @@ void GenericAnalog::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-
 // base class
 generic_config GenericAnalog::getConfiguration()
 {
@@ -116,91 +114,126 @@ generic_config GenericAnalog::getConfiguration()
   return configuration;
 }
 
-
 void GenericAnalog::setConfiguration(generic_config configuration)
 {
   memcpy(&this->configuration, &configuration, sizeof(generic_config));
 }
 
-
 // split between base class and this class
 // getConfigurationJSON: base class
 // getDriverSpecificConfigurationJSON: this class
-cJSON * GenericAnalog::getConfigurationJSON() // returns unprotected pointer
+cJSON *GenericAnalog::getConfigurationJSON() // returns unprotected pointer
 {
-  cJSON* json = cJSON_CreateObject();
+  cJSON *json = cJSON_CreateObject();
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
   cJSON_AddStringToObject(json, "type", "generic_analog");
   cJSON_AddStringToObject(json, "tag", configuration.common.tag);
   cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
   cJSON_AddNumberToObject(json, "sensor_port", configuration.sensor_port);
-  switch(configuration.adc_select)
+  switch (configuration.adc_select)
   {
-    case ADC_SELECT_INTERNAL:
-      cJSON_AddStringToObject(json, "adc_select", "internal");
-      break;
-    case ADC_SELECT_EXTERNAL:
-      cJSON_AddStringToObject(json, "adc_select", "external");
-      break;
-    default:
-      break;
+  case ADC_SELECT_INTERNAL:
+    cJSON_AddStringToObject(json, "adc_select", "internal");
+    break;
+  case ADC_SELECT_EXTERNAL:
+    cJSON_AddStringToObject(json, "adc_select", "external");
+    break;
+  default:
+    break;
   }
   addCalibrationParametersToJSON(json);
   return json;
 }
 
-const char * GenericAnalog::getBaseColumnHeaders()
+const char *GenericAnalog::getBaseColumnHeaders()
 {
   return baseColumnHeaders;
 }
 
+void GenericAnalog::stop() {}
 
-void GenericAnalog::stop(){}
-
-bool GenericAnalog::takeMeasurement(){
+bool GenericAnalog::takeMeasurement()
+{
   // take measurement and write to dataString member variable
-  switch(this->configuration.adc_select)
+  switch (this->configuration.adc_select)
   {
-    case ADC_SELECT_INTERNAL:
-    {
-      int adcPin = ADC_PINS[this->configuration.sensor_port];
-      this->value = analogRead(adcPin);
-    }
-      break;
-    
-    case ADC_SELECT_EXTERNAL:
-    {
-      debug("getting external ADC measurement");
-      this->value = externalADC->getChannelValue(this->configuration.sensor_port - 1);
-    }
-      break;
+  case ADC_SELECT_INTERNAL:
+  {
+    int adcPin = ADC_PINS[this->configuration.sensor_port];
+    this->value = analogRead(adcPin);
+  }
+  break;
 
-    default:
-    {}       // bad configuration
-      break;
+  case ADC_SELECT_EXTERNAL:
+  {
+    debug("getting external ADC measurement");
+    this->value = externalADC->getChannelValue(this->configuration.sensor_port - 1);
+  }
+  break;
+
+  default:
+  {
+  } // bad configuration
+  break;
   }
 
   return true;
 }
 
-char * GenericAnalog::getDataString(){
-  //   int parameterValue = (value-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-  int parameterValue = (value - (configuration.b / 100))/(configuration.m / 100);
+#define BURST_SIZE 20
+void GenericAnalog::takeBurstMeasurement()
+{
 
-  sprintf(dataString, "%d,%d", value, parameterValue);
+  int x[BURST_SIZE];
+  int sum = 0;
+  double sum1 = 0;
+  notify("Calibration measurments:")
+  for (int i = 0; i < BURST_SIZE; i++)
+  {
+    if (this->configuration.adc_select == ADC_SELECT_EXTERNAL)
+    {
+      externalADC->convertEnabledChannels();
+    }
+    takeMeasurement();
+    notify(this->value);
+    sum += this->value;
+    x[i] = this->value;
+    delay(100);
+  }
+  int average = sum / BURST_SIZE;
+  this->value = average;
+
+  /*  Compute  variance  and standard deviation  */
+  for (int i = 0; i < BURST_SIZE; i++)
+  {
+    sum1 = sum1 + pow((x[i] - average), 2);
+  }
+  double variance = sum1 / (float)(BURST_SIZE);
+  char buffer[50];
+  sprintf(buffer, "variance of measurements = %.2f\n", variance);
+  notify(buffer);
+}
+
+char *GenericAnalog::getDataString()
+{
+  double m = ((double)configuration.m) / FLOATING_POINT_STORAGE_MULTIPLIER;
+  double b = ((double)configuration.b) / FLOATING_POINT_STORAGE_MULTIPLIER;
+  double calibratedValue = m * value + b;
+  sprintf(dataString, "%d,%0.3f", value, calibratedValue);
   return dataString;
 }
 
-char * GenericAnalog::getCSVColumnNames()
+char *GenericAnalog::getCSVColumnNames()
 {
-   debug(csvColumnHeaders);
-   return csvColumnHeaders;
+  debug(csvColumnHeaders);
+  return csvColumnHeaders;
 }
 
-protocol_type GenericAnalog::getProtocol(){
+protocol_type GenericAnalog::getProtocol()
+{
+  notify(F("getting protocol"));
   return analog;
 }
-
 
 void GenericAnalog::initCalibration()
 {
@@ -209,7 +242,6 @@ void GenericAnalog::initCalibration()
   notify(F("calibrate SLOT high VALUE"));
   notify(F("calibrate SLOT store"));
   calibrate_high_reading = calibrate_high_value = calibrate_low_reading = calibrate_low_value = 0;
-
 }
 
 void GenericAnalog::printCalibrationStatus()
@@ -226,17 +258,18 @@ void GenericAnalog::printCalibrationStatus()
   notify(buffer);
 }
 
-void GenericAnalog::calibrationStep(char * step, int trueValue)
+void GenericAnalog::calibrationStep(char *step, int trueValue)
 {
-  takeMeasurement();
-  if(strcmp(step, "high") == 0)
+  if (strcmp(step, "high") == 0)
   {
+    takeBurstMeasurement();
     calibrate_high_reading = this->value;
     calibrate_high_value = trueValue;
     printCalibrationStatus();
   }
   else if (strcmp(step, "low") == 0)
   {
+    takeBurstMeasurement();
     calibrate_low_reading = this->value;
     calibrate_low_value = trueValue;
     printCalibrationStatus();
@@ -244,12 +277,8 @@ void GenericAnalog::calibrationStep(char * step, int trueValue)
   else if (strcmp(step, "store") == 0)
   {
     printCalibrationStatus();
-    if(
-      calibrate_high_reading == 0
-      || calibrate_high_value == 0
-      || calibrate_low_reading == 0
-      || calibrate_low_value == 0
-    )
+    if (
+        calibrate_high_reading == 0 || calibrate_high_value == 0 || calibrate_low_reading == 0 || calibrate_low_value == 0)
     {
       notify("Incomplete calibration");
       return;
@@ -259,18 +288,17 @@ void GenericAnalog::calibrationStep(char * step, int trueValue)
 
     // TODO: ideally this function would not be called from within a driver
     // but how does datalogger know the configuration is dirty, so it can write?
-    writeSensorConfigurationToEEPROM(configuration.common.slot, &configuration); 
+    writeSensorConfigurationToEEPROM(configuration.common.slot, &configuration);
 
-    cJSON* json = cJSON_CreateObject();
+    cJSON *json = cJSON_CreateObject();
     addCalibrationParametersToJSON(json);
-    char * string = cJSON_Print(json);
+    char *string = cJSON_Print(json);
     if (string == NULL)
     {
       notify("Failed to print json.");
     }
     notify(string);
     free(json);
-    
   }
   else
   {
@@ -278,35 +306,30 @@ void GenericAnalog::calibrationStep(char * step, int trueValue)
   }
 }
 
-
 void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equation, log time
 {
-  //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
+  // y = mx+b    m = (y2-y1)/(x2-x1)    b = y - mx
+  // all x and y are integers.  m and b are scale up and cast to int for storage
 
-  double m = (calibrate_high_value - calibrate_low_value) / ( calibrate_high_reading - calibrate_low_reading);
-  double b = (((m*(0-calibrate_low_reading)) + calibrate_low_value) + ((m*(0-calibrate_high_reading)) + calibrate_high_value))/2; //average at two points
+  double m = (double)(calibrate_high_value - calibrate_low_value) / (double)(calibrate_high_reading - calibrate_low_reading);
+  double b = calibrate_high_value - m * calibrate_high_reading;
 
-  // slope = m * TEMPERATURE_SCALER;
-  // intercept = b;
-  configuration.m = m * 100;
-  configuration.b = b * 100;
-  configuration.x1 = calibrate_low_reading * 100;
-  configuration.x2 = calibrate_high_reading * 100;
-  configuration.y1 = calibrate_low_value * 100;
-  configuration.y2 = calibrate_high_value * 100;
+  configuration.m = (int)(m * FLOATING_POINT_STORAGE_MULTIPLIER);
+  configuration.b = (int)(b * FLOATING_POINT_STORAGE_MULTIPLIER);
+  configuration.x1 = calibrate_low_reading;
+  configuration.x2 = calibrate_high_reading;
+  configuration.y1 = calibrate_low_value;
+  configuration.y2 = calibrate_high_value;
   configuration.cal_timestamp = timestamp();
 }
 
-
-void GenericAnalog::addCalibrationParametersToJSON(cJSON * json)
+void GenericAnalog::addCalibrationParametersToJSON(cJSON *json)
 {
-  cJSON_AddNumberToObject(json, "m", configuration.m);
-  cJSON_AddNumberToObject(json, "b", configuration.b);
+  cJSON_AddNumberToObject(json, "m", (double)configuration.m / FLOATING_POINT_STORAGE_MULTIPLIER);
+  cJSON_AddNumberToObject(json, "b", (double)configuration.b / FLOATING_POINT_STORAGE_MULTIPLIER);
   cJSON_AddNumberToObject(json, "x1", configuration.x1);
   cJSON_AddNumberToObject(json, "x2", configuration.x2);
   cJSON_AddNumberToObject(json, "y1", configuration.y1);
   cJSON_AddNumberToObject(json, "y2", configuration.y2);
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
-

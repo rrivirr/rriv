@@ -33,6 +33,7 @@ void notify(const char*);
 void notify(const __FlashStringHelper * message);
 void notify(short number);
 void notify(int number);
+void notify(unsigned int number);
 void notify(uint32 number);
 
 class Monitor

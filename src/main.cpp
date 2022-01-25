@@ -31,11 +31,14 @@
 // Setup and Loop
 Datalogger *datalogger;
 void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
+void workspace();
 
 void setup(void)
 {
   startSerial2();
   Monitor::instance()->debugToSerial = true;
+
+  workspace();
 
   startCustomWatchDog();
   printWatchDogStatus();
@@ -163,4 +166,14 @@ under certain conditions; type `show-conditions' for details.
 Type 'help' for command list.
 )RRIV");
   notify(handoff);
+}
+
+// space to work our development details
+
+
+void workspace()
+{
+  // notify(sizeof(long long));
+  // notify(sizeof(sone));
+  // exit(0);
 }

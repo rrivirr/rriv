@@ -71,7 +71,7 @@ class Datalogger
 public:
 
     // sensors
-    int sensorCount = 0;
+    unsigned int sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
