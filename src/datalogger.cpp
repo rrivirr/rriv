@@ -217,6 +217,7 @@ void Datalogger::loop()
         measureSensorValues(false);
         if(interactiveModeLogging)
         {
+          Serial2.print("\n");
           for (unsigned int i = 0; i < sensorCount; i++)
           {
             Serial2.print(drivers[i]->getCSVColumnNames());
