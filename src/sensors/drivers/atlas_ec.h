@@ -50,7 +50,7 @@ class AtlasEC : public I2CSensorDriver
     const char * getBaseColumnHeaders();
 
     void initCalibration();
-    void calibrationStep(char * step, int value);
+    void calibrationStep(char * step, double value);
     void addCalibrationParametersToJSON(cJSON * json);
 
   protected:

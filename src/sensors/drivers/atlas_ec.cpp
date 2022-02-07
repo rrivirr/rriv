@@ -160,7 +160,7 @@ void AtlasEC::initCalibration()
   oem_ec->clearCalibrationData();
 }
 
-void AtlasEC::calibrationStep(char * step, int trueValue)
+void AtlasEC::calibrationStep(char * step, double trueValue)
 {
   takeMeasurement();
   if(strcmp(step, "dry") == 0)

@@ -74,7 +74,7 @@ class SensorDriver {
 
     // Calibration
     virtual void initCalibration();
-    virtual void calibrationStep(char * step, int value);
+    virtual void calibrationStep(char * step, double value);
 
     void initializeBurst();
     void incrementBurst();

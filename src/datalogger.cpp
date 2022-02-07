@@ -852,7 +852,7 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
   else
   {
     notify(args[0]);
-    driver->calibrationStep(subcommand, atoi(args[0]));
+    driver->calibrationStep(subcommand, atof(args[0]));
   }
 }
 

@@ -216,9 +216,8 @@ void GenericAnalog::takeCalibrationBurstMeasurement()
 
 char *GenericAnalog::getDataString()
 {
-  double m = ((double)configuration.m) / FLOATING_POINT_STORAGE_MULTIPLIER;
-  double b = ((double)configuration.b) / FLOATING_POINT_STORAGE_MULTIPLIER;
-  double calibratedValue = m * value + b;
+  int exponent = -(4 - configuration.order_of_magnitude);
+  double calibratedValue = (configuration.m * value + configuration.b) * pow(10, -exponent);
   sprintf(dataString, "%d,%0.3f", value, calibratedValue);
   return dataString;
 }
@@ -258,7 +257,7 @@ void GenericAnalog::printCalibrationStatus()
   notify(buffer);
 }
 
-void GenericAnalog::calibrationStep(char *step, int trueValue)
+void GenericAnalog::calibrationStep(char *step, double trueValue)
 {
   if (strcmp(step, "high") == 0)
   {
@@ -311,11 +310,19 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
   // y = mx+b    m = (y2-y1)/(x2-x1)    b = y - mx
   // all x and y are integers.  m and b are scale up and cast to int for storage
 
-  double m = (double)(calibrate_high_value - calibrate_low_value) / (double)(calibrate_high_reading - calibrate_low_reading);
-  double b = calibrate_high_value - m * calibrate_high_reading;
+  // figure out orders of magnitude
+  int orderOfMagnitude = floor(log10(calibrate_low_value));
+  int exponent = 4 - orderOfMagnitude;
+  double scaledCalibrateHighValue = calibrate_high_value * pow(10, exponent);
+  double scaledCalibrateLowValue = calibrate_low_value * pow(10, exponent);
 
-  configuration.m = (int)(m * FLOATING_POINT_STORAGE_MULTIPLIER);
-  configuration.b = (int)(b * FLOATING_POINT_STORAGE_MULTIPLIER);
+
+  double m = (double)(scaledCalibrateHighValue - scaledCalibrateLowValue) / (double)(calibrate_high_reading - calibrate_low_reading);
+  double b = scaledCalibrateHighValue - m * calibrate_high_reading;
+
+  configuration.m = m;
+  configuration.b = b;
+  configuration.order_of_magnitude = orderOfMagnitude;
   configuration.x1 = calibrate_low_reading;
   configuration.x2 = calibrate_high_reading;
   configuration.y1 = calibrate_low_value;
@@ -325,8 +332,9 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
 
 void GenericAnalog::addCalibrationParametersToJSON(cJSON *json)
 {
-  cJSON_AddNumberToObject(json, "m", (double)configuration.m / FLOATING_POINT_STORAGE_MULTIPLIER);
-  cJSON_AddNumberToObject(json, "b", (double)configuration.b / FLOATING_POINT_STORAGE_MULTIPLIER);
+  cJSON_AddNumberToObject(json, "m", configuration.m);
+  cJSON_AddNumberToObject(json, "b", configuration.b);
+  cJSON_AddNumberToObject(json, "order_of_magnitude", configuration.order_of_magnitude);
   cJSON_AddNumberToObject(json, "x1", configuration.x1);
   cJSON_AddNumberToObject(json, "x2", configuration.x2);
   cJSON_AddNumberToObject(json, "y1", configuration.y1);
