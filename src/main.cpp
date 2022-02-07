@@ -1,104 +1,120 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include <Arduino.h>
-#include <libmaple/libmaple.h>
-#include <libmaple/pwr.h> // necessary?
 #include <string.h>
 
 #include "datalogger.h"
-#include "scratch/dbgmcu.h"
 #include "system/watchdog.h"
+#include "system/hardware.h"
+#include "utilities/i2c.h"
 #include "utilities/qos.h"
+#include "scratch/dbgmcu.h"
+#include "version.h"
+#include "system/eeprom.h"
 
 // Setup and Loop
-Datalogger * datalogger;
-
-void copyBytesToRegister(byte * registerPtr, byte msb, byte lsb){
-  memcpy( registerPtr + 1, &msb, 1);
-  memcpy( registerPtr, &lsb, 1);
-}
-
+Datalogger *datalogger;
+void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
+void workspace();
 
 void setup(void)
 {
   startSerial2();
-  Monitor::instance()->debugToSerial=true;
+  Monitor::instance()->debugToSerial = true;
 
+  workspace();
 
   startCustomWatchDog();
   printWatchDogStatus();
 
-
-  // disable unused components and hardware pins //
+  // disable unused components and hardware pins
   componentsAlwaysOff();
   //hardwarePinsAlwaysOff(); // TODO are we turning off I2C pins still, which is wrong
 
+  setupInternalRTC();
+
+  // turn on switched power to read from EEPROM
   setupSwitchedPower();
+  cycleSwitchablePower();
+  enableI2C1();
+  delay(500);
 
-  enableSwitchedPower();
-
-  setupHardwarePins();
-
-  // digitalWrite(PA4, LOW); // turn on the battery measurement
-
-  //blinkTest();
-
-  // Set up the internal RTC
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_PWREN;
-  RCC_BASE->APB1ENR |= RCC_APB1ENR_BKPEN;
-  PWR_BASE->CR |= PWR_CR_DBP; // Disable backup domain write protection, so we can write
-
-  setupManualWakeInterrupts();
-
-  powerUpSwitchableComponents();
-
-  // Don't respond to interrupts during setup
-  disableManualWakeInterrupt();
-  clearManualWakeInterrupt();
-
-  // Clear the alarms so they don't go off during setup
-  clearAllAlarms();
-
-  // initializeFilesystem();
-
-  //initBLE();
-
-  readUniqueId(uuid);
-  uuidString[2 * UUID_LENGTH] = '\0';
-  for (short i = 0; i < UUID_LENGTH; i++)
-  {
-    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
-  }
-  Serial2.println(uuidString);
-  
-
-  datalogger_settings_type * dataloggerSettings = (datalogger_settings_type *) malloc(sizeof(datalogger_settings_type));
+  debug("creating datalogger");
+  datalogger_settings_type *dataloggerSettings = (datalogger_settings_type *)malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
-  Monitor::instance()->writeDebugMessage("created datalogger");
+  debug("created datalogger");
   datalogger->setup();
-  
+
   /* We're ready to go! */
-  Monitor::instance()->writeDebugMessage(F("done with setup"));
+  debug(F("done with setup"));
+  notifyDebugStatus();
 
-  print_debug_status();
+  startCustomWatchDog(); // printDebugStatus delays with user message, don't want watchdog to trigger
 
-  disableCustomWatchDog();
-  print_debug_status(); // delays for 10s with user message, don't want watchdog to trigger
-  startCustomWatchDog();
-  Monitor::instance()->debugToSerial=false;
-  Monitor::instance()->writeSerialMessage("Entering main run loop");
-  Monitor::instance()->writeSerialMessage("Press return to access CLI");
-  int start = timestamp();
-  int now = start;
-  while(now < start + 5)
+  Monitor::instance()->debugToSerial = false;
+
+  printWelcomeMessage(dataloggerSettings);
+
+  if (datalogger->inMode(logging))
   {
-    startCustomWatchDog();
-    datalogger->processCLI();
-    now = timestamp();
+    notify("Device will enter logging mode in 5 seconds");
+    notify("Type 'i' to exit to interactive mode");
+    Serial2.print("CMD >> ");
+    int start = timestamp();
+    int now = start;
+    while (now < start + 5)
+    {
+      startCustomWatchDog();
+      datalogger->processCLI();
+      now = timestamp();
+    }
   }
+  else
+  {
+    Serial2.print("CMD >> ");
+  }
+
 }
 
 void loop(void)
 {
+  // short deviceAddress = 0x50;
+  // short memoryAddress = 0;
+  // byte data = 20;
+  // notify((int) data);
+  // writeObjectToEEPROM(deviceAddress, memoryAddress, &data, 1);
+  // data = 0;
+  // readObjectFromEEPROM(deviceAddress, memoryAddress, &data, 1);
+  // notify((int) data);
+
+  // data = 21;
+  // notify((int) data);
+  // writeObjectToEEPROM(deviceAddress + 1, memoryAddress, &data, 1);
+  // data = 0;
+  // readObjectFromEEPROM(deviceAddress + 1, memoryAddress, &data, 1);
+  // notify((int) data);
+
+  // readObjectFromEEPROM(deviceAddress, memoryAddress, &data, 1);
+  // notify((int) data);
+  // exit(0);
+
   startCustomWatchDog();
   printWatchDogStatus();
   checkMemory();
@@ -106,74 +122,58 @@ void loop(void)
   datalogger->loop();
 }
 
-// OLD CODE:
+void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
+{
+  // Welcome message
 
-  // Get reading from RGB Sensor
-  // char * data = AtlasRGB::instance()->mallocDataMemory();
-  // AtlasRGB::instance()->takeMeasurement(data);
-  // free(data);
- 
+  const __FlashStringHelper *welcomeMessage = F(R"RRIV(
+____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
+ __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
+  _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
+   _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
+    _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
+     _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
+      _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
+       _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
+        _\///________\///__\///________\///__\///////////________\///________
 
-  // bool bursting = shouldContinueBursting();
-  // bool debugLoop = checkDebugLoop();
-  // bool awakeForUserInteraction = checkAwakeForUserInteraction(debugLoop);
-  // bool takeMeasurement = checkTakeMeasurement(bursting, awakeForUserInteraction);
 
-  // // Should we sleep until a measurement is triggered?
-  // bool awaitMeasurementTrigger = false;
-  // if (!bursting && !awakeForUserInteraction)
-  // {
-  //   Monitor::instance()->writeDebugMessage(F("Not bursting or awake"));
-  //   awaitMeasurementTrigger = true;
-  // }
+River Restoration Intelligence and Verification  https://rriv.org
+Copyright (C) 2020  Zaven Arra  zaven.arra@gmail.com
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show-warranty'.
+This is free software, and you are welcome to redistribute it
+under certain conditions; type `show-conditions' for details.
+)RRIV");
 
-  // if (awaitMeasurementTrigger) // Go to sleep
-  // {
-  //   stopAndAwaitTrigger();
-  //   return; // Go to top of loop
-  // }
-  // datalogger->processCLI();
+  // You are connected to Little Peep
+  // Site name: TRAY
+  // Hardware version: WB2.1
+  // Software version: v1.3.2
 
-  // if (CommandInterface::ready(Serial2))
-  // {
-  //   handleControlCommand();
-  //   return;
-  // }
+  // The river is at the center.
+  // Type 'help' for command list.
+  // CMD >>
+  // )RRIV";
 
-  // if (CommandInterface::ready(getBLE()))
-  // {
-  //   Monitor::instance()->writeDebugMessage(F("BLE Input Ready"));
-  //   awakeTime = timestamp(); // Push awake time forward
-  //   // WaterBear_Control::processControlCommands(getBLE(), );
-  //   return;
-  // }
+  notify(welcomeMessage);
+  char buffer[100];
+  sprintf(buffer, "Site name: %s", dataloggerSettings->siteName);
+  notify(buffer);
+  sprintf(buffer, "Software version: %s", WATERBEAR_FIRMWARE_VERSION);
+  notify(buffer);
 
-  // if (takeMeasurement)
-  // {
-  //   takeNewMeasurement();
-  //   trackBurst(bursting);
-  //   if (DEBUG_MEASUREMENTS)
-  //   {
-  //     monitorValues();
-  //   }
-  // }
+  const __FlashStringHelper *handoff = F(R"RRIV(
+Type 'help' for command list.
+)RRIV");
+  notify(handoff);
+}
 
-  // if (configurationMode)
-  // {
-  //   monitorConfiguration();
-  // }
+// space to work our development details
 
-  // if (debugValuesMode)
-  // {
-  //   if (burstCount == burstLength) // will cause loop() to continue until mode turned off
-  //   {
-  //     prepareForTriggeredMeasurement();
-  //   }
-  //   monitorValues();
-  // }
 
-  // if (tempCalMode)
-  // {
-  //   monitorTemperature();
-  // }
-
+void workspace()
+{
+  // notify(sizeof(long long));
+  // notify(sizeof(sone));
+  // exit(0);
+}

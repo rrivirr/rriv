@@ -16,13 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#include <Arduino.h>
-#include <Wire_slave.h> // Communicate with I2C/TWI devices
+// #include "driver_test.h"
+// #include "system/eeprom.h"
 
-void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * data, int numBytes);
-void i2cError(int transmissionCode);
-void scanIC2(TwoWire *wire);
-bool scanIC2(TwoWire *wire, int searchAddress);
-void enableI2C1();
-void enableI2C2();
-
+// void get_sensor_type(char sensor_slot)
+// {
+//     unsigned short sensor_type = 0;
+//     readEEPROMBytes(sensor_slot, (unsigned char*)&sensor_type, SENSOR_TYPE_LENGTH);
+    
+//     /*
+//     if(sensor_type == 0)
+//     {
+//         //where should sensor_types be defined?
+//         return no_sensor;
+//     }
+//     */
+// }

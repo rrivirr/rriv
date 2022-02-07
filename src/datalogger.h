@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #ifndef WATERBEAR_DATALOGGER
 #define WATERBEAR_DATALOGGER
 
@@ -21,21 +39,20 @@
 #include "system/adc.h"
 #include "system/write_cache.h"
 
-#include <sensors/atlas_oem.h>
 #include "sensors/sensor.h"
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 typedef struct datalogger_settings { // 64 bytes
-    byte deploymentIdentifier[16];
-    unsigned short interval;  // 2 bytes
+    byte deploymentIdentifier[16]; // 16 bytes
+    unsigned short interval;  // 2 bytes minutes
     unsigned short reserved; // 2 bytes, unused
     unsigned short burstNumber; // 2 bytes
-    unsigned short startUpDelay; // 2 bytes
-    unsigned short interBurstDelay; // 2 bytes
-    char mode;       // i(interative), d(debug), l(logging), t(deploy on trigger) 1 byte
-    char siteName[8];
-    unsigned long deploymentTimestamp;
+    unsigned short startUpDelay; // 2 bytes minutes
+    unsigned short interBurstDelay; // 2 bytes minutes
+    char mode;       // i(interactive), d(debug), l(logging), t(deploy on trigger) 1 byte
+    char siteName[8]; // 8 bytes
+    unsigned long deploymentTimestamp; // 8 bytes
     byte externalADCEnabled : 1;
     byte debug_values : 1;
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
@@ -54,7 +71,7 @@ class Datalogger
 public:
 
     // sensors
-    int sensorCount = 0;
+    unsigned int sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
@@ -70,7 +87,7 @@ public:
     void changeMode(mode_type mode);
     bool inMode(mode_type mode);
     void storeMode(mode_type mode);
-    void deploy();
+    bool deploy();
 
     void processCLI();
 
@@ -86,7 +103,7 @@ public:
     void setIntraBurstDelay(int delay);
 
     void getConfiguration(datalogger_settings_type * dataloggerSettings);
-    cJSON ** getSensorConfigurations();
+    cJSON * getSensorConfiguration(short index);
 
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
@@ -100,12 +117,17 @@ public:
     void stopLogging();
     void startLogging();
 
+    const char * getUUIDString();
+
+    void reloadSensorConfigurations(); // for dev & debug
+
 private:
     // modules
     WaterBear_FileSystem *fileSystem;
     WriteCache * fileSystemWriteCache = NULL;
 
     // state
+    char uuidString[25]; // 2 * UUID_LENGTH + 1
     mode_type mode = interactive;
     bool powerCycle = true;
     bool interactiveModeLogging = false;
@@ -148,6 +170,8 @@ private:
     void stopAndAwaitTrigger();
     void writeStatusFields();
     void prepareForUserInteraction();
+    void powerUpSwitchableComponents();
+    void powerDownSwitchableComponents();
 
     // utility
     SensorDriver * getDriver(unsigned short slot);
@@ -158,6 +182,7 @@ private:
 
 };
 
+<<<<<<< HEAD
 // State
 extern unsigned char uuid[UUID_LENGTH];
 extern char uuidString[25]; // 2 * UUID_LENGTH + 1
@@ -227,7 +252,8 @@ bool checkThermistorCalibration();
 void clearThermistorCalibration();
 
 float calculateTemperature();
+=======
+>>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
 
-void processControlFlag(char *flag);
 
 #endif

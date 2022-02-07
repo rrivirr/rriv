@@ -1,23 +1,26 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #ifndef WATERBEAR_EEPROM
 #define WATERBEAR_EEPROM
 
 #include <Arduino.h>
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
-
-/*
- * EEPROM Partition scheme (24LC01B 1Kbit)
- * 000-359 Waterbear Device Info, Calibration, Significant Values
- * 360-423 Sensor Calibration Block 1
- * 424-487 Sensor Calibration Block 2
- * 488-551 Sensor Calibration Block 3
- * 552-615 Sensor Calibration Block 4
- * 616-679 Sensor Calibration Block 5
- * 680-743 Sensor Calibration Block 6
- * 744-807 Sensor Calibration Block 7
- * 808-873 Sensor Calibration Block 8
- * 872-936 Sensor Calibration Block 9
- * 936-999 Sensor Calibration Block 10
-*/
 
 #define EEPROM_I2C_ADDRESS 0x50
 
@@ -31,6 +34,7 @@
 #define EEPROM_DATALOGGER_CONFIGURATION_SIZE 64
 #define EEPROM_DATALOGGER_SENSORS_START 80
 #define EEPROM_DATALOGGER_SENSOR_SIZE 64
+<<<<<<< HEAD
 
 #define USER_WAKE_TIMEOUT_ADDRESS 252 // timeout after wakeup from user interaction, seconds->min?
 
@@ -113,12 +117,12 @@
 
 #define TEMPERATURE_SCALER 100 // applies to C1 C2 M B values for storage
 #define TEMPERATURE_BLOCK_LENGTH 18//for resetting 64-81
+=======
+#define EEPROM_TOTAL_SENSOR_SLOTS 12
+>>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data );
 byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress );
-
-// void readDeploymentIdentifier(char * deploymentIdentifier);
-// void writeDeploymentIdentifier(char * deploymentIdentifier);
 
 void readUniqueId(unsigned char * uuid); // uuid must point to char[UUID_LENGTH]
 
@@ -127,12 +131,16 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
 void writeDataloggerSettingsToEEPROM(void * dataloggerSettings);
 void writeSensorConfigurationToEEPROM(short slot, void * configuration);
+void readSensorConfigurationFromEEPROM(short slot, void * configuration);
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian
 void writeEEPROMBytesMem(short address, void * source, uint8_t size);
 
 void clearEEPROMAddress(short address, uint8_t length);
 
-void readEEPROMObject(short address, void * data, uint8_t size); // Little Endian
+void writeObjectToEEPROM(int i2cAddress, int baseAddress, void * source, int size);
+
+void readObjectFromEEPROM(short i2cAddress, short address, void * data, uint8_t size);
+void readObjectFromEEPROM(short address, void * data, uint8_t size); // Little Endian
 
 #endif

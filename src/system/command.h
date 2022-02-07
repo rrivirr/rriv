@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #ifndef WATERBEAR_CONTROL
 #define WATERBEAR_CONTROL
 
@@ -7,6 +25,7 @@
 #include "DS3231.h"
 #include "time.h"
 #include "datalogger.h"
+
 
 // Forward declaration of class
 class Datalogger;
@@ -66,6 +85,46 @@ class CommandInterface
 #if SOFTWARE_SERIAL_AVAILABLE
     static void processControlCommands(SoftwareSerial &port);
 #endif
+<<<<<<< HEAD
+=======
+
+    // cli functions
+    void _setSiteName(char * siteName);
+    void _setInterval(int size);
+    void _setBurstSize(int size);
+    void _setBurstNumber(int number);
+    void _setStartUpDelay(int number);
+    void _setBurstDelay(int number);
+    
+    void _setUserNote(char * note);
+    void _setUserValue(int value);
+
+
+    void _getConfig();
+    void _setConfig(char * config);
+    void _setSlotConfig(char * config);
+    void _clearSlot(int slot);
+    void _deployNow();
+    void _switchToInteractiveMode();
+
+    void _calibrate(int slot, char * subcommand, int arg_cnt, char ** args);
+
+    void _toggleDebug();
+    void _startLogging();
+    void _stopLogging();
+    void _go();
+    void _reloadSensorConfigurations();
+
+    void _help();
+
+
+
+
+  private:
+    Datalogger * datalogger;
+    void * lastCommandPayload;
+    bool lastCommandPayloadAllocated = false;
+>>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
 };
 
 #endif

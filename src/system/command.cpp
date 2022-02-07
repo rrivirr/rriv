@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "command.h"
 #include <re.h>
 #include <Cmd.h>
@@ -9,6 +27,24 @@
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
 CommandInterface * commandInterface;
+
+const __FlashStringHelper * conditions = F(R"RRIV(
+RRIV - Open Source Environmental Data Logging Platform
+Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+)RRIV");
 
 CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
 {
@@ -97,26 +133,38 @@ void CommandInterface::_startLogging()
 {
   this->datalogger->settings.debug_values = true;
   this->datalogger->startLogging();
-  Serial2.println("OK");
+  notify("OK");
+}
+
+void stopLogging(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_stopLogging();
+}
+
+void CommandInterface::_stopLogging()
+{
+  this->datalogger->settings.debug_values = false;
+  this->datalogger->stopLogging();
+  notify("OK");
 }
 
 void CommandInterface::_toggleDebug()
 {
   this->datalogger->changeMode(debugging);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void printVersion(int arg_cnt, char **args)
 {
   char message[100];
   sprintf(message, "Firmware Version: %s", WATERBEAR_FIRMWARE_VERSION);
-  Serial2.println(message);
+  notify(message);
 }
 
 void invalidArgumentsMessage(const __FlashStringHelper * message)
 {
-  Serial2.println(F("Invalid arguments"));
-  Serial2.println(message);
+  notify(F("Invalid arguments"));
+  notify(message);
   return;
 }
 
@@ -135,7 +183,7 @@ void setSiteName(int arg_cnt, char **args)
 void CommandInterface::_setSiteName(char * siteName)
 {
   this->datalogger->setSiteName(siteName);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setInterval(int arg_cnt, char **args)
@@ -153,7 +201,7 @@ void setInterval(int arg_cnt, char **args)
 void CommandInterface::_setInterval(int size)
 {
   this->datalogger->setInterval(size);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstSize(int arg_cnt, char **args)
@@ -171,7 +219,7 @@ void setBurstSize(int arg_cnt, char **args)
 void CommandInterface::_setBurstSize(int size)
 {
   this->datalogger->setBurstSize(size);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstNumber(int arg_cnt, char **args)
@@ -189,7 +237,7 @@ void setBurstNumber(int arg_cnt, char **args)
 void CommandInterface::_setBurstNumber(int number)
 {
   this->datalogger->setBurstNumber(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 
@@ -208,7 +256,7 @@ void setStartUpDelay(int arg_cnt, char **args)
 void CommandInterface::_setStartUpDelay(int number)
 {
   this->datalogger->setStartUpDelay(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setBurstDelay(int arg_cnt, char **args)
@@ -226,14 +274,21 @@ void setBurstDelay(int arg_cnt, char **args)
 void CommandInterface::_setBurstDelay(int number)
 {
   this->datalogger->setIntraBurstDelay(number);
-  Serial2.println(F("OK"));
+  notify(F("OK"));
 }
 
 
 void printWarranty(int arg_cnt, char **args)
 {
-  Serial2.println(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
+  notify(F("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION."));
 }
+
+
+void printConditions(int arg_cng, char **args)
+{
+  notify(conditions);
+}
+
 
 void getConfig(int arg_cnt, char **args)
 {
@@ -254,11 +309,13 @@ void CommandInterface::_getConfig()
   this->datalogger->getConfiguration(&dataloggerSettings);
  
   cJSON* json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval")), dataloggerSettings.interval);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay")), dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay")), dataloggerSettings.interBurstDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
+  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
 
   char string[BUFFER_SIZE];
   cJSON_PrintPreallocated(json, string, BUFFER_SIZE, true);
@@ -267,27 +324,25 @@ void CommandInterface::_getConfig()
     fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
     return;
   }
-  Serial2.println(string);
+  notify(string);
   Serial2.flush();
   
   cJSON_Delete(json);
   
-
-  cJSON ** sensorConfigurations = this->datalogger->getSensorConfigurations();
   for(int i=0; i<this->datalogger->sensorCount; i++)
   {
-    cJSON_PrintPreallocated(sensorConfigurations[i], string, BUFFER_SIZE, true);
+    cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
+    cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);
     if (string == NULL)
     {
       fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
       return;
     }
-    Serial2.println(string);
+    notify(string);
     Serial2.flush();
 
-    cJSON_Delete(sensorConfigurations[i]);
+    cJSON_Delete(sensorConfiguration);
   }
-  free(sensorConfigurations);
 }
 
 void setConfig(int arg_cnt, char **args)
@@ -306,7 +361,7 @@ void CommandInterface::_setConfig(char * config)
 {
   cJSON *json = cJSON_Parse(config);
   char * printString = cJSON_Print(json);
-  Serial2.println(printString);
+  notify(printString);
 
   cJSON_Delete(json);
 }
@@ -336,7 +391,7 @@ void CommandInterface::_setSlotConfig(char * config)
   debug(F("printing json"));
 
   const char * printString = cJSON_Print(json);
-  Serial2.println(printString);
+  notify(printString);
   delete(printString);
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
@@ -346,6 +401,10 @@ void CommandInterface::_setSlotConfig(char * config)
 
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON)){
     short slot = slotJSON->valueint;
+    if(slot > EEPROM_TOTAL_SENSOR_SLOTS)
+    {
+      notify(F("Invalid slot"));
+    }
   } else {
     notify(F("Invalid slot"));
     return;
@@ -379,7 +438,7 @@ void clearSlot(int arg_cnt, char **args)
 void CommandInterface::_clearSlot(int number)
 {
   this->datalogger->clearSlot(number);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setRTC(int arg_cnt, char **args)
@@ -391,7 +450,7 @@ void setRTC(int arg_cnt, char **args)
 
   int timestamp = atoi(args[1]);
   setTime(timestamp);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void getRTC(int arg_cnt, char **args)
@@ -399,7 +458,7 @@ void getRTC(int arg_cnt, char **args)
   int time = timestamp();
   char message[100];
   sprintf(message, "current timestamp: %i", time);
-  Serial2.println(message);
+  notify(message);
 }
 
 void restart(int arg_cnt, char **args)
@@ -463,7 +522,7 @@ void setUserNote(int arg_cnt, char **args)
 void CommandInterface::_setUserNote(char * note)
 {
   this->datalogger->setUserNote(note);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void setUserValue(int arg_cnt, char **args)
@@ -480,7 +539,7 @@ void setUserValue(int arg_cnt, char **args)
 void CommandInterface::_setUserValue(int value)
 {
   this->datalogger->setUserValue(value);
-  Serial2.println("OK");
+  notify("OK");
 }
 
 void checkMemory(int arg_cnt, char **args)
@@ -504,10 +563,61 @@ void CommandInterface::_go()
   this->datalogger->changeMode(logging);
 }
 
+void help(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_help();
+}
+
+void CommandInterface::_help()
+{
+  char commands[] = "Command List:\n"
+  "version\n"
+  "show-warranty\n"
+  "get-config\n"
+  "set-config\n"
+  "set-slot-config\n"
+  "clear-slot\n"
+  "set-rtc\n"
+  "get-rtc\n"
+  "restart\n"
+  "set-site-name\n"
+  "set-interval\n"
+  "set-burst-number\n"
+  "set-start-up-delay\n"
+  "set-burst-delay\n"
+  "calibrate\n"
+  "set-user-note\n"
+  "set-user-value\n"
+  "start-logging\n"
+  "deploy-now\n"
+  "interactive\n"
+  "trace\n"
+  "check-memory\n"
+  "scan-ic2\n";
+
+
+  Serial2.println(commands);
+  Serial2.flush();
+}
+
+
+void reloadSensorConfigurations(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_reloadSensorConfigurations();
+}
+
+
+void CommandInterface::_reloadSensorConfigurations()
+{
+  this->datalogger->reloadSensorConfigurations();
+}
+
 
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
+  cmdAdd("show-conditions", printConditions);
+
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
   cmdAdd("set-slot-config", setSlotConfig);
@@ -515,7 +625,6 @@ void CommandInterface::setup(){
 
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
-  cmdAdd("restart", restart);
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-interval", setInterval);
@@ -528,19 +637,25 @@ void CommandInterface::setup(){
   cmdAdd("set-user-note", setUserNote);
   cmdAdd("set-user-value", setUserValue);
 
-
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
+  cmdAdd("stop-logging", stopLogging);
+
   // cmdAdd("start-logging", toggleInteractiveLogging);
 
   // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
+  cmdAdd("i", switchToInteractiveMode);
 
-  // qos commands
+  // qos commands / debug commands
+  cmdAdd("restart", restart);
   cmdAdd("check-memory", checkMemory);
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);
+  cmdAdd("reload-sensors", reloadSensorConfigurations);
+
+  cmdAdd("help", help);
 
 }
 
@@ -554,149 +669,7 @@ void CommandInterface::poll()
 
 
 
-//
-// old, unused code
-//
-// int CommandInterface::processControlCommands(Stream * myStream, Datalogger * datalogger)
-// {
-//   char lastDownloadDate[15] = "NOTIMPLEMENTED"; // placeholder
-
-//   if(CommandInterface::state == 0)
-//   {
-//     if(lastCommandPayloadAllocated == true)
-//     {
-//       free(lastCommandPayload);
-//       lastCommandPayloadAllocated = false;
-//     }
-//     //awakeTime = WaterBear_Control::timestamp(); // Keep us awake once we are talking to the phone
-
-//     char request[MAX_REQUEST_LENGTH] = "";
-//     myStream->readBytesUntil('\r', request, MAX_REQUEST_LENGTH);
-//     myStream->write(">COMMAND RECIEVED:");
-//     myStream->write(&request[0]);
-//     myStream->write("<");
-//     myStream->flush();
-//     delay(100);
-
-//     int matchLength;
-//     SensorDriver * driver;
-
-//     if (!strncmp(request, "version", 7)) {
-
-//     }
-//     else if (!re_match("^set-config .*\\.json$", request, &matchLength)){
-//       char * fileName = strchr(request, ' ') + 1;
-//     }
-//     else if (!re_match("^get-config [0-9]$", request, &matchLength)){
-//       char * find = strchr(request, ' ') + 1;
-//       unsigned short slot = atoi(find);
-//       driver = datalogger->drivers[slot];
-//     }
-//     else if (!strncmp(request, "list", 4)) {
-
-//     }
-//     else if (!re_match("^calibrate [0-9] init$", request, &matchLength)){
-//       char * find = (strchr(request, ' ')) + 1;
-//       char * slotString;
-//       strncpy(slotString, find, 1);
-//       unsigned short slot = atoi(find);
-//       driver = datalogger->drivers[slot];
-//     }
-//     else if (!re_match("^calibrate [0-9] .*$", request, &matchLength)){
-//       char * find = (strchr(request, ' ')) + 1;
-//       char * slotString;
-//       strncpy(slotString, find, 1);
-//       unsigned short slot = atoi(find);
-//       driver = datalogger->drivers[slot];
-//     }
-//     else if (!re_match("^set-rtc .*$", request, &matchLength)){
-//       char * time = strchr(request, ' ') + 1;
-//     }
-//     else if (!strncmp(request, "get-rtc", 7)) {
-
-//     }
-//     else if (!re_match("^user-note .*$", request, &matchLength)){
-//       char * note = strchr(request, ' ') + 1;
-//     }
-//     else if (!re_match("^user-value [0-9]*$", request, &matchLength)){
-//       char * find = strchr(request, ' ') + 1;
-//       unsigned short value = atoi(find);
-//     }
-//     else if (!strncmp(request, "delete-config", 13)) {
-
-//     }
-//     else if (!re_match("^reset-slot [0-9]$", request, &matchLength)){
-//       char * find = strchr(request, ' ') + 1;
-//       unsigned short slot = atoi(find);
-//       driver = datalogger->drivers[slot];
-//     }
-//     else if (!re_match("^delete-slot [0-9]$", request, &matchLength)){
-//       char * find = strchr(request, ' ') + 1;
-//       unsigned short slot = atoi(find);
-//       driver = datalogger->drivers[slot];
-//     }
-//     else if (!strncmp(request, "deploy-now", 10)) {
-
-//     }
-//     else if (!strncmp(request, "deploy-on-trigger", 17)) {
-
-//     }
-//     else if (!strncmp(request, "deploy-at-time", 14)) {
-
-//     }
-//     else if (!strncmp(request, "debug", 5)) {
-//       Monitor::instance()->debugToSerial = !Monitor::instance()->debugToSerial;
-//     }
-//     else if (!strncmp(request, "interactive", 11)) {
-
-//     }
-//     else if (!strncmp(request, "start-logging", 13)) {
-
-//     }
-//     else if (!re_match("^set-site-name .*$", request, &matchLength)){
-//       char * siteName = strchr(request, ' ') + 1;
-//     }
-//     else if (!strncmp(request, "show-copyright", 14)) {
-
-//     }
-//     else if (!strncmp(request, "show-warranty", 13)) {
-
-//     }
-//     // if(strncmp(request, ">WT_OPEN", 19) == 0)
-//     // {
-//     //   // TODO:  Need to pass firmware version to control somehow
-//     //   /*
-//     //   myStream->write(">VERSION:");
-//     //   myStream->write(version);
-//     //   myStream->write("<");
-//     //   myStream->flush();
-//     //   delay(100);
-//     //   */
-
-//     //   char dateString[26];
-//     //   time_t timeNow = timestamp();
-
-//     //   t_t2ts(timeNow, millis(), dateString); // change to 'yyyy-mm-dd hh:mm:ss.sss'?
-//     //   myStream->print(">Datalogger Time: ");
-//     //   myStream->print(dateString);
-//     //   myStream->print("<");
-//     //   delay(100);
-
-//     //   myStream->write(">WT_IDENTIFY:");
-//     //   // TODO: create and pass a device info object
-//     //   myStream->print(F("NOTIMPLEMENTED"));
-//     //   for(int i=0; i<8; i++)
-//     //   {
-//     //   }
-//     //   myStream->write("<");
-//     //   myStream->flush();
-
-//     //   myStream->write(">WT_TIMESTAMP:");
-//     //   myStream->println(timestamp());
-//     //   myStream->write("<");
-//     //   myStream->flush();
-//     //   delay(100);
-//     // }
+//    Old code for reference - download process
 //     // else if(strncmp(request, ">WT_DOWNLOAD",12) == 0)
 //     // {
 //     //   // Flush the input, would be better to use a delimiter
@@ -718,172 +691,7 @@ void CommandInterface::poll()
 //     //   WaterBear_Control::state = 1;
 //     //   return WT_CONTROL_NONE;
 //     // }
-//     // else if(strncmp(request, ">WT_SET_RTC:", 12) == 0)
-//     // {
-//     //   myStream->println("GOT SET_RTC<"); //acknowledge command sent
-//     //   char UTCTime[11] = "0000000000"; // buffer for data to read
-//     //   strncpy(UTCTime, &request[12], 10); // read serial data into char string
-//     //   time_t value;
-//     //   int found = sscanf(&UTCTime[0], "%lld", &value); // turn char string into correct value type
-//     //   if(found == 1)
-//     //   {
-//     //     time_t * commandPayloadPointer = (time_t *) malloc(sizeof(time_t));
-//     //     *commandPayloadPointer = value;
-//     //     lastCommandPayloadAllocated = true;
-//     //     lastCommandPayload = commandPayloadPointer;
-//     //   }
-//     //   return WT_SET_RTC;
-//     //   // TODO: create and pass a data file writer class
-//     //   // setNewDataFile();
-//     // }
-//     // else if(strncmp(request, ">WT_DEPLOY:", 11) == 0)
-//     // {
-//     //   myStream->println("GOT WT_DEPLOY<");
-//     //   char * commandPayloadPointer = (char *) malloc(26);
-//     //   strncpy(commandPayloadPointer, &request[11], 26);
-//     //   commandPayloadPointer[26] ='\0';
-//     //   lastCommandPayloadAllocated = true;
-//     //   lastCommandPayload = commandPayloadPointer;
-//     //   return WT_DEPLOY;
 
-//     //   // TODO: create and pass a data file writer class
-//     //   // setNewDataFile();
-//     // }
-//     // else if(strncmp(request, ">WT_CONFIG:", 10) == 0)
-//     // { //flags:time, conduct, therm
-//     //   myStream->println(">CONFIG<");
-//     //   char * commandPayloadPointer = (char *)malloc(8);
-//     //   strncpy(commandPayloadPointer, &request[11],8);
-//     //   commandPayloadPointer[8] ='\0';
-//     //   lastCommandPayloadAllocated = true;
-//     //   lastCommandPayload = commandPayloadPointer;
-//     //   return WT_CONTROL_CONFIG;
-//     //   // go into config mode
-//     // }
-//     // else if(strncmp(request, ">WT_DEBUG_VALUES", 16) == 0)
-//     // {
-//     //   myStream->println(">DEBUG_VALUES<");
-//     //   return WT_DEBUG_VAlUES;
-//     // }
-//     // else if(strncmp(request, ">WT_CLEAR_MODES", 15) == 0)
-//     // {
-//     //   myStream->println(">CLEAR_MODES<");
-//     //   return WT_CLEAR_MODES;
-//     // }
-//     // else if(strncmp(request, ">CAL_DRY", 8) == 0)
-//     // {
-//     //   myStream->println(">GOT CAL_DRY<");
-//     //   return WT_CONTROL_CAL_DRY;
-//     // }
-//     // else if(strncmp(request, ">CAL_LOW:", 9) == 0)
-//     // {
-//     //   myStream->println(">GOT CAL_LOW<");
-//     //   char calibrationPointStringValue[10];
-//     //   strncpy(calibrationPointStringValue, &request[9], 9);
-//     //   int value;
-//     //   int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
-//     //   if(found == 1)
-//     //   {
-//     //     int * commandPayloadPointer = (int *) malloc(sizeof(int));
-//     //     *commandPayloadPointer = value;
-//     //     lastCommandPayloadAllocated = true;
-//     //     lastCommandPayload = commandPayloadPointer;
-//     //   }
-//     //   return WT_CONTROL_CAL_LOW;
-//     // }
-//     // else if(strncmp(request, ">CAL_HIGH:", 10) == 0)
-//     // {
-//     //   myStream->println(">GOT CAL_HIGH<");
-//     //   char calibrationPointStringValue[10];
-//     //   strncpy(calibrationPointStringValue, &request[10], 9);
-//     //   int value;
-//     //   myStream->println(calibrationPointStringValue); // what is this line for???
-//     //   int found = sscanf(&calibrationPointStringValue[0], "%d", &value);
-//     //   if(found == 1)
-//     //   {
-//     //     int * commandPayloadPointer = (int *) malloc(sizeof(int));
-//     //     *commandPayloadPointer = value;
-//     //     lastCommandPayloadAllocated = true;
-//     //     lastCommandPayload = commandPayloadPointer;
-//     //   }
-//     //   return WT_CONTROL_CAL_HIGH;
-//     // }
-//     // else if(strncmp(request, ">WT_CAL_TEMP", 12) == 0)
-//     // {
-//     //   myStream->println(">CAL_TEMP<");
-//     //   return WT_CAL_TEMP;
-//     // }
-//     // else if(strncmp(request, ">TEMP_CAL_LOW:", 14) == 0)
-//     // {
-//     //   myStream->println(">GOT TEMP_CAL_LOW<");
-//     //   char calibrationPointStringValue[8];
-//     //   strncpy(calibrationPointStringValue, &request[14], 7);
-//     //   float value;
-//     //   myStream->println(calibrationPointStringValue);
-//     //   int found = sscanf(&calibrationPointStringValue[0], "%f", &value);
-//     //   if(found == 1){
-//     //     value = value * 100;
-//     //     unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
-//     //     *commandPayloadPointer = (unsigned short)value;
-//     //     lastCommandPayloadAllocated = true;
-//     //     lastCommandPayload = commandPayloadPointer;
-//     //   }
-//     //   return WT_TEMP_CAL_LOW;
-//     // }
-//     // else if(strncmp(request, ">TEMP_CAL_HIGH:", 15) == 0)
-//     // {
-//     //   myStream->println(">GOT TEMP_CAL_HIGH<");
-//     //   char calibrationPointStringValue[8];
-//     //   strncpy(calibrationPointStringValue, &request[15], 7);
-//     //   float value;
-//     //   myStream->println(calibrationPointStringValue);
-//     //   int found = sscanf(&calibrationPointStringValue[0], "%f", &value); // xxx.xx
-//     //   if(found == 1){
-//     //     value = value * 100; // either here or at the case
-//     //     unsigned short * commandPayloadPointer = (unsigned short *) malloc(sizeof(unsigned short));
-//     //     *commandPayloadPointer = (unsigned short)value;
-//     //     lastCommandPayloadAllocated = true;
-//     //     lastCommandPayload = commandPayloadPointer;
-//     //   }
-//     //   return WT_TEMP_CAL_HIGH;
-//     // }
-//     // else if(strncmp(request, ">WT_USER_VALUE:", 15) == 0)
-//     // {
-//     //   myStream->println("GOT WT_USER_VALUE<");
-//     //   char * commandPayloadPointer = (char *) malloc(11);
-//     //   strncpy(commandPayloadPointer, &request[15], 11);
-//     //   commandPayloadPointer[11] ='\0';
-//     //   lastCommandPayloadAllocated = true;
-//     //   lastCommandPayload = commandPayloadPointer;
-//     //   return WT_USER_VALUE;
-//     // }
-//     // else if(strncmp(request, ">WT_USER_NOTE:", 14) == 0)
-//     // {
-//     //   myStream->println("GOT WT_USER_NOTE<");
-//     //   char * commandPayloadPointer = (char *) malloc(31);
-//     //   strncpy(commandPayloadPointer, &request[14], 31);
-//     //   commandPayloadPointer[31] ='\0';
-//     //   lastCommandPayloadAllocated = true;
-//     //   lastCommandPayload = commandPayloadPointer;
-//     //   return WT_USER_NOTE;
-//     // }
-//     // else if(strncmp(request, ">WT_USER_INPUT:", 15) == 0)
-//     // {
-//     //   myStream->println("GOT WT_USER_INPUT<");
-//     //   char * commandPayloadPointer = (char *) malloc(42);
-//     //   strncpy(commandPayloadPointer, &request[15], 42);
-//     //   commandPayloadPointer[42] ='\0';
-//     //   lastCommandPayloadAllocated = true;
-//     //   lastCommandPayload = commandPayloadPointer;
-//     //   return WT_USER_INPUT;
-//     // }
-//     // else
-//     // {
-//     //   char lastDownloadDateEmpty[11] = "0000000000";
-//     //   strcpy(lastDownloadDate, lastDownloadDateEmpty);
-//     //   myStream->flush();
-//     // }
-//   }
 //   else if(CommandInterface::state == 1)
 //   {
 //     char ack[7] = "";

@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "i2c.h"
 #include "system/hardware.h"
 #include "system/monitor.h"
@@ -33,7 +51,7 @@ void i2cError(int transmissionCode)
 void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * data, int numBytes)
 {
   // char debugMessage[100];
-  // sprintf(debugMessage, "i2c %d %d %d", i2cAddress, registerAddress, numBytes);
+  // sprintf(debugMessage, "i2c %X %X %d", i2cAddress, registerAddress, numBytes);
   // debug(debugMessage);
 
   short rval = -1;
@@ -43,14 +61,10 @@ void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * dat
     Wire.write(registerAddress);
 
     for(int i=numBytes-1; i>=0; i--){ // correct order
-    // for(int i=0; i<numBytes; i++){
-      // Serial2.println(i);
-      // Serial2.println( *( ((byte *) data) +i), BIN );
       Wire.write( ((byte *) data) +i, 1);
     }
 
     rval = Wire.endTransmission();
-    // Serial2.println(rval);
 
     if(rval != 0){
       i2cError(rval);
@@ -81,7 +95,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.println(F("I2C2: I2C device found at address 0x"));
+      Serial.print(F("I2C: I2C device found at address 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
@@ -93,7 +107,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     }
     else if (error == 4)
     {
-      Serial.println(F("Unknown error at address 0x"));
+      Serial.print(F("Unknown error at address 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
@@ -122,6 +136,8 @@ void enableI2C1()
   delay(1000);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
+  
+  Monitor::instance()->writeDebugMessage(F("Scanning 1"));
 
   scanIC2(&Wire);
 }
@@ -138,7 +154,7 @@ void enableI2C2()
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
 
-  Monitor::instance()->writeDebugMessage(F("Scanning"));
+  Monitor::instance()->writeDebugMessage(F("Scanning 2"));
 
   scanIC2(&WireTwo);
 }

@@ -16,13 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#include <Arduino.h>
+#ifndef WATERBEAR_ATLAS_OEM
+#define WATERBEAR_ATLAS_OEM
+
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
+#include <EC_OEM.h>
 
-void i2cSendTransmission(byte i2cAddress, byte registerAddress, const void * data, int numBytes);
-void i2cError(int transmissionCode);
-void scanIC2(TwoWire *wire);
-bool scanIC2(TwoWire *wire, int searchAddress);
-void enableI2C1();
-void enableI2C2();
+void setupEC_OEM(TwoWire * wire);
+void hibernateEC_OEM();
+void clearECCalibrationData();
+void setECDryPointCalibration();
+void setECLowPointCalibration(float lowPoint);
+void setECHighPointCalibration(float highPoint);
+bool readECDataIfAvailable(float * value);
 
+#endif

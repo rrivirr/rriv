@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "low_power.h"
 
 #include <Arduino.h>
@@ -234,7 +252,12 @@ void hardwarePinsStopMode()
 void componentsBurstMode()
 {
 
+<<<<<<< HEAD
   Monitor::instance()->writeDebugMessage(F("turn on components"));
+=======
+
+  debug(F("turn on components"));
+>>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
 
   //pinmode?
   rcc_clk_enable( RCC_I2C1); // these clocks are needed during normal run
@@ -251,7 +274,7 @@ void componentsBurstMode()
   adc_enable(ADC1);
   ADC1->regs->CR2 |= ADC_CR2_TSVREFE; // temperature sensor inside ADC
 
-  Monitor::instance()->writeDebugMessage(F("turned on components"));
+  debug(F("turned on components"));
 
 }
 

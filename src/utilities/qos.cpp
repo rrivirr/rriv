@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "qos.h"
 #include <Arduino.h>
 #include <libmaple/libmaple.h>
@@ -8,8 +26,8 @@ extern "C" char* _sbrk(int incr);
 int freeMemory()
 {
   char top;
-  Monitor::instance()->Monitor::instance()->writeDebugMessage((int) &top );
-  Monitor::instance()->Monitor::instance()->writeDebugMessage((int) reinterpret_cast<char*>(_sbrk(0)) );
+  debug((int) &top );
+  debug((int) reinterpret_cast<char*>(_sbrk(0)) );
 
   return &top - reinterpret_cast<char*>(_sbrk(0));
 }
@@ -18,7 +36,7 @@ void intentionalMemoryLeak()
 {
   // cause a memory leak
   char * mem = (char *) malloc(400); // intentional memory leak, big enough to get around buffering
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(mem); // use it so compiler doesn't remove the leak
+  debug(mem); // use it so compiler doesn't remove the leak
 }
 
 
@@ -29,9 +47,9 @@ void checkMemory()
   char freeMemoryMessage[21];
   int freeMemoryAmount = freeMemory();
   sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(freeMemoryMessage);
+  debug(freeMemoryMessage);
   if(freeMemoryAmount < 500){
-    Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Low memory, resetting!"));
+    debug(F("Low memory, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
 }
