@@ -33,7 +33,7 @@ void timerFired() // trigger a reset
   nvic_sys_reset();
 }
 
-void reloadCustomWatchdog()
+/*void reloadCustomWatchdog()
 {
   debug(F("reloadCustomWatchdog"));
   timer_generate_update(TIMER1);
@@ -55,16 +55,21 @@ void extendCustomWatchdog(int seconds)
     }
     seconds = seconds - (WATCHDOG_TIMEOUT_SECONDS - 1);
   }
-}
+}*/
 
 void startCustomWatchDog()
+{
+  startCustomWatchDog(WATCHDOG_TIMEOUT_SECONDS);
+}
+
+void startCustomWatchDog(int watchdogSeconds)
 {
   debug("Setup custom watchdog!");
 
   timer_init(TIMER1);
   timer_set_prescaler(TIMER1, 65535); //  64000000 / 65536 = 976.5 Hz
   // int watchdogValue = 5 * 976.5 ; // 976.5 Hz * ( 5 * 976.5 counts) = 5s
-  int watchdogValue = WATCHDOG_TIMEOUT_SECONDS * 976.5; // 976.5 Hz * ( 5 * 976.5 counts) = 5s
+  int watchdogValue = watchdogSeconds * 976.5; // 976.5 Hz * ( 5 * 976.5 counts) = 5s
   timer_set_compare(TIMER1, TIMER_CH1, watchdogValue);
   // timer_cc_enable(TIMER1, TIMER_CH1); // not necessary?
 

@@ -187,7 +187,7 @@ void GenericAnalog::takeBurstMeasurement()
   int x[BURST_SIZE];
   int sum = 0;
   double sum1 = 0;
-  notify("Calibration measurments:")
+  notify("Calibration measurments:");
   for (int i = 0; i < BURST_SIZE; i++)
   {
     if (this->configuration.adc_select == ADC_SELECT_EXTERNAL)

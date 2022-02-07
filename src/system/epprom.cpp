@@ -195,6 +195,7 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Littl
   }
 }
 
+
 void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
 {
   debug(F("readEEPROMBytesMem"));

@@ -167,8 +167,16 @@ void Datalogger::loop()
         debug(settings.burstNumber);
         debug(completedBursts);
         
-        notify(F("Waiting for burst delay"));
-        extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
+        if (settings.interBurstDelay > 0)
+        {
+          notify(F("Waiting for burst delay"));
+          int interBurstDelay = settings.interBurstDelay*60;
+          Serial2.println(interBurstDelay);
+          startCustomWatchDog(interBurstDelay+WATCHDOG_TIMEOUT_SECONDS);
+          delay(interBurstDelay*60*1000); // convert minutes to milliseconds
+        }
+        
+        //extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
         
         /*
         pauseCustomWatchDog();
@@ -435,9 +443,15 @@ void Datalogger::initializeMeasurementCycle()
   delay(settings.startUpDelay * 1000 * 60);
   resumeCustomWatchDog();
   */
-
-  notify(F("Waiting for start up delay"));
-  delay(settings.startUpDelay); // can be zero
+  if (settings.interBurstDelay > 0)
+  {
+    notify(F("Waiting for start up delay"));
+    int startUpDelay = settings.startUpDelay*60;
+    Serial2.println(startUpDelay);
+    startCustomWatchDog(startUpDelay+WATCHDOG_TIMEOUT_SECONDS);
+    delay(startUpDelay*60*1000); // convert minutes to milliseconds
+  }
+  //delay(settings.startUpDelay); // can be zero
 
   bool sensorsWarmedUp = false;
   while(sensorsWarmedUp == false)

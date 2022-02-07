@@ -28,25 +28,6 @@ bool checkDebugSystemDisabled()
 void notifyDebugStatus()
 {
   if(DBGMCU_BASE->CR != 0){
-<<<<<<< HEAD
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** WARNING *****");
-      Serial2.println("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      Serial2.println("**** WARNING *****");
-<<<<<<< HEAD
-      delay(10000);
-=======
-      // delay(10000);
->>>>>>> 88d91c9af8b4672bc907caf97567ee111826600a
-=======
     notify("**** WARNING *****");
     notify("**** A MANUAL POWER CYCLE IS REQUIRED TO ENABLE LOW POWER MODES *****");
   }
@@ -71,7 +52,6 @@ void printDebugStatus()
       notify("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
       notify("**** WARNING *****");
       delay(2000);
->>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
   } else {
     notify("DEBUG MODE OFF - OK!");
   }

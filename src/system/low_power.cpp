@@ -216,6 +216,7 @@ void hardwarePinsAlwaysOff() // not currently used
 
 void componentsStopMode()
 {
+
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
@@ -252,12 +253,8 @@ void hardwarePinsStopMode()
 void componentsBurstMode()
 {
 
-<<<<<<< HEAD
-  Monitor::instance()->writeDebugMessage(F("turn on components"));
-=======
 
   debug(F("turn on components"));
->>>>>>> d104042cd76c8e3d785414559ffec288efdb6847
 
   //pinmode?
   rcc_clk_enable( RCC_I2C1); // these clocks are needed during normal run
