@@ -44,7 +44,7 @@
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 typedef struct datalogger_settings { // 64 bytes
-    byte unused[16]; // 16 bytes
+    char deploymentIdentifier[16]; // 16 bytes
     unsigned short interval;  // 2 bytes minutes
     unsigned short reserved; // 2 bytes, unused
     unsigned short burstNumber; // 2 bytes
@@ -88,11 +88,13 @@ public:
     bool inMode(mode_type mode);
     void storeMode(mode_type mode);
     bool deploy();
+    bool enterFieldLoggingMode();
 
     void processCLI();
 
     // settings
     void setSiteName(char * siteName);
+    void setDeploymentIdentifier(char * deploymentIdentifier);
     void setDeploymentTimestamp(int timestamp);
 
     void setInterval(int interval);

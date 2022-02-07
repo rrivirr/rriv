@@ -132,7 +132,7 @@ void Datalogger::loop()
     if (powerCycle)
     {
       debug("Powercycle");
-      bool deployed = deploy();
+      bool deployed = enterFieldLoggingMode();
       if (!deployed)
       {
         // what should we do here?
@@ -142,7 +142,7 @@ void Datalogger::loop()
         while (1)
           ;
       }
-
+      powerCycle = false; // handled powercycle loop
       goto SLEEP;
     }
 
@@ -497,7 +497,20 @@ void Datalogger::writeStatusFieldsToLogFile()
 
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
-  sprintf(buffer, "%s-%s-%s", settings.siteName, settings.deploymentTimestamp, uuidString ); // deployment identifier
+  if(settings.deploymentIdentifier[0] == 0xFF)
+  {
+    sprintf(buffer, "%s-%s", uuidString, settings.deploymentTimestamp);
+  }
+  else 
+  {
+    char deploymentIdentifier[16] = {0};
+    strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
+    debug(deploymentIdentifier[0]);
+    debug(deploymentIdentifier);
+    debug(uuidString);
+    debug(settings.deploymentTimestamp);
+    sprintf(buffer, "%s-%s-%d", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
+  }
   fileSystemWriteCache->writeString(buffer);
   fileSystemWriteCache->writeString((char *)",");
   sprintf(buffer, "%ld,", settings.deploymentTimestamp);
@@ -821,12 +834,16 @@ bool Datalogger::deploy()
   }
 
   setDeploymentTimestamp(timestamp());  // TODO: deployment should span across power cycles
+  enterFieldLoggingMode();
+}
+
+bool Datalogger::enterFieldLoggingMode()
+{
   strcpy(loggingFolder, settings.siteName);
   fileSystem->closeFileSystem();
   initializeFilesystem();
   changeMode(logging);
   storeMode(logging);
-  powerCycle = false; // not a powercycle loop
   return true;
 }
 
@@ -1066,9 +1083,17 @@ void Datalogger::storeSensorConfiguration(generic_config *configuration)
 
 void Datalogger::setSiteName(char *siteName)
 {
-  strcpy(this->settings.siteName, siteName);
+  strncpy(this->settings.siteName, siteName, 7);
   storeDataloggerConfiguration();
 }
+
+void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
+{
+  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 15);
+  storeDataloggerConfiguration();
+}
+
+
 
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {

@@ -177,12 +177,40 @@ void setSiteName(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   char * siteName = args[1];
+  if(strlen(siteName) > 8)
+  {
+    invalidArgumentsMessage(F("Site name must be 8 characters or less"));
+    return;
+  }
   CommandInterface::instance()->_setSiteName(siteName);
 }
 
 void CommandInterface::_setSiteName(char * siteName)
 {
   this->datalogger->setSiteName(siteName);
+  notify("OK");
+}
+
+void setDeploymentIdentifier(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-deployment-identifier DEPLOYMENT_IDENTIFIER"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  char * deploymentIdentifier = args[1];
+  if(strlen(deploymentIdentifier) > 8)
+  {
+    invalidArgumentsMessage(F("Deployment identifier must be 16 characters or less"));
+    return;
+  }
+  CommandInterface::instance()->_setDeploymentIdentifier(deploymentIdentifier);
+}
+
+void CommandInterface::_setDeploymentIdentifier(char * deploymentIdentifier)
+{
+  this->datalogger->setDeploymentIdentifier(deploymentIdentifier);
   notify("OK");
 }
 
@@ -581,6 +609,7 @@ void CommandInterface::_help()
   "get-rtc\n"
   "restart\n"
   "set-site-name\n"
+  "set-deployment-identifier\n"
   "set-interval\n"
   "set-burst-number\n"
   "set-start-up-delay\n"
@@ -627,6 +656,7 @@ void CommandInterface::setup(){
   cmdAdd("get-rtc", getRTC);
 
   cmdAdd("set-site-name", setSiteName);
+  cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
   cmdAdd("set-interval", setInterval);
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
