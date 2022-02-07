@@ -44,7 +44,7 @@
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 typedef struct datalogger_settings { // 64 bytes
-    byte deploymentIdentifier[16]; // 16 bytes
+    byte unused[16]; // 16 bytes
     unsigned short interval;  // 2 bytes minutes
     unsigned short reserved; // 2 bytes, unused
     unsigned short burstNumber; // 2 bytes
@@ -57,7 +57,7 @@ typedef struct datalogger_settings { // 64 bytes
     byte debug_values : 1;
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
     byte reserved2 : 5;
-    char unused[20];        // padding
+    char unused2[20];        // padding
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
@@ -93,7 +93,6 @@ public:
 
     // settings
     void setSiteName(char * siteName);
-    void setDeploymentIdentifier();
     void setDeploymentTimestamp(int timestamp);
 
     void setInterval(int interval);
