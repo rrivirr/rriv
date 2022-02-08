@@ -169,11 +169,14 @@ void Datalogger::loop()
         
         if (settings.interBurstDelay > 0)
         {
-          notify(F("Waiting for burst delay"));
-          int interBurstDelay = settings.interBurstDelay*60;
+          notify(F("Waiting for burst delay, starting custom watchdog"));
+          int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
+          int customWatchTime = interBurstDelay + WATCHDOG_TIMEOUT_SECONDS;
           Serial2.println(interBurstDelay);
-          startCustomWatchDog(interBurstDelay+WATCHDOG_TIMEOUT_SECONDS);
-          delay(interBurstDelay*60*1000); // convert minutes to milliseconds
+          Serial2.println(customWatchTime);
+          Serial2.flush();
+          startCustomWatchDog(customWatchTime);
+          delay(interBurstDelay*1000); // convert minutes to milliseconds
         }
         
         //extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
@@ -443,13 +446,16 @@ void Datalogger::initializeMeasurementCycle()
   delay(settings.startUpDelay * 1000 * 60);
   resumeCustomWatchDog();
   */
-  if (settings.interBurstDelay > 0)
+  if (settings.startUpDelay > 0)
   {
-    notify(F("Waiting for start up delay"));
-    int startUpDelay = settings.startUpDelay*60;
+    notify(F("Waiting for start up delay, starting custom watchdog"));
+    int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
+    int customWatchTime = startUpDelay+WATCHDOG_TIMEOUT_SECONDS; 
     Serial2.println(startUpDelay);
-    startCustomWatchDog(startUpDelay+WATCHDOG_TIMEOUT_SECONDS);
-    delay(startUpDelay*60*1000); // convert minutes to milliseconds
+    Serial2.println(customWatchTime);
+    Serial2.flush();
+    startCustomWatchDog(customWatchTime);
+    delay(startUpDelay*1000); // convert minutes to milliseconds
   }
   //delay(settings.startUpDelay); // can be zero
 
