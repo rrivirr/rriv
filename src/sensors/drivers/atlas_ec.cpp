@@ -160,7 +160,7 @@ void AtlasEC::initCalibration()
   oem_ec->clearCalibrationData();
 }
 
-void AtlasEC::calibrationStep(char * step, double trueValue)
+void AtlasEC::calibrationStep(char * step, int arg_cnt, char ** args)
 {
   takeMeasurement();
   if(strcmp(step, "dry") == 0)
@@ -171,12 +171,12 @@ void AtlasEC::calibrationStep(char * step, double trueValue)
   else if (strcmp(step, "low") == 0)
   {
     notify("Low point calibration");
-    oem_ec->setCalibration(LOW_POINT_CALIBRATION, trueValue);
+    oem_ec->setCalibration(LOW_POINT_CALIBRATION, atof(args[0]));
   }
   else if (strcmp(step, "high") == 0)
   {
     notify("High point calibration");
-    oem_ec->setCalibration(HIGH_POINT_CALIBRATION, trueValue);
+    oem_ec->setCalibration(HIGH_POINT_CALIBRATION, atof(args[0]));
     configuration.cal_timestamp = timestamp();
   }
   else

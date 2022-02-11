@@ -119,8 +119,6 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 {
   powerCycle = true;
   debug("creating datalogger");
-  debug("got mode");
-  debug(settings->mode);
 
   // defaults
   if (settings->interval < 1)
@@ -223,9 +221,7 @@ void Datalogger::loop()
       completedBursts++;
       if (completedBursts < settings.burstNumber)
       {
-        debug(F("do another burst"));
-        debug(settings.burstNumber);
-        debug(completedBursts);
+        // debug(F("do another burst"));
         
         if (settings.interBurstDelay > 0)
         {
@@ -575,7 +571,7 @@ void Datalogger::writeStatusFieldsToLogFile()
     debug(deploymentIdentifier);
     debug(uuidString);
     debug(settings.deploymentTimestamp);
-    sprintf(buffer, "%s-%s-%d", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
+    sprintf(buffer, "%s-%s-%lu", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
   }
   fileSystemWriteCache->writeString(buffer);
   fileSystemWriteCache->writeString((char *)",");
@@ -844,15 +840,23 @@ SensorDriver *Datalogger::getDriver(unsigned short slot)
 
 void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, char **args)
 {
+
   SensorDriver *driver = getDriver(slot);
+  if(driver == NULL)
+  {
+    notify(F("No driver"));
+    return;
+  }
+
   if (strcmp(subcommand, "init") == 0)
   {
+    notify("calling init");
     driver->initCalibration();
   }
   else
   {
-    notify(args[0]);
-    driver->calibrationStep(subcommand, atof(args[0]));
+
+    driver->calibrationStep(subcommand, arg_cnt, args);
   }
 }
 
@@ -901,6 +905,7 @@ bool Datalogger::deploy()
 
   setDeploymentTimestamp(timestamp());  // TODO: deployment should span across power cycles
   enterFieldLoggingMode();
+  return true;
 }
 
 bool Datalogger::enterFieldLoggingMode()
@@ -945,7 +950,6 @@ void Datalogger::initializeFilesystem()
   {
     delete (fileSystemWriteCache);
   }
-  debug("make a new write cache");
   fileSystemWriteCache = new WriteCache(fileSystem);
 }
 

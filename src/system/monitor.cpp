@@ -90,6 +90,14 @@ void notify(uint32 number)
 }
 
 
+void notify(double number)
+{
+  char message[10];
+  sprintf(message, "%f", number);
+  notify(message);
+}
+
+
 Monitor * monitor = new Monitor();
 
 // get default logger

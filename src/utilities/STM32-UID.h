@@ -28,9 +28,6 @@
  */
 #ifndef __UUID_H
 #define __UUID_H
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 /**
  * The STM32 factory-programmed UUID memory.

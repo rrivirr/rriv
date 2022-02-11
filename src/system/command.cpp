@@ -341,6 +341,7 @@ void CommandInterface::_getConfig()
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
   // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_name")), dataloggerSettings.deploymentIdentifier);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
@@ -526,14 +527,15 @@ void calibrate(int arg_cnt, char **args)
     return;
   }
 
-
   int slot = atoi(args[1]);
   char * subcommand = args[2];
+  notify(subcommand);
   CommandInterface::instance()->_calibrate(slot, subcommand, arg_cnt - 3, &args[3]);
 }
 
 void CommandInterface::_calibrate(int slot, char * subcommand, int arg_cnt, char ** args)
 {
+  notify(subcommand);
   this->datalogger->calibrate(slot, subcommand, arg_cnt, args);
 }
 
