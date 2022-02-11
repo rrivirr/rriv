@@ -1,35 +1,92 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "filesystem.h"
+#include "clock.h"
+#include "monitor.h"
 
 char dataDirectory[6] = "/Data";
 
-WaterBear_FileSystem::WaterBear_FileSystem(char * deploymentIdentifier, int chipSelectPin)
-{
-  strcpy(this->deploymentIdentifier, deploymentIdentifier);
 
-  // initialize the SD card
-  Serial2.print(F("Initializing SD card..."));
+WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectPin)
+{
+  strcpy(this->loggingFolder, loggingFolder);
+  this->chipSelectPin = chipSelectPin;
+  this->initializeSDCard();
+  debug("initialized filesystem");
+ 
+  this->setLoggingFolder(loggingFolder);
+  debug("set the logging folder");
+}
+
+void WaterBear_FileSystem::initializeSDCard(){
+   // initialize the SD card
+  //Serial2.print(F("Initializing SD card..."));
+  notify("Initializing SD card...");
 
   // Make sure chip select pin is set to output
-  pinMode(chipSelectPin, OUTPUT);
+  pinMode(this->chipSelectPin, OUTPUT);
 
   // see if the card is present and can be initialized:
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
-    Serial2.println(F(">Card fail<"));
-    while(1);
+    notify(F(">Card fail<"));
+    // one way to handle a failure:
+    // flash the led in an alert like fashion
+    // go to sleep for a short period of time
+    // then wake up and reset
+    //
+    // another way to handle a failure:
+    // somehow latch on an error led and power everything else down.
+    // errored out mode
+    //
+    // another way to handle a failure:
+    // just go to sleep and wait for the next cycle
+    // also produce some kind of check engine light.
+    // can we do a very low current blink LED or something.
+    delay(6000);
+    nvic_sys_reset();
   }
   else
   {
-    Serial2.println(F("card initialized."));
+    notify(F("card initialized."));
   }
-  this->setDeploymentIdentifier(deploymentIdentifier);
-  Serial2.println("Set deployment identifier");
 }
+
+void WaterBear_FileSystem::writeString(char * string)
+{
+  // notify("printing to log file");
+  // notify((int)strlen(string));
+  // notify(string);
+  this->logfile.print(string);
+}
+
+void WaterBear_FileSystem::endOfLine()
+{
+  this->logfile.println();
+  this->logfile.flush();
+}
+
 
 void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
   for(int i=0; i<fieldCount; i++)
   {
-    //Serial2.println(values[i]);
+    // notify(values[i]);  Serial2.flush();
     this->logfile.print(values[i]);
     if(i+1 < fieldCount)
     {
@@ -55,14 +112,14 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     // printCurrentDirListing();
 
     if (!sd.chdir(dataDirectory)) {
-      Serial2.println(F("fail: Data."));
+      notify(F("fail: Data."));
       state = 0;
       return;
     }
 
     // Debug
     // printCurrentDirListing();
-    // Serial2.println(lastDownloadDate);
+    // notify(lastDownloadDate);
 
     sd.vwd()->rewind();
     SdFile dirFile;
@@ -72,7 +129,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     while (dirFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!dirFile.dirEntry(&d)) {
-        //Serial2.println(F("dirEntry failed"));
+        //notify(F("dirEntry failed"));
         state = 0;
         return;
       }
@@ -82,11 +139,11 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       }
       dirFile.getName(sdDirName, 30);
       //Serial2.write("Dir: ");
-      //Serial2.println(sdDirName);
+      //notify(sdDirName);
 
       if(! sd.chdir(sdDirName) ){
         Serial2.write("fail:");
-        Serial2.println(sdDirName);
+        notify(sdDirName);
         state = 0;
         return;
       }
@@ -97,7 +154,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       while (deploymentFile.openNext(sd.vwd(), O_READ)) {
         dir_t d;
         if (!deploymentFile.dirEntry(&d)) {
-          // Serial2.println(F("depl file fail"));
+          // notify(F("depl file fail"));
           state = 0;
           return;
         }
@@ -105,11 +162,11 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
 
 
         if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
-            //Serial2.println(sdFilename);
+            //notify(sdFilename);
 
             File datafile = sd.open(sdFileName);
             // send size of transmission ?
-            // Serial2.println(datafile.fileSize());
+            // notify(datafile.fileSize());
             while (datafile.available()) {
                 Serial2.write(datafile.read());
             }
@@ -137,144 +194,149 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     }
 
     if (!sd.chdir("/")) {
-      Serial2.println(F("fail /"));
+      notify(F("fail /"));
       state = 0;
       return;
     }
 */
 }
 
-void WaterBear_FileSystem::setDeploymentIdentifier(char *newDeploymentIdentifier)
+void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
 {
-  strcpy(deploymentIdentifier, newDeploymentIdentifier);
+  strcpy(loggingFolder, newLoggingFolder);
 }
 
-void WaterBear_FileSystem::setNewDataFile(long unixtime)
+bool WaterBear_FileSystem::openFile(char * filename)
 {
-  /*Serial2.println("oki");
-    Serial2.flush();
-
-    DateTime now = this->rtc->now();
-    Serial2.println("ok");
-    Serial2.flush();
-
-    Serial2.println(now.unixtime());
-    Serial2.flush();
-*/
-  Serial2.println("ok");
-  Serial2.flush();
-  char uniquename[11] = "NEWFILE";
-  sprintf(uniquename, "%lu", unixtime);
-  char suffix[5] = ".CSV";
-  char filename[15];
-  strncpy(filename, uniquename, 10);
-  strncpy(&filename[10], suffix, 5);
-
-  Serial2.println("cd");
-  Serial2.flush();
   this->sd.chdir("/");
-  delay(10);
-
-  File columnsFile;
-  columnsFile = this->sd.open("/COLUMNS.TXT");
-
-  if(!columnsFile)
-  {
-    Serial2.println(F("COLUMNS.TXT did not open"));
-    while(1);
-  }
-
-  char header[100];
-  int n = columnsFile.fgets(header, sizeof(header));
-  if(header[n - 1] == '\n')
-  {
-    // remove '\n'
-    header[n - 1] = 0;
-  }
-
-  Serial2.print(F(">log:"));
-  Serial2.println(header);
-  columnsFile.close();
-
   printCurrentDirListing();
-  Serial2.println("OK in root");
+  notify("OK in root");
   if(!this->sd.exists(dataDirectory))
   {
-    Serial2.println("mkdir");
+    notify("mkdir");
     this->sd.mkdir(dataDirectory);
     delay(10);
   }
 
   if(!this->sd.chdir(dataDirectory))
   {
-    //Serial2.println("OK");
-    Serial2.println(F("failed: /Data."));
+    notify(F("failed: /Data."));
   }
   else
   {
-    //Serial2.println(F("cd /Data."));
+    //notify(F("cd /Data."));
   }
 
-  if(!this->sd.exists(this->deploymentIdentifier))
+  if(!this->sd.exists(loggingFolder))
   {
     // printCurrentDirListing();
     Serial2.write("mkdir:");
-    Serial2.println(deploymentIdentifier);
-    this->sd.mkdir(deploymentIdentifier);
-     //delay(10);
+    notify(loggingFolder);
+    this->sd.mkdir(loggingFolder);
   }
 
-  if(!this->sd.chdir(this->deploymentIdentifier))
+  if(!this->sd.chdir(this->loggingFolder))
   {
     Serial2.print("failed:");
-    Serial2.println(deploymentIdentifier);
+    notify(loggingFolder);
   }
   else
   {
     Serial2.print("cd:");
-    Serial2.println(deploymentIdentifier);
+    notify(loggingFolder);
   }
-  //delay(10);
+
 
   Serial2.print("Opening file ");
-  Serial2.println(filename);
+  notify(filename);
   Serial2.flush();
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
-  //delay(10);
+  notify("opened file");
+  Serial2.flush();
 
   //sd.chdir();
   if(!logfile)
   {
     Serial2.print(F(">not found<"));
-    while(1);
+    return false;
   }
 
-  //if (!sd.chdir("/")) {
-  //  Serial2.println("fail /");
-  //}
+  return true;
+
+}
+
+void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
+{
+
+  char uniquename[11] = "NEWFILE";
+  sprintf(uniquename, "%lu", unixtime);
+  char suffix[5] = ".CSV";
+  strncpy(filename, uniquename, 10);
+  strncpy(&filename[10], suffix, 5);
+
+  notify("cd");
+  Serial2.flush();
+  this->sd.chdir("/");
+  delay(1);
+
+  Serial2.print(F(">log:"));
+  notify(header);
+  
+  strcpy(this->header, header);
+
+  bool success = this->openFile(filename);
+  if( !success )
+  {
+    Serial2.print(F("filesystem open failure"));
+    while(1);
+  }
 
   this->logfile.println(header); // write the headers to the new logfile
   this->logfile.flush();
   //Serial2.print("wrote:");
-  //Serial2.println(ret);
+  //notify(ret);
 }
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
+  debug("printCurrentDirListing");
+
   this->sd.vwd()->rewind();
   SdFile dirFile;
   char sdFilename[30];
   while (dirFile.openNext(sd.vwd(), O_READ))
   {
     dirFile.getName(sdFilename, 30);
-    Serial2.println(sdFilename);
+    debug(sdFilename);
     dirFile.close();
   }
 }
 
 void WaterBear_FileSystem::closeFileSystem()
 {
+  Serial2.print(F(">close filesystem<"));
   //this->logfile.sync();
   this->logfile.close(); // syncs then closes
   //this->sd.end // doesn't exist
+}
+
+void WaterBear_FileSystem::reopenFileSystem()
+{
+
+  initializeSDCard();
+  bool success = this->openFile(filename);
+  if( !success )
+  {
+    debug(F("Could not reopen file"));
+    time_t setupTime = timestamp();
+    char setupTS[21];
+    sprintf(setupTS, "unixtime: %lld", setupTime);
+    debug(setupTS);
+    setNewDataFile(setupTime, this->header); // open a new file via epoch timestamp
+  }
+  else 
+  {
+    debug(F("Successfully reopened file"));
+  }
+
 }

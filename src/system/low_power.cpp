@@ -1,18 +1,34 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "low_power.h"
 
+#include <Arduino.h>
 #include <libmaple/pwr.h>
 #include <libmaple/scb.h>
 #include <libmaple/rcc.h>
 #include <libmaple/systick.h>
 #include <libmaple/usb.h>
-
-#include <Arduino.h>
-#include <libmaple/usart.h>
-#include <libmaple/spi.h>
-#include <libmaple/i2c.h>
 #include <libmaple/timer.h>
 #include <libmaple/adc.h>
 #include <libmaple/dac.h>
+#include <libmaple/usart.h>
+
 
 void enterStopMode()
 {
@@ -28,15 +44,12 @@ void enterStopMode()
   //Unset Power down deepsleep bit.
   PWR_BASE->CR &= ~PWR_CR_PDDS; // Also have to unset this to get into STOP mode
   // set Low-power deepsleep.
-  PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  This seems to cause problems
-
+  PWR_BASE->CR |= PWR_CR_LPDS; // Puts voltage regulator in low power mode.  
+  
   SCB_BASE->SCR |= SCB_SCR_SLEEPDEEP;
   //SCB_BASE->SCR &= ~SCB_SCR_SLEEPDEEP;
 
   SCB_BASE->SCR &= ~SCB_SCR_SLEEPONEXIT;
-
-  componentsStopMode();
-  hardwarePinsStopMode(); // switch to input mode
 
   rcc_switch_sysclk(RCC_CLKSRC_HSI);
   rcc_turn_off_clk(RCC_CLK_PLL);
@@ -55,9 +68,6 @@ void enterStopMode()
   //Finally, switch to the now-ready PLL as the main clock source.
   rcc_switch_sysclk(RCC_CLKSRC_PLL);
 
-  /////turn stuff back on (components, hardware pins)
-  componentsBurstMode();
-  setupHardwarePins(); // used from setup steps in datalogger
 
 }
 
@@ -80,7 +90,6 @@ void componentsAlwaysOff()
 
   spi_peripheral_disable(SPI2);  // this one is used by the BLE chip
 
-  timer_disable(&timer1);
   timer_disable(&timer2);
   timer_disable(&timer3);
   timer_disable(&timer4);
@@ -96,34 +105,41 @@ void componentsAlwaysOff()
   DAC_BASE->CR &= ~DAC_CR_EN1;  // don't think this made a difference
   DAC_BASE->CR &= ~DAC_CR_EN2;
 
+return;
 
-  rcc_clk_disable( RCC_ADC1);
+  // rcc_clk_disable( RCC_ADC1);
   rcc_clk_disable( RCC_ADC2);
   rcc_clk_disable( RCC_ADC3);
-  rcc_clk_disable( RCC_AFIO);
-  rcc_clk_disable( RCC_BKP);
-  rcc_clk_disable( RCC_CRC);
+    
+
+  //rcc_clk_disable( RCC_AFIO);
+  
+  // rcc_clk_disable( RCC_BKP);
+  // rcc_clk_disable( RCC_CRC);
   rcc_clk_disable( RCC_DAC);
   rcc_clk_disable( RCC_DMA1);
   rcc_clk_disable( RCC_DMA2);
   rcc_clk_disable( RCC_FLITF);
   rcc_clk_disable( RCC_FSMC);
-  rcc_clk_disable( RCC_GPIOA);
-  rcc_clk_disable( RCC_GPIOB);
-  rcc_clk_disable( RCC_GPIOC);
-  rcc_clk_disable( RCC_GPIOD);
-  rcc_clk_disable( RCC_GPIOE);
-  rcc_clk_disable( RCC_GPIOF);
-  rcc_clk_disable( RCC_GPIOG);
-  rcc_clk_disable( RCC_I2C1);
-  rcc_clk_disable( RCC_I2C2);
-  rcc_clk_disable( RCC_PWR);
-  rcc_clk_disable( RCC_SDIO);
-  rcc_clk_disable( RCC_SPI1);
-  rcc_clk_disable( RCC_SPI2);
+
+
+
+  // rcc_clk_disable( RCC_GPIOA); // ??
+  // rcc_clk_disable( RCC_GPIOB);
+  // rcc_clk_disable( RCC_GPIOC);
+  // rcc_clk_disable( RCC_GPIOD);
+  // rcc_clk_disable( RCC_GPIOE);
+  // rcc_clk_disable( RCC_GPIOF);
+  // rcc_clk_disable( RCC_GPIOG);
+  //rcc_clk_disable( RCC_I2C1); // these clocks are needed during normal run
+  //rcc_clk_disable( RCC_I2C2);
+  // rcc_clk_disable( RCC_PWR); // ??
+  // rcc_clk_disable( RCC_SDIO); // ??
+  // rcc_clk_disable( RCC_SPI1);
+  // rcc_clk_disable( RCC_SPI2);
   rcc_clk_disable( RCC_SPI3);
   rcc_clk_disable( RCC_SRAM);
-  rcc_clk_disable( RCC_TIMER1);
+  // rcc_clk_disable( RCC_TIMER1); // this clock is needed by the custom watchdog
   rcc_clk_disable( RCC_TIMER2);
   rcc_clk_disable( RCC_TIMER3);
   rcc_clk_disable( RCC_TIMER4);
@@ -138,14 +154,15 @@ void componentsAlwaysOff()
   rcc_clk_disable( RCC_TIMER13);
   rcc_clk_disable( RCC_TIMER14);
   rcc_clk_disable( RCC_USART1);
-  rcc_clk_disable( RCC_USART2);
+  //rcc_clk_disable( RCC_USART2); // needed for USART2 
   rcc_clk_disable( RCC_USART3);
   rcc_clk_disable( RCC_UART4);
   rcc_clk_disable( RCC_UART5);
   rcc_clk_disable( RCC_USB);
+  
 }
 
-void hardwarePinsAlwaysOff()
+void hardwarePinsAlwaysOff() // not currently used
 {
 // any pins changed need to be set back to the right modes when we wake
 // need to find out what pinModes are default or how to reset them
@@ -185,9 +202,8 @@ void hardwarePinsAlwaysOff()
   pinMode(PB15, INPUT);
 
   pinMode(PC4, INPUT);
-  pinMode(PC5, INPUT);
-  pinMode(PC6, INPUT);
-
+  // pinMode(PC5, INPUT); // external ADC reset
+  // pinMode(PC6, INPUT); // this is the switch power pin
 
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
@@ -200,13 +216,15 @@ void hardwarePinsAlwaysOff()
 
 void componentsStopMode()
 {
-  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
-  digitalWrite(PC8, LOW);
-  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+
   i2c_disable(I2C1);  // other chips on waterbear board
   i2c_disable(I2C2);  // Atlas EC chip, external chips
                       // this is a place where using a timer as a watchdog may be important
+  rcc_clk_disable( RCC_I2C1); // these clocks are needed during normal run
+  rcc_clk_disable( RCC_I2C2);
 
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, LOW);
   spi_peripheral_disable(SPI1);  // this one is used by the SD card
 
   // this might be redundant
@@ -218,6 +236,7 @@ void componentsStopMode()
 
 void hardwarePinsStopMode()
 {
+  return; // didn't make a big power difference
   // check pins again on new board //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
@@ -233,15 +252,42 @@ void hardwarePinsStopMode()
 
 void componentsBurstMode()
 {
+
+
+  debug(F("turn on components"));
+
   //pinmode?
-  usart_enable(Serial2.c_dev());
-  i2c_master_enable(I2C1, I2C_BUS_RESET);
-  i2c_master_enable(I2C2, I2C_BUS_RESET);
+  rcc_clk_enable( RCC_I2C1); // these clocks are needed during normal run
+  rcc_clk_enable( RCC_I2C2);
+  // i2c_master_enable(I2C1, I2C_BUS_RESET);
+  // i2c_master_enable(I2C2, I2C_BUS_RESET);
+  // i2c_master_enable(I2C1, 0, 0);
+  // i2c_master_enable(I2C2, 0, 0);
   
+  pinMode(PC8, OUTPUT); // check order of operation, necessary to switch components off
+  digitalWrite(PC8, HIGH);
   spi_peripheral_enable(SPI1);
+  
   adc_enable(ADC1);
+  ADC1->regs->CR2 |= ADC_CR2_TSVREFE; // temperature sensor inside ADC
+
+  debug(F("turned on components"));
+
 }
 
+void disableSerialLog()
+{
+  Serial2.end();
+  usart_disable(Serial2.c_dev()); // turn back on when awakened? or not needed when deployed
+}
+
+void enableSerialLog()
+{
+  usart_enable(Serial2.c_dev());
+  Serial2.begin(SERIAL_BAUD);
+}
+
+// Not Used
 void restorePinDefaults()
 {
 
@@ -286,7 +332,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // ADC12_IN15
+  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);

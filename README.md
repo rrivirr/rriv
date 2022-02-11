@@ -1,7 +1,9 @@
 # waterteam-embedded
+
 - Install the file COLUMNS.TXT into the root directory of your SD Card, and change field names 5-10 to reflect the sensors attached to analog inputs 0-5 (A0 - A5).
   - Current columns.txt: duuid,uuid,time.s,time.h,battery.V,sensor.V,data3,data4,data5,data6,conductivity.mS
   - Deployment uuid, uuid, epoch time in seconds, time in yyyy-mm-dd hh:mm:ss GMT, battery voltage, sensor voltage, n/a, n/a, n/a, n/a, conductivity in microsiemens
+
 
 ### CONNECTING VIA SERIAL/PROGRAMMING:
 1. Use a severed development board to program STM32F103RB via usb:
@@ -17,6 +19,7 @@
 6. If the output gets stuck at 'scanning...' then you will need to power cycle the waterbear shield, this can be done by unplugging the power pack then plugging it back in.
 	1. If still stuck, there's a line in setup() called i2c_bus_reset(I2C1); that might help, uncomment, rebuild, reupload and wait for it to run. you won't see any output for a moment or any lights on. I also found that unconnecting the USB along with the power helped. If still stuck and you see a blue light on the Atlas Scientific OEM Development board, you may need to let it sit for a period, with power still plugged in, and then reset again.
 7. Some linux systems will require the correct USB device permission to program.  These can be installed using the below commands:
+
 ```
 sudo apt -y install stlink-tools
 sudo systemctl restart udev

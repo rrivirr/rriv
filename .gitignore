@@ -4,3 +4,7 @@
 .gcc-flags.json
 .DS_Store
 out
+.pio/build/*
+.pio/
+.vscode/
+node_modules

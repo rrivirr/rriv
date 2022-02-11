@@ -1,802 +1,1126 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "datalogger.h"
+#include <Cmd.h>
+#include "system/measurement_components.h"
+#include "system/monitor.h"
+#include "system/watchdog.h"
+#include "system/command.h"
+#include "sensors/sensor.h"
+#include "sensors/sensor_map.h"
+#include "sensors/sensor_types.h"
+#include "utilities/i2c.h"
+#include "utilities/qos.h"
+#include "utilities/STM32-UID.h"
+#include "scratch/dbgmcu.h"
 
-// Settings
-char version[5] = "v2.0";
-
-short interval = 1;     // minutes between loggings when not in short sleep
-short burstLength = 25; // how many readings in a burst
-
-short fieldCount = 22; // number of fields to be logged to SDcard file
-
-// Pin Mappings for Nucleo Board
-// BLE USART
-//#define D4 PB5
-//int bluefruitModePin = D4;
-//Adafruit_BluefruitLE_UART ble(Serial1, bluefruitModePin);
-
-// State
-WaterBear_FileSystem *filesystem;
-unsigned char uuid[UUID_LENGTH];
-char lastDownloadDate[11] = "0000000000";
-char **values;
-unsigned long lastMillis = 0;
-uint32_t awakeTime = 0;
-uint32_t lastTime = 0;
-short burstCount = 0;
-bool configurationMode = false;
-bool debugValuesMode = false;
-bool clearModes = false;
-bool tempCalMode = false;
-bool tempCalibrated = false;
-short controlFlag = 0;
-
-void enableI2C2()
+// static method to read configuration from EEPROM
+void Datalogger::readConfiguration(datalogger_settings_type *settings)
 {
-  i2c_disable(I2C2);
-  i2c_master_enable(I2C2, 0);
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
-
-  i2c_bus_reset(I2C2);
-  Wire2.begin();
-  delay(1000);
-
-  Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
-  scanIC2(&Wire2);
-}
-
-void powerUpSwitchableComponents()
-{
-  cycleSwitchablePower();
-  enableI2C2();
-  setupEC_OEM(&Wire2);
-  Monitor::instance()->writeDebugMessage(F("Switchable components powered up"));
-}
-
-void powerDownSwitchableComponents() // called in stopAndAwaitTrigger
-{
-  hibernateEC_OEM();
-  i2c_disable(I2C2);
-  Monitor::instance()->writeDebugMessage(F("Switchable components powered down"));
-}
-
-void startSerial2()
-{
-  // Start up Serial2
-  // TODO: Need to do an if(Serial2) after an amount of time, just disable it
-  Serial2.begin(SERIAL_BAUD);
-  while (!Serial2)
+  byte *buffer = (byte *)malloc(sizeof(byte) * sizeof(datalogger_settings_type));
+  for (unsigned short i = 0; i < sizeof(datalogger_settings_type); i++)
   {
-    delay(100);
+    short address = EEPROM_DATALOGGER_CONFIGURATION_START + i;
+    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
-  Monitor::instance()->writeSerialMessage(F("Hello world: serial2"));
-  Monitor::instance()->writeSerialMessage(F("Begin Setup"));
+
+  memcpy(settings, buffer, sizeof(datalogger_settings_type));
+
+  // apply defaults
+  if (settings->burstNumber == 0 || settings->burstNumber > 20)
+  {
+    settings->burstNumber = 1;
+  }
+  if (settings->interBurstDelay > 300)
+  {
+    settings->interBurstDelay = 0;
+  }
+
+  settings->debug_values = true;
 }
 
-void setupHardwarePins()
+Datalogger::Datalogger(datalogger_settings_type *settings)
 {
-  Monitor::instance()->writeDebugMessage(F("setting up hardware pins"));
-  //pinMode(BLE_COMMAND_MODE_PIN, OUTPUT); // Command Mode pin for BLE
-  pinMode(INTERRUPT_LINE_7_PIN, INPUT_PULLUP); // This the interrupt line 7
-  //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
-  pinMode(ANALOG_INPUT_1_PIN, INPUT_ANALOG);
-  pinMode(ANALOG_INPUT_2_PIN, INPUT_ANALOG);
-  pinMode(ANALOG_INPUT_3_PIN, INPUT_ANALOG);
-  pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
-  pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
-  pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+  powerCycle = true;
+  debug("creating datalogger");
+  debug("got mode");
+  debug(settings->mode);
 
-  pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
-  pinMode(PA3, OUTPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
+  // defaults
+  if (settings->interval < 1)
+  {
+    debug("Setting interval to 1 by default");
+    settings->interval = 1;
+  }
+
+  memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
+
+  switch (settings->mode)
+  {
+  case 'i':
+    changeMode(interactive);
+    strcpy(loggingFolder, reinterpret_cast<const char *> F("INTERACTIVE"));
+    break;
+  case 'l':
+    changeMode(logging);
+    strcpy(loggingFolder, settings->siteName);
+    break;
+  default:
+    changeMode(interactive);
+    strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
+    break;
+  }
 }
 
-void blinkTest()
+void Datalogger::setup()
 {
-  //Logger::instance()->writeDebugMessage(F("blink test:"));
-  //blink(10,250);
+  startCustomWatchDog();
+
+  setupHardwarePins();
+  setupSwitchedPower();
+  powerUpSwitchableComponents();
+
+  bool externalADCInstalled = scanIC2(&Wire, 0x2f);
+  settings.externalADCEnabled = externalADCInstalled;
+
+  setupManualWakeInterrupts();
+  disableManualWakeInterrupt(); // don't respond to interrupt during setup
+  clearManualWakeInterrupt();
+
+  clearAllAlarms(); // don't respond to alarms during setup
+
+  //initBLE();
+
+  unsigned char uuid[UUID_LENGTH];
+  readUniqueId(uuid);
+  decodeUniqueId(uuid, uuidString, UUID_LENGTH);
+
+  buildDriverSensorMap();
+  loadSensorConfigurations();
+  initializeFilesystem();
+  setUpCLI();
 }
 
-void initializeFilesystem()
+void Datalogger::loop()
 {
 
+  if (inMode(deploy_on_trigger))
+  {
+    deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
+    goto SLEEP;
+    return;
+  }
+
+  if (inMode(logging))
+  {
+    if (powerCycle)
+    {
+      debug("Powercycle");
+      bool deployed = enterFieldLoggingMode();
+      if (!deployed)
+      {
+        // what should we do here?
+        // if we are in the field and the manual power cycle got skipped, the battery will quickly drain
+        // perhaps just shut down the unit?
+        powerDownSwitchableComponents();
+        while (1)
+          ;
+      }
+      powerCycle = false; // handled powercycle loop
+      goto SLEEP;
+    }
+
+    if (shouldExitLoggingMode())
+    {
+      notify("Should exit logging mode");
+      changeMode(interactive);
+      return;
+    }
+
+    if (shouldContinueBursting())
+    {
+      measureSensorValues();
+      writeMeasurementToLogFile();
+    }
+    else
+    {
+      completedBursts++;
+      if (completedBursts < settings.burstNumber)
+      {
+        debug(F("do another burst"));
+        debug(settings.burstNumber);
+        debug(completedBursts);
+        
+        if (settings.interBurstDelay > 0)
+        {
+          notify(F("Waiting for burst delay, starting custom watchdog"));
+          int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
+          int customWatchTime = interBurstDelay + WATCHDOG_TIMEOUT_SECONDS;
+          Serial2.println(interBurstDelay);
+          Serial2.println(customWatchTime);
+          Serial2.flush();
+          startCustomWatchDog(customWatchTime);
+          delay(interBurstDelay*1000); // convert minutes to milliseconds
+        }
+        
+        //extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
+        
+        /*
+        pauseCustomWatchDog();
+        notify(F("Waiting for burst delay"));
+        delay(settings.interBurstDelay * 1000 * 60); //convert minutes to milliseconds
+        resumeCustomWatchDog();
+        */
+
+        initializeBurst();
+        return;
+      }
+
+      // go to sleep
+      fileSystemWriteCache->flushCache();
+    SLEEP:
+      stopAndAwaitTrigger();
+      initializeMeasurementCycle();
+      return;
+    }
+    return;
+  }
+
+  processCLI();
+
+  // not currently used
+  // TODO: do we want to cache dirty config to reduce writes to EEPROM?
+  // if (configurationIsDirty())
+  // {
+  //   debug("Configuration is dirty");
+  //   storeConfiguration();
+  //   stopLogging();
+  // }
+
+  if (inMode(logging) || inMode(deploy_on_trigger))
+  {
+    // processCLI may have moved logger into a deployed mode
+    goto SLEEP;
+  }
+  else if (inMode(interactive))
+  {
+    if (interactiveModeLogging)
+    {
+      if (timestamp() > lastInteractiveLogTime + 1)
+      {
+        // notify(F("interactive log"));
+        measureSensorValues(false);
+        if(interactiveModeLogging)
+        {
+          Serial2.print("\n");
+          for (unsigned int i = 0; i < sensorCount; i++)
+          {
+            Serial2.print(drivers[i]->getCSVColumnNames());
+            if (i < sensorCount - 1)
+            {
+              Serial2.print(F(","));
+            }
+            else
+            {
+              Serial2.println("");
+            }
+          }
+
+          for (unsigned int i = 0; i < sensorCount; i++)
+          {
+            Serial2.print(drivers[i]->getDataString());
+            if (i < sensorCount - 1)
+            {
+              Serial2.print(F(","));
+            }
+            else
+            {
+              Serial2.println("");
+            }
+          }
+          Serial2.print("CMD >> ");
+        }
+        writeMeasurementToLogFile();
+        lastInteractiveLogTime = timestamp();
+      }
+    }
+  }
+  else if (inMode(debugging))
+  {
+    measureSensorValues(false);
+    writeMeasurementToLogFile();
+    delay(5000); // this value could be configurable, also a step / read from CLI is possible
+  }
+  else
+  {
+    // invalid mode!
+    notify(F("Invalid Mode!"));
+    notify(mode);
+    mode = interactive;
+    delay(1000);
+  }
+
+  powerCycle = false;
+}
+
+void Datalogger::loadSensorConfigurations()
+{
+
+  // load sensor configurations from EEPROM and count them
+  sensorCount = 0;
+  generic_config *configs[EEPROM_TOTAL_SENSOR_SLOTS];
+  for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
+  {
+    notify("reading slot");
+    generic_config *sensorConfig = (generic_config *)malloc(sizeof(generic_config));
+
+    readSensorConfigurationFromEEPROM(i, sensorConfig);
+
+    notify(sensorConfig->common.sensor_type);
+    if (sensorConfig->common.sensor_type <= MAX_SENSOR_TYPE)
+    {
+      notify("found configured sensor");
+      sensorCount++;
+    }
+    sensorConfig->common.slot = i;
+    configs[i] = sensorConfig;
+  }
+  if (sensorCount == 0)
+  {
+    notify("no sensor configurations found");
+  }
+  notify("FREE MEM");
+  printFreeMemory();
+
+  // construct the drivers
+  notify("construct drivers");
+  drivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
+  int j = 0;
+  for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
+  {
+    notify("FREE MEM");
+    printFreeMemory();
+    if (configs[i]->common.sensor_type > MAX_SENSOR_TYPE)
+    {
+      notify("no sensor");
+      continue;
+    }
+
+    debug("getting driver for sensor type");
+    debug(configs[i]->common.sensor_type);
+    SensorDriver *driver = driverForSensorType(configs[i]->common.sensor_type);
+    debug("got sensor driver");
+    checkMemory();
+
+    drivers[j] = driver;
+    j++;
+
+    if (driver->getProtocol() == i2c)
+    {
+      debug("got i2c sensor");
+      ((I2CSensorDriver *)driver)->setWire(&WireTwo);
+      debug("set wire");
+    }
+    debug("do setup");
+    driver->setup();
+
+    debug("configure sensor driver");
+    driver->configure(*configs[i]); //pass configuration struct to the driver
+    debug("configured sensor driver");
+  }
+
+  for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
+  {
+    free(configs[i]);
+  }
+
+  // set up bookkeeping for dirty configurations
+  // if (dirtyConfigurations != NULL)
+  // {
+  //   free(dirtyConfigurations);
+  // }
+  // dirtyConfigurations = (bool *)malloc(sizeof(bool) * (sensorCount + 1));
+}
+
+void Datalogger::reloadSensorConfigurations() // for dev & debug
+{
+  // calling this function does not deal with memory fragmentation
+  // so it's not part of the main system, only for dev & debug
+  notify("FREE MEM reload");
+  printFreeMemory();
+  // free sensor configs
+  for(int i=0; i<sensorCount; i++)
+  {
+    delete(drivers[i]);
+  }
+  free(drivers);
+  notify("FREE MEM reload");
+  printFreeMemory();
+  loadSensorConfigurations();
+}
+
+void Datalogger::startLogging()
+{
+  initializeMeasurementCycle();
+  interactiveModeLogging = true;
+}
+
+void Datalogger::stopLogging()
+{
+  interactiveModeLogging = false;
+}
+
+bool Datalogger::shouldExitLoggingMode()
+{
+  if (Serial2.peek() != -1)
+  {
+    //attempt to process the command line
+    for (int i = 0; i < 10; i++)
+    {
+      processCLI();
+    }
+    if (inMode(interactive))
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  return false;
+}
+
+bool Datalogger::shouldContinueBursting()
+{
+  for (int i = 0; i < sensorCount; i++)
+  {
+    notify(F("check sensor burst"));
+    notify(i);
+    if (!drivers[i]->burstCompleted())
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+void Datalogger::initializeBurst()
+{
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    drivers[i]->initializeBurst();
+  }
+}
+
+void Datalogger::initializeMeasurementCycle()
+{
+  notify(F("setting base time"));
+  currentEpoch = timestamp();
+  offsetMillis = millis();
+
+  initializeBurst();
+
+  completedBursts = 0;
+
+  // extendCustomWatchdog(settings.startUpDelay*60);
+
+  /*
+  pauseCustomWatchDog();
+  notify(F("Waiting for start up delay"));
+  delay(settings.startUpDelay * 1000 * 60);
+  resumeCustomWatchDog();
+  */
+  if (settings.startUpDelay > 0)
+  {
+    notify(F("Waiting for start up delay, starting custom watchdog"));
+    int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
+    int customWatchTime = startUpDelay+WATCHDOG_TIMEOUT_SECONDS; 
+    Serial2.println(startUpDelay);
+    Serial2.println(customWatchTime);
+    Serial2.flush();
+    startCustomWatchDog(customWatchTime);
+    delay(startUpDelay*1000); // convert minutes to milliseconds
+  }
+  //delay(settings.startUpDelay); // can be zero
+
+  bool sensorsWarmedUp = false;
+  while(sensorsWarmedUp == false)
+  {
+    sensorsWarmedUp = true;
+    for (int i = 0; i < sensorCount; i++)
+    {
+      notify("check isWarmed");
+      if (!drivers[i]->isWarmedUp())
+      {
+        // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
+        // mcuSleep(drivers[i]->warmUpSleep());
+        sensorsWarmedUp = false;
+      }
+    }
+  }
+
+}
+
+void Datalogger::measureSensorValues(bool performingBurst)
+{
+  if (settings.externalADCEnabled)
+  {
+    // get readings from the external ADC
+    debug("converting enabled channels call");
+    externalADC->convertEnabledChannels();
+    debug("converted enabled channels");
+  }
+
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    if (drivers[i]->takeMeasurement())
+    {
+      if (performingBurst)
+      {
+        drivers[i]->incrementBurst(); // burst bookkeeping
+      }
+    }
+  }
+}
+
+void Datalogger::writeStatusFieldsToLogFile()
+{
+  debug(F("Write status fields"));
+
+  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
+  uint32 currentMillis = millis();
+  double currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
+
+  char currentTimeString[20];
+  char humanTimeString[20];
+  sprintf(currentTimeString, "%10.3f", currentTime);                  // convert double value into string
+  t_t2ts(currentTime, currentMillis - offsetMillis, humanTimeString); // convert time_t value to human readable timestamp
+
+  char buffer[100];
+
+  fileSystemWriteCache->writeString(settings.siteName);
+  fileSystemWriteCache->writeString((char *)",");
+  if(settings.deploymentIdentifier[0] == 0xFF)
+  {
+    sprintf(buffer, "%s-%s", uuidString, settings.deploymentTimestamp);
+  }
+  else 
+  {
+    char deploymentIdentifier[16] = {0};
+    strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
+    debug(deploymentIdentifier[0]);
+    debug(deploymentIdentifier);
+    debug(uuidString);
+    debug(settings.deploymentTimestamp);
+    sprintf(buffer, "%s-%s-%d", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
+  }
+  fileSystemWriteCache->writeString(buffer);
+  fileSystemWriteCache->writeString((char *)",");
+  sprintf(buffer, "%ld,", settings.deploymentTimestamp);
+  fileSystemWriteCache->writeString(buffer);
+  fileSystemWriteCache->writeString(uuidString);
+  fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(currentTimeString);
+  fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(humanTimeString);
+  fileSystemWriteCache->writeString((char *)",");
+}
+
+bool Datalogger::writeMeasurementToLogFile()
+{
+  writeStatusFieldsToLogFile();
+
+  // write out the raw battery reading
+  int batteryValue = analogRead(PB0);
+  char buffer[100];
+  sprintf(buffer, "%d,", batteryValue);
+  fileSystemWriteCache->writeString(buffer);
+
+  // and write out the sensor data
+  debug(F("Write out sensor data"));
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    // get values from the sensor
+    char *dataString = drivers[i]->getDataString();
+    fileSystemWriteCache->writeString(dataString);
+    if (i < sensorCount - 1)
+    {
+      fileSystemWriteCache->writeString((char *)reinterpretCharPtr(F(",")));
+    }
+  }
+  sprintf(buffer, ",%s,", userNote);
+  fileSystemWriteCache->writeString(buffer);
+  if (userValue != INT_MIN)
+  {
+    sprintf(buffer, "%d", userValue);
+    fileSystemWriteCache->writeString(buffer);
+  }
+  fileSystemWriteCache->endOfLine();
+  return true;
+}
+
+void Datalogger::setUpCLI()
+{
+  cli = CommandInterface::create(Serial2, this);
+  cli->setup();
+}
+
+void Datalogger::processCLI()
+{
+  cli->poll();
+}
+
+// not currently used
+// bool Datalogger::configurationIsDirty()
+// {
+//   for(int i=0; i<sensorCount+1; i++)
+//   {
+//     if(dirtyConfigurations[i])
+//     {
+//       return true;
+//     }
+//   }
+
+//   return false;
+// }
+
+// not curretnly used
+// void Datalogger::storeConfiguration()
+// {
+//   for(int i=0; i<sensorCount+1; i++)
+//   {
+//     if(dirtyConfigurations[i]){
+//       //store this config block to EEPROM
+//     }
+//   }
+// }
+
+void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
+{
+  memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
+}
+
+void Datalogger::setSensorConfiguration(char *type, cJSON *json)
+{
+
+  SensorDriver *driver = NULL;
+  notify("get driver");
+  driver = driverForSensorTypeString(type);
+  notify("got driver");
+
+  if (driver != NULL)
+  {
+    notify("configure from json");
+    driver->configureFromJSON(json);
+    notify("configured from json");
+    if (driver->getProtocol() == i2c)
+    {
+      notify("got i2c sensor");
+      ((I2CSensorDriver *)driver)->setWire(&WireTwo);
+      notify("set wire");
+    }
+    notify("do setup");
+    driver->setup();
+    notify("done setup");
+    generic_config configuration = driver->getConfiguration();
+    storeSensorConfiguration(&configuration);
+
+    notify(F("updating slots"));
+    bool slotReplacement = false;
+    notify(sensorCount);
+    for (int i = 0; i < sensorCount; i++)
+    {
+      if (drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
+      {
+        slotReplacement = true;
+        notify(F("slot replacement"));
+        notify(i);
+        SensorDriver *replacedDriver = drivers[i];
+        drivers[i] = driver;
+        notify("deleting");
+        delete (replacedDriver);
+        notify(F("OK"));
+        break;
+      }
+    }
+    if (!slotReplacement)
+    {
+      sensorCount = sensorCount + 1;
+      SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
+      int i = 0;
+      // printFreeMemory();
+      // if(sensorCount > 1)
+      // {
+      //   notify(drivers[i]->getConfiguration().common.slot);
+      //   notify(driver->getConfiguration().common.slot);
+      // }
+      for (; i < sensorCount-1 && drivers[i]->getConfiguration().common.slot < driver->getConfiguration().common.slot ; i++)
+      {
+        updatedDrivers[i] = drivers[i];
+      }
+
+      updatedDrivers[i] = driver;
+      i++;
+      for (; i < sensorCount; i++)
+      {
+        updatedDrivers[i] = drivers[i-1];
+      }
+      free(drivers);
+      drivers = updatedDrivers;
+    }
+    notify(F("OK"));
+  }
+}
+
+void Datalogger::clearSlot(unsigned short slot)
+{
+  bool slotConfigured = false;
+  for (int i = 0; i < sensorCount; i++)
+  {
+    if (drivers[i]->getConfiguration().common.slot == slot)
+    {
+      slotConfigured = true;
+      break;
+    }
+  }
+  if (!slotConfigured)
+  {
+    notify("Slot not configured");
+    return;
+  }
+
+  byte empty[SENSOR_CONFIGURATION_SIZE];
+  for (int i = 0; i < SENSOR_CONFIGURATION_SIZE; i++)
+  {
+    empty[i] = 0xFF;
+  }
+  writeSensorConfigurationToEEPROM(slot, empty);
+  sensorCount--;
+
+  SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
+  int j = 0;
+  for (int i = 0; i < sensorCount + 1; i++)
+  {
+    generic_config configuration = this->drivers[i]->getConfiguration();
+    if (configuration.common.slot != slot)
+    {
+      updatedDrivers[j] = this->drivers[i];
+      j++;
+    } 
+    else 
+    {
+      delete(this->drivers[i]);
+    }
+  }
+  free(this->drivers);
+  this->drivers = updatedDrivers;
+}
+
+cJSON *Datalogger::getSensorConfiguration(short index) // returns unprotected **
+{
+  return drivers[index]->getConfigurationJSON();
+}
+
+void Datalogger::setInterval(int interval)
+{
+  settings.interval = interval;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setBurstNumber(int number)
+{
+  settings.burstNumber = number;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setStartUpDelay(int delay)
+{
+  settings.startUpDelay = delay;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setIntraBurstDelay(int delay)
+{
+  settings.interBurstDelay = delay;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::setExternalADCEnabled(bool enabled)
+{
+  settings.externalADCEnabled = enabled;
+}
+
+void Datalogger::setUserNote(char *note)
+{
+  strcpy(userNote, note);
+}
+
+void Datalogger::setUserValue(int value)
+{
+  userValue = value;
+}
+
+void Datalogger::toggleTraceValues()
+{
+  settings.debug_values = !settings.debug_values;
+  storeConfiguration();
+  Serial2.println(bool(settings.debug_values));
+}
+
+SensorDriver *Datalogger::getDriver(unsigned short slot)
+{
+  for (int i = 0; i < sensorCount; i++)
+  {
+    if (this->drivers[i]->getConfiguration().common.slot == slot)
+    {
+      return this->drivers[i];
+    }
+  }
+  return NULL;
+}
+
+void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, char **args)
+{
+  SensorDriver *driver = getDriver(slot);
+  if (strcmp(subcommand, "init") == 0)
+  {
+    driver->initCalibration();
+  }
+  else
+  {
+    notify(args[0]);
+    driver->calibrationStep(subcommand, atoi(args[0]));
+  }
+}
+
+void Datalogger::storeMode(mode_type mode)
+{
+  char modeStorage = 'i';
+  switch (mode)
+  {
+  case logging:
+    modeStorage = 'l';
+    break;
+  case deploy_on_trigger:
+    modeStorage = 't';
+    break;
+  default:
+    modeStorage = 'i';
+    break;
+  }
+  settings.mode = modeStorage;
+  storeDataloggerConfiguration();
+}
+
+void Datalogger::changeMode(mode_type mode)
+{
+  char message[50];
+  sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
+  notify(message);
+  this->mode = mode;
+}
+
+bool Datalogger::inMode(mode_type mode)
+{
+  return this->mode == mode;
+}
+
+bool Datalogger::deploy()
+{
+  notify(F("Deploying now!"));
+  notifyDebugStatus();
+  if (checkDebugSystemDisabled() == false)
+  {
+    notify("**** ABORTING DEPLOYMENT *****");
+    notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    return false;
+  }
+
+  setDeploymentTimestamp(timestamp());  // TODO: deployment should span across power cycles
+  enterFieldLoggingMode();
+}
+
+bool Datalogger::enterFieldLoggingMode()
+{
+  strcpy(loggingFolder, settings.siteName);
+  fileSystem->closeFileSystem();
+  initializeFilesystem();
+  changeMode(logging);
+  storeMode(logging);
+  return true;
+}
+
+void Datalogger::initializeFilesystem()
+{
   SdFile::dateTimeCallback(dateTime);
 
-  char defaultDeployment[25] = "SITENAME_00000000000000";
-  char *deploymentIdentifier = defaultDeployment;
-
-  // get any stored deployment identifier from EEPROM
-  readDeploymentIdentifier(deploymentIdentifier);
-  unsigned char empty[1] = {0xFF};
-  if (memcmp(deploymentIdentifier, empty, 1) == 0)
-  {
-    //Logger::instance()->writeDebugMessage(F(">NoDplyment<"));
-
-    writeDeploymentIdentifier(defaultDeployment);
-    readDeploymentIdentifier(deploymentIdentifier);
-  }
-
-  filesystem = new WaterBear_FileSystem(deploymentIdentifier, SD_ENABLE_PIN);
-  Monitor::instance()->filesystem = filesystem;
-  Monitor::instance()->Monitor::instance()->writeDebugMessage(F("Filesystem started OK"));
+  fileSystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
+  Monitor::instance()->filesystem = fileSystem;
+  debug(F("Filesystem started OK"));
 
   time_t setupTime = timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
-  Monitor::instance()->Monitor::instance()->writeSerialMessage(setupTS);
-  filesystem->setNewDataFile(setupTime); // name file via epoch timestamp
+  notify(setupTS);
+
+  char header[200];
+  const char *statusFields = "site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
+  strcpy(header, statusFields);
+  debug(header);
+  for (int i = 0; i < sensorCount; i++)
+  {
+    debug(i);
+    debug(drivers[i]->getCSVColumnNames());
+    strcat(header, ",");
+    strcat(header, drivers[i]->getCSVColumnNames());
+  }
+  strcat(header, ",user_note,user_value");
+
+  fileSystem->setNewDataFile(setupTime, header); // name file via epoch timestamps
+
+  if (fileSystemWriteCache != NULL)
+  {
+    delete (fileSystemWriteCache);
+  }
+  debug("make a new write cache");
+  fileSystemWriteCache = new WriteCache(fileSystem);
 }
 
-void allocateMeasurementValuesMemory()
+void Datalogger::powerUpSwitchableComponents()
 {
+  cycleSwitchablePower();
 
-  values = (char **)malloc(sizeof(char *) * fieldCount);
+  // turn on 5v booster for exADC reference voltage, needs the delay
+  // might be possible to turn off after exADC discovered, not certain.
+  gpioPinOn(GPIO_PIN_4);
+  
+  delay(500);
+  enableI2C1();
+  enableI2C2();
 
-  values[0] = (char *)malloc(sizeof(char) * (DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2)); // Deployment UUID 51
-  sprintf(values[0], "%50d", 0);
-  values[1] = (char *)malloc(sizeof(char) * ((2 * UUID_LENGTH + 1))); // UUID 25
-  sprintf(values[1], "%24d", 0);
-  values[2] = (char *)malloc(sizeof(char) * 15); // epoch timestamp.millis
-  sprintf(values[2], "%10.3f", (double)0);
-  values[3] = (char *)malloc(sizeof(char) * 24); // human readable timestamp
-  sprintf(values[3], "%23d", 0);
-  for (int i = 4; i <= 10; i++)
-  { // 6 sensors + conductivity + 6 for temp calibration data
-    values[i] = (char *)malloc(sizeof(char) * 5);
-    sprintf(values[i], "%4d", 0);
+  debug("resetting for exADC");
+  // Reset external ADC (if it's installed)
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(EXADC_RESET,HIGH);
+  delay(100); // Wait for ADC to start up
+
+  bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
+  if (externalADCInstalled)
+  {
+    debug(F("Set up external ADC"));
+    externalADC = new AD7091R();
+    externalADC->configure();
+    externalADC->enableChannel(0);
+    externalADC->enableChannel(1);
+    externalADC->enableChannel(2);
+    externalADC->enableChannel(3);
+  }
+  else
+  {
+    debug(F("external ADC not installed"));
   }
 
-  values[11] = (char *)malloc(sizeof(char) * 11); // epoch timestamp for temp calibration
-  sprintf(values[11], "%10d", 0);
-  for (int i = 12; i <= 18; i++)
-  { // temp calibration data C1, V1, C2, V2, M, B, temp reading
-    values[i] = (char *)malloc(sizeof(char) * 7);
-    sprintf(values[i], "%6d", 0);
-  }
-  values[19] = (char *)malloc(sizeof(char) * 3); // burst count
-  sprintf(values[19], "%2d", 0);
-  values[20] = (char *)malloc(sizeof(char) * 11); // user serial value input
-  sprintf(values[20], "%10d", 0);
-  values[21] = (char *)malloc(sizeof(char) * 31); // user serial notes input
-  sprintf(values[21], "%30d", 0);
+  debug(F("Switchable components powered up"));
 }
 
-void prepareForTriggeredMeasurement()
+void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
-  burstCount = 0;
+  //TODO: hook for sensors that need to be powered down?
+  gpioPinOff(GPIO_PIN_3); //not in use currently
+  gpioPinOff(GPIO_PIN_4); //turn off 5v booster
+  i2c_disable(I2C2);
+  debug(F("Switchable components powered down"));
 }
 
-void prepareForUserInteraction()
+void Datalogger::prepareForUserInteraction()
 {
   char humanTime[26];
   time_t awakenedTime = timestamp();
 
   t_t2ts(awakenedTime, millis(), humanTime);
-  Monitor::instance()->writeDebugMessage(F("Awakened by user"));
-  Monitor::instance()->writeDebugMessage(F(humanTime));
+  debug(F("Awakened by user"));
+  debug(F(humanTime));
 
   awakenedByUser = false;
   awakeTime = awakenedTime;
 }
 
-void setNotBursting()
+// bool Datalogger::checkAwakeForUserInteraction(bool debugLoop)
+// {
+//   // Are we awake for user interaction?
+//   bool awakeForUserInteraction = false;
+//   if (timestamp() < awakeTime + USER_WAKE_TIMEOUT)
+//   {
+//     debug(F("Awake for user interaction"));
+//     awakeForUserInteraction = true;
+//   }
+//   else
+//   {
+//     if (!debugLoop)
+//     {
+//       debug(F("Not awake for user interaction"));
+//     }
+//   }
+//   if (!awakeForUserInteraction)
+//   {
+//     awakeForUserInteraction = debugLoop;
+//   }
+//   return awakeForUserInteraction;
+// }
+
+// bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
+// {
+//   // See if we should send a measurement to an interactive user
+//   // or take a bursting measurement
+//   bool takeMeasurement = false;
+//   if (bursting)
+//   {
+//     takeMeasurement = true;
+//   }
+//   else if (awakeForUserInteraction)
+//   {
+//     unsigned long currentMillis = millis();
+//     unsigned int interactiveMeasurementDelay = 1000;
+//     if (currentMillis - lastMillis >= interactiveMeasurementDelay)
+//     {
+//       lastMillis = currentMillis;
+//       takeMeasurement = true;
+//     }
+//   }
+//   return takeMeasurement;
+// }
+
+void Datalogger::stopAndAwaitTrigger()
 {
-  burstCount = burstLength; // Set to not bursting
-}
-
-void measureSensorValues()
-{
-  // TODO: do we need to do this every time ??
-  char uuidString[2 * UUID_LENGTH + 1];
-  uuidString[2 * UUID_LENGTH] = '\0';
-  for (short i = 0; i < UUID_LENGTH; i++)
-  {
-    sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
-  }
-
-  // Get the deployment identifier
-  // TODO: do we need to do this every time ??
-  char deploymentIdentifier[26];
-  readDeploymentIdentifier(deploymentIdentifier);
-  char deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH + 2];
-  memcpy(deploymentUUID, deploymentIdentifier, DEPLOYMENT_IDENTIFIER_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH] = '_';
-  memcpy(&deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 1], uuidString, 2 * UUID_LENGTH);
-  deploymentUUID[DEPLOYMENT_IDENTIFIER_LENGTH + 2 * UUID_LENGTH] = '\0';
-
-  // Log Deployment UUID
-  sprintf(values[0], "%s", deploymentUUID);
-
-  // Log UUID
-  sprintf(values[1], "%s", uuidString);
-
-  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
-  static double currentTime;
-  static time_t currentEpoch;
-  static uint32 offsetMillis;
-  if (burstCount == 0)
-  {
-    Monitor::instance()->writeDebugMessage(F("setting base time"));
-    currentEpoch = timestamp();
-    offsetMillis = millis();
-  }
-  /*else if (!currentEpoch && !offsetMillis)
-  {
-    currentEpoch = timestamp();
-    offsetMillis = millis();
-  }*/
-  uint32 currentMillis = millis();
-  currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
-
-  //debug timestamp calculations
-  char valuesBuffer[190];
-  sprintf(valuesBuffer, "burstCount=%i currentMillis=%i offsetMillis=%i currentEpoch=%lld currentTime=%10.3f\n", burstCount, currentMillis, offsetMillis, currentEpoch, currentTime);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-
-  sprintf(values[2], "%10.3f", currentTime); // convert double value into string
-  t_t2ts(currentTime, currentMillis-offsetMillis, values[3]);        // convert time_t value to human readable timestamp
-
-  // Measure the new data
-  short sensorCount = 6;
-  short sensorPins[6] = {PB0, PB1, PC0, PC1, PC2, PC3};
-  for (short i = 0; i < sensorCount; i++)
-  {
-    int value = analogRead(sensorPins[i]);
-    sprintf(values[4 + i], "%4d", value);
-  }
-  // Measure and log temperature data and calibration info -> move to seperate function?
-  unsigned int uiData = 0;
-  unsigned short usData = 0;
-
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  sprintf(values[11], "%i", uiData);
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C1_ADDRESS_LENGTH);
-  sprintf(values[12], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V1_ADDRESS_LENGTH);
-  sprintf(values[13], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_C2_ADDRESS_LENGTH);
-  sprintf(values[14], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_V2_ADDRESS_LENGTH);
-  sprintf(values[15], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char *)&usData, TEMPERATURE_M_ADDRESS_LENGTH);
-  sprintf(values[16], "%i", usData);
-  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&uiData, TEMPERATURE_B_ADDRESS_LENGTH);
-  sprintf(values[17], "%i", uiData);
-  sprintf(values[18], "%.2f", calculateTemperature());
-}
-
-bool checkBursting()
-{
-  bool bursting = false;
-  if (burstCount < burstLength)
-  {
-    Monitor::instance()->writeDebugMessage(F("Bursting"));
-    bursting = true;
-  }
-  return bursting;
-}
-
-bool checkDebugLoop()
-{
-  // Debug debugLoop
-  // this should be a jumper
-  bool debugLoop = false;
-  if (debugLoop == false)
-  {
-    debugLoop = DEBUG_LOOP;
-  }
-  return debugLoop;
-}
-
-bool checkThermistorCalibration()
-{
-  unsigned int calTime = 0;
-  bool thermistorCalibrated = false;
-
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&calTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  if (calTime > 1617681773 && calTime != 4294967295)
-  {
-    thermistorCalibrated = true;
-  }
-  return thermistorCalibrated;
-}
-
-bool checkAwakeForUserInteraction(bool debugLoop)
-{
-  // Are we awake for user interaction?
-  bool awakeForUserInteraction = false;
-  if (timestamp() < awakeTime + USER_WAKE_TIMEOUT)
-  {
-    Monitor::instance()->writeDebugMessage(F("Awake for user interaction"));
-    awakeForUserInteraction = true;
-  }
-  else
-  {
-    if (!debugLoop)
-    {
-      Monitor::instance()->writeDebugMessage(F("Not awake for user interaction"));
-    }
-  }
-  if (!awakeForUserInteraction)
-  {
-    awakeForUserInteraction = debugLoop;
-  }
-  return awakeForUserInteraction;
-}
-
-bool checkTakeMeasurement(bool bursting, bool awakeForUserInteraction)
-{
-  // See if we should send a measurement to an interactive user
-  // or take a bursting measurement
-  bool takeMeasurement = false;
-  if (bursting)
-  {
-    takeMeasurement = true;
-  }
-  else if (awakeForUserInteraction)
-  {
-    unsigned long currentMillis = millis();
-    unsigned int interactiveMeasurementDelay = 1000;
-    if (currentMillis - lastMillis >= interactiveMeasurementDelay)
-    {
-      lastMillis = currentMillis;
-      takeMeasurement = true;
-    }
-  }
-  return takeMeasurement;
-}
-
-void stopAndAwaitTrigger()
-{
-  Monitor::instance()->writeDebugMessage(F("Await measurement trigger"));
+  debug(F("Await measurement trigger"));
 
   if (Clock.checkIfAlarm(1))
   {
-    Monitor::instance()->writeDebugMessage(F("Alarm 1"));
+    debug(F("Alarm 1"));
   }
 
-  setNextAlarm(interval); // If we are in this block, alawys set the next alarm
-  powerDownSwitchableComponents();
-  disableSwitchedPower();
-
-  printInterruptStatus(Serial2);
-  Monitor::instance()->writeDebugMessage(F("Going to sleep"));
+  // printInterruptStatus(Serial2);
+  debug(F("Going to sleep"));
 
   // save enabled interrupts
   int iser1, iser2, iser3;
   storeAllInterrupts(iser1, iser2, iser3);
 
-  clearAllInterrupts();
-  clearAllPendingInterrupts();
-  clearUserInterrupt();
+  clearManualWakeInterrupt();
+  setNextAlarmInternalRTC(settings.interval);
 
-  enableClockInterrupt();
-  enableUserInterrupt();
+  powerDownSwitchableComponents();
+  fileSystem->closeFileSystem(); // close file, filesystem
+  disableSwitchedPower();
+
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
-  Serial2.end();
+  componentsStopMode();
 
-  /////WaterBear_FileSystem::closeFileSystem(); // close file, filesystem, turn off sdcard?
+  disableCustomWatchDog();
+  debug(F("disabled watchdog"));
+  disableSerialLog();     // TODO
+  hardwarePinsStopMode(); // switch to input mode
+
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
+
+  enableManualWakeInterrupt();    // The button, which is not powered during stop mode on v0.2 hardware
+  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
   enterStopMode();
-  //enterSleepMode()
-
-  ///////upon awakening
-  //i2c 1 & 2 + resets (note 2 is in switchable components currently)
-  //reopen sd card file (save file name? or use variable that has it already)
-  //
-
-  Serial2.begin(SERIAL_BAUD);
+  //enterSleepMode();
 
   reenableAllInterrupts(iser1, iser2, iser3);
-  disableClockInterrupt();
-  disableUserInterrupt();
+  disableManualWakeInterrupt();
+  nvic_irq_disable(NVIC_RTCALARM);
+
+  enableSerialLog();
+  enableSwitchedPower();
+  setupHardwarePins(); // used from setup steps in datalogger
+
+  debug(F("Awakened by interrupt"));
+
+  startCustomWatchDog(); // could go earlier once working reliably
+  // delay( (WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
+
+  if (awakenedByUser == true)
+  {
+    notify(F("USER TRIGGERED INTERRUPT"));
+  }
 
   // We have woken from the interrupt
-  Monitor::instance()->writeDebugMessage(F("Awakened by interrupt"));
-  printInterruptStatus(Serial2);
+  // printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
+  // turn components back on
+  componentsBurstMode();
+  fileSystem->reopenFileSystem();
+
+  if (awakenedByUser == true)
+  {
+    awakeTime = timestamp();
+  }
 
   // We need to check on which interrupt was triggered
   if (awakenedByUser)
   {
     prepareForUserInteraction();
   }
-  else
-  {
-    prepareForTriggeredMeasurement();
-  }
 }
 
-void handleControlCommand()
+void Datalogger::storeDataloggerConfiguration()
 {
-  Monitor::instance()->writeDebugMessage(F("SERIAL2 Input Ready"));
-  awakeTime = timestamp(); // Push awake time forward
-  int command = WaterBear_Control::processControlCommands(Serial2);
-  switch (command)
-  {
-  case WT_CLEAR_MODES:
-  {
-    Monitor::instance()->writeDebugMessage(F("Clearing Config, Debug, & TempCal modes"));
-    configurationMode = false;
-    debugValuesMode = false;
-    tempCalMode = false;
-    controlFlag = 0;
-    break;
-  }
-  case WT_CONTROL_CONFIG:
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Configuration Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    configurationMode = true;
-    char *flagPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("ConfigMode: "), flagPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    processControlFlag(flagPtr);
-    break;
-  }
-  case WT_DEBUG_VAlUES:
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Value Debug Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    debugValuesMode = true;
-    break;
-  }
-  case WT_CONTROL_CAL_DRY:
-    Monitor::instance()->writeDebugMessage(F("DRY_CALIBRATION"));
-    clearECCalibrationData();
-    setECDryPointCalibration();
-    break;
-  case WT_CONTROL_CAL_LOW:
-  {
-    Monitor::instance()->writeDebugMessage(F("LOW_POINT_CALIBRATION"));
-    int *lowPointPtr = (int *)WaterBear_Control::getLastPayload();
-    int lowPoint = *lowPointPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_POINT_CALIBRATION: "), lowPoint);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    setECLowPointCalibration(lowPoint);
-    break;
-  }
-  case WT_CONTROL_CAL_HIGH:
-  {
-    Monitor::instance()->writeDebugMessage(F("HIGH_POINT_CALIBRATION"));
-    int *highPointPtr = (int *)WaterBear_Control::getLastPayload();
-    int highPoint = *highPointPtr;
-    char logMessage[31];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_POINT_CALIBRATION: "), highPoint);
-    setECHighPointCalibration(highPoint);
-    break;
-  }
-  case WT_SET_RTC: // DS3231
-  {
-    Monitor::instance()->writeDebugMessage(F("SET_RTC"));
-    time_t *RTCPtr = (time_t *)WaterBear_Control::getLastPayload();
-    time_t RTC = *RTCPtr;
-    char logMessage[24];
-    sprintf(&logMessage[0], "%s%lld", reinterpret_cast<const char *> F("SET_RTC_TO: "), RTC);
-    setTime(RTC);
-    break;
-  }
-  case WT_DEPLOY: // Set deployment identifier via serial
-  {
-    Monitor::instance()->writeDebugMessage(F("SET_DEPLOYMENT_IDENTIFIER"));
-    char *deployPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[46];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("SET_DEPLOYMENT_TO: "), deployPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeDeploymentIdentifier(deployPtr);
-    break;
-  }
-  case WT_CAL_TEMP: // display raw temperature readings, and calibrated if available
-  {
-    Monitor::instance()->writeDebugMessage(F("Entering Temperature Calibration Mode"));
-    Monitor::instance()->writeDebugMessage(F("Reset device to enter normal operating mode"));
-    Monitor::instance()->writeDebugMessage(F("Or >WT_CLEAR_MODES<"));
-    tempCalMode = true;
-    break;
-  }
-  case WT_TEMP_CAL_LOW:
-  {
-    clearThermistorCalibration();
-    Monitor::instance()->writeDebugMessage(F("LOW_TEMP_CALIBRATION")); // input in xxx.xxC
-    unsigned short *lowTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
-    unsigned short lowTemp = *lowTempPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_CAL: "), lowTemp);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, (unsigned char*)&lowTemp, TEMPERATURE_C1_ADDRESS_LENGTH);
-
-    unsigned short voltage = analogRead(PB1);
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("LOW_TEMP_VOLTAGE: "), voltage);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V1_ADDRESS_LENGTH);
-    break;
-  }
-  case WT_TEMP_CAL_HIGH:
-  {
-    Monitor::instance()->writeDebugMessage(F("HIGH_TEMP_CALIBRATION")); // input in xxx.xxC
-    unsigned short *highTempPtr = (unsigned short *)WaterBear_Control::getLastPayload();
-    unsigned short highTemp = *highTempPtr;
-    char logMessage[30];
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_CAL: "), highTemp);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, (unsigned char*)&highTemp, TEMPERATURE_C2_ADDRESS_LENGTH);
-
-    unsigned short voltage = analogRead(PB1);
-    sprintf(&logMessage[0], "%s%i", reinterpret_cast<const char *> F("HIGH_TEMP_VOLTAGE: "), voltage);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    writeEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, (unsigned char*)&voltage, TEMPERATURE_V2_ADDRESS_LENGTH);
-    calibrateThermistor();
-    break;
-  }
-  case WT_USER_VALUE:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_VALUE"));
-    char *userValuePtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[24];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_VALUE: "), userValuePtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    sprintf(values[20], "%s", userValuePtr);
-    break;
-  }
-  case WT_USER_NOTE:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_NOTE"));
-    char *userNotePtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[42];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_NOTE: "), userNotePtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    sprintf(values[21], "%s", userNotePtr);
-    break;
-  }
-  case WT_USER_INPUT:
-  {
-    Monitor::instance()->writeDebugMessage(F("USER_INPUT"));
-    char *userInputPtr = (char *)WaterBear_Control::getLastPayload();
-    char logMessage[55];
-    sprintf(&logMessage[0], "%s%s", reinterpret_cast<const char *> F("USER_INPUT: "), userInputPtr);
-    Monitor::instance()->writeDebugMessage(logMessage);
-    for (size_t i = 0; i < 42 ; i++)
-    {
-      if (userInputPtr[i] == '&')
-      {
-        sprintf(values[21], "%s", &userInputPtr[i+1]);
-        userInputPtr[i] = '\0';
-        sprintf(values[20], "%s", userInputPtr);
-        break;
-      }
-      else if (userInputPtr[i] == '\0')
-      {
-        Monitor::instance()->writeDebugMessage(F("incorrect format, delimiter is &"));
-        break;
-      }
-    }
-    break;
-  }
-  default:
-    Monitor::instance()->writeDebugMessage(F("Invalid command code"));
-    break;
-  }
+  writeDataloggerSettingsToEEPROM(&this->settings);
 }
 
-void clearThermistorCalibration()
+void Datalogger::storeSensorConfiguration(generic_config *configuration)
 {
-  Monitor::instance()->writeDebugMessage(F("clearing thermistor EEPROM registers"));
-  for (size_t i = 0; i < TEMPERATURE_BLOCK_LENGTH; i++)
-  {
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, TEMPERATURE_C1_ADDRESS_START+i, 255);
-  }
+  notify(F("Storing sensor configuration"));
+  // notify(configuration->common.slot);
+  // notify(configuration->common.sensor_type);
+  writeSensorConfigurationToEEPROM(configuration->common.slot, configuration);
 }
 
-void calibrateThermistor() // calibrate using linear slope equation, log time
+void Datalogger::setSiteName(char *siteName)
 {
-  //v = mc+b    m = (v2-v1)/(c2-c1)    b = (m*-c1)+v1
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  float c1,v1,c2,v2,m,b;
-  unsigned short slope, read;
-  unsigned int intercept;
-  unsigned char * dataPtr = (unsigned char *)&read;
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
-  c1 = *(unsigned short *)dataPtr;
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
-  v1 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
-  c2 = *(unsigned short *)dataPtr;
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
-  v2 = *(unsigned short *)dataPtr * TEMPERATURE_SCALER;
-  m = (v2-v1)/(c2-c1);
-  b = (((m*(0-c1)) + v1) + ((m*(0-c2)) + v2))/2; //average at two points
-
-  slope = m * TEMPERATURE_SCALER;
-  writeEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&slope, TEMPERATURE_M_ADDRESS_LENGTH);
-  intercept = b;
-  writeEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char*)&intercept, TEMPERATURE_B_ADDRESS_LENGTH);
-  unsigned int tempCalTime= timestamp();
-  writeEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, (unsigned char*)&tempCalTime, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  Monitor::instance()->writeDebugMessage(F("thermistor calibration complete"));
+  strncpy(this->settings.siteName, siteName, 7);
+  storeDataloggerConfiguration();
 }
 
-float calculateTemperature()
+void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
 {
-  //v = mx+b  =>  x = (v-b)/m
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  float temperature = -1;
-  if (checkThermistorCalibration() == true)
-  {
-    unsigned short m = 0;
-    unsigned int b = 0;
-    float rawData = analogRead(PB1);
-    if (rawData == 0) // indicates thermistor disconnect
-    {
-      temperature = -2;
-    }
-    else
-    {
-      readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, (unsigned char*)&m, TEMPERATURE_M_ADDRESS_LENGTH);
-      readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, (unsigned char *)&b, TEMPERATURE_B_ADDRESS_LENGTH);
-      temperature = (rawData-(b/TEMPERATURE_SCALER))/(m/TEMPERATURE_SCALER);
-    }
-  }
-  else
-  {
-    Monitor::instance()->writeDebugMessage(F("Thermistor not calibrated"));
-  }
-  return temperature;
+  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 15);
+  storeDataloggerConfiguration();
 }
 
-void takeNewMeasurement()
+
+
+void Datalogger::setDeploymentTimestamp(int timestamp)
 {
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("Taking new measurement"));
-  }
-  measureSensorValues();
-
-  // OEM EC
-  float ecValue = -1;
-  bool newDataAvailable = readECDataIfAvailable(&ecValue);
-  if (!newDataAvailable)
-  {
-    Monitor::instance()->writeDebugMessage(F("New EC data not available"));
-  }
-
-  //Serial2.print(F("Got EC value: "));
-  //Serial2.print(ecValue);
-  //Serial2.println();
-  sprintf(values[10], "%4f", ecValue); // stuff EC value into values[10] for the moment.
-
-  sprintf(values[19], "%i", burstCount); // log burstCount
-
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog"));
-  }
-  filesystem->writeLog(values, fieldCount);
-  if (DEBUG_MEASUREMENTS)
-  {
-    Monitor::instance()->writeDebugMessage(F("writeLog done"));
-  }
+  this->settings.deploymentTimestamp = timestamp;
 }
 
-void trackBurst(bool bursting)
+const char *Datalogger::getUUIDString()
 {
-  if (bursting)
-  {
-    burstCount = burstCount + 1;
-  }
-}
-
-// displays relevant readings based on controlFlag
-void monitorConfiguration()
-{
-  blink(1,500); //slow down rate of responses to 1/s
-  if (controlFlag == 0)
-  {
-    Monitor::instance()->writeDebugMessage(F("Error: no control Flag"));
-  }
-  if (controlFlag == 1) // time stamps
-  {
-    printDS3231Time();
-  }
-  if (controlFlag == 2) // conductivity readings
-  {
-    float ecValue = -1;
-    bool newDataAvailable = readECDataIfAvailable(&ecValue);
-    if (newDataAvailable)
-    {
-      char message[100];
-      sprintf(message, "Got EC value: %f", ecValue);
-      Monitor::instance()->writeDebugMessage(message);
-    }
-  }
-  if (controlFlag == 3) // thermistor readings
-  {
-    char valuesBuffer[35];
-    sprintf(valuesBuffer, "raw voltage: %i", analogRead(PB1));
-    Monitor::instance()->writeDebugMessage(valuesBuffer);
-  }
-  //test code simplified calls to write and read eeprom
-  /*
-  int test = 1337;
-  Serial2.println("writing 1337");
-  Serial2.flush();
-  writeExposedBytes(TEST_START, (unsigned char *)&test, TEST_LENGTH);
-
-  unsigned short read = 0;
-  readExposedBytes(TEST_START,(unsigned char *)&read, TEST_LENGTH);
-  Serial2.print("reading:");
-  Serial2.println(read);
-  Serial2.flush();
-  */
-}
-
-void processControlFlag(char *flag)
-{
-  if (strcmp(flag, "time") == 0)
-  {
-    controlFlag = 1;
-  }
-  else if(strcmp(flag, "conduct") == 0)
-  {
-    controlFlag = 2;
-  }
-  else if(strcmp(flag, "therm") == 0)
-  {
-    controlFlag = 3;
-  }
-  else
-  {
-    controlFlag = 0;
-  }
-}
-
-void monitorValues()
-{
-  // print content being logged each second
-  blink(1, 500);
-  char valuesBuffer[180]; // 51+25+11+24+(7*5)+33
-  sprintf(valuesBuffer, ">WT_VALUES: %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s<",
-      values[0], values[1], values[2], values[3], values[4], values[5],
-      values[6],values[7], values[8], values[9], values[10]);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-
-  //sprintf(valuesBuffer, "burstcount = %i current millis = %i\n", burstCount, (int)millis());
-  //Monitor::instance()->writeDebugMessage(F(valuesBuffer));
-
-  printToBLE(valuesBuffer);
-}
-
-void monitorTemperature() // print out calibration information & current readings
-{
-  blink(1,500);
-  unsigned short c1, v1, c2, v2, m;
-  unsigned int b;
-  unsigned int calTime;
-  unsigned char data = 0;
-  unsigned char * dataPtr = &data;
-
-  //C1 C2 M B are scaled up for storage, V1 V2 are scaled up for calculation
-  readEEPROMBytes(TEMPERATURE_C1_ADDRESS_START, dataPtr, TEMPERATURE_C1_ADDRESS_LENGTH);
-  c1 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_V1_ADDRESS_START, dataPtr, TEMPERATURE_V1_ADDRESS_LENGTH);
-  v1 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_C2_ADDRESS_START, dataPtr, TEMPERATURE_C2_ADDRESS_LENGTH);
-  c2 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_V2_ADDRESS_START, dataPtr, TEMPERATURE_V2_ADDRESS_LENGTH);
-  v2 = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_M_ADDRESS_START, dataPtr, TEMPERATURE_M_ADDRESS_LENGTH);
-  m = *(unsigned short *)dataPtr; //4
-  readEEPROMBytes(TEMPERATURE_B_ADDRESS_START, dataPtr, TEMPERATURE_B_ADDRESS_LENGTH);
-  b = *(unsigned int *)dataPtr; // 5
-  readEEPROMBytes(TEMPERATURE_TIMESTAMP_ADDRESS_START, dataPtr, TEMPERATURE_TIMESTAMP_ADDRESS_LENGTH);
-  calTime = *(unsigned int *)dataPtr; // 10
-
-  float temperature = calculateTemperature();
-
-  char valuesBuffer[150];
-  sprintf(valuesBuffer,"EEPROM thermistor block\n(%i,%i)(%i,%i)\nv=%ic+%i\ncalTime:%i\ntemperature:%.2fC\n", c1, v1, c2, v2, m, b, calTime, temperature);
-  Monitor::instance()->writeDebugMessage(F(valuesBuffer));
+  return uuidString;
 }

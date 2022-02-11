@@ -1,3 +1,21 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "utilities.h"
 #include "system/monitor.h"
 #include "system/clock.h"
@@ -5,43 +23,7 @@
 // For F103RM convienience in this file
 #define Serial Serial2
 
-void scanIC2(TwoWire *wire)
-{
-  Serial.println("Scanning...");
-  byte error, address;
-  int nDevices;
-  nDevices = 0;
-  for (address = 1; address < 127; address++)
-  {
-    // The i2c_scanner uses the return value of
-    // the Write.endTransmisstion to see if
-    // a device did acknowledge to the address.
 
-    wire->beginTransmission(address);
-    error = wire->endTransmission();
-
-    if (error == 0)
-    {
-      Serial.print("I2C device found at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.println(address, HEX);
-
-      nDevices++;
-    }
-    else if (error == 4)
-    {
-      Serial.print("Unknown error at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.println(address, HEX);
-    }
-  }
-  if (nDevices == 0)
-    Serial.println("No I2C devices found");
-  else
-    Serial.println("done");
-}
 
 void printInterruptStatus(HardwareSerial &serial)
 {
@@ -90,15 +72,25 @@ void blink(int times, int duration)
 void printDS3231Time()
 {
   char testTime[11]; // timestamp responses
-  Serial2.print(F("TS:"));
-  sprintf(testTime, "%lld", timestamp()); // convert time_t value into string
-  Serial2.println(testTime);
-  Serial2.flush();
+  sprintf(testTime, "TS: %lld", timestamp()); // convert time_t value into string
+  Monitor::instance()->writeDebugMessage(testTime);
 }
 
-void printNVICStatus(){
+void printNVICStatus()
+{
   char  message[100];
   sprintf(message, "1: NVIC_BASE->ISPR\n%" PRIu32"\n%" PRIu32"\n%" PRIu32, NVIC_BASE->ISPR[0], NVIC_BASE->ISPR[1], NVIC_BASE->ISPR[2]);
   Monitor::instance()->writeSerialMessage(F(message));
-
 }
+
+const char * reinterpretCharPtr(const __FlashStringHelper *string)
+{
+  return reinterpret_cast<const char *>(string);
+}
+
+void blinkTest()
+{
+  debug(F("blink test:"));
+  blink(10,250);
+}
+
