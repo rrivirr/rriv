@@ -181,13 +181,13 @@ bool GenericAnalog::takeMeasurement()
 }
 
 #define BURST_SIZE 20
-void GenericAnalog::takeBurstMeasurement()
+void GenericAnalog::takeCalibrationBurstMeasurement()
 {
 
   int x[BURST_SIZE];
   int sum = 0;
   double sum1 = 0;
-  notify("Calibration measurments:")
+  notify("Calibration measurments:");
   for (int i = 0; i < BURST_SIZE; i++)
   {
     if (this->configuration.adc_select == ADC_SELECT_EXTERNAL)
@@ -203,7 +203,7 @@ void GenericAnalog::takeBurstMeasurement()
   int average = sum / BURST_SIZE;
   this->value = average;
 
-  /*  Compute  variance  and standard deviation  */
+  /*  Compute  variance */
   for (int i = 0; i < BURST_SIZE; i++)
   {
     sum1 = sum1 + pow((x[i] - average), 2);
@@ -262,14 +262,14 @@ void GenericAnalog::calibrationStep(char *step, int trueValue)
 {
   if (strcmp(step, "high") == 0)
   {
-    takeBurstMeasurement();
+    takeCalibrationBurstMeasurement();
     calibrate_high_reading = this->value;
     calibrate_high_value = trueValue;
     printCalibrationStatus();
   }
   else if (strcmp(step, "low") == 0)
   {
-    takeBurstMeasurement();
+    takeCalibrationBurstMeasurement();
     calibrate_low_reading = this->value;
     calibrate_low_value = trueValue;
     printCalibrationStatus();

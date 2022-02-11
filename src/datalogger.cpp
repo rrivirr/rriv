@@ -132,7 +132,7 @@ void Datalogger::loop()
     if (powerCycle)
     {
       debug("Powercycle");
-      bool deployed = deploy();
+      bool deployed = enterFieldLoggingMode();
       if (!deployed)
       {
         // what should we do here?
@@ -142,7 +142,7 @@ void Datalogger::loop()
         while (1)
           ;
       }
-
+      powerCycle = false; // handled powercycle loop
       goto SLEEP;
     }
 
@@ -217,6 +217,7 @@ void Datalogger::loop()
         measureSensorValues(false);
         if(interactiveModeLogging)
         {
+          Serial2.print("\n");
           for (unsigned int i = 0; i < sensorCount; i++)
           {
             Serial2.print(drivers[i]->getCSVColumnNames());
@@ -492,19 +493,26 @@ void Datalogger::writeStatusFieldsToLogFile()
   sprintf(currentTimeString, "%10.3f", currentTime);                  // convert double value into string
   t_t2ts(currentTime, currentMillis - offsetMillis, humanTimeString); // convert time_t value to human readable timestamp
 
-  // TODO: only do this once
-  char deploymentUUIDString[2 * 16 + 1];
-  for (short i = 0; i < 16; i++)
-  {
-    sprintf(&deploymentUUIDString[2 * i], "%02X", (byte)settings.deploymentIdentifier[i]);
-  }
-  deploymentUUIDString[2 * 16] = '\0';
+  char buffer[100];
 
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
-  fileSystemWriteCache->writeString(deploymentUUIDString);
+  if(settings.deploymentIdentifier[0] == 0xFF)
+  {
+    sprintf(buffer, "%s-%s", uuidString, settings.deploymentTimestamp);
+  }
+  else 
+  {
+    char deploymentIdentifier[16] = {0};
+    strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
+    debug(deploymentIdentifier[0]);
+    debug(deploymentIdentifier);
+    debug(uuidString);
+    debug(settings.deploymentTimestamp);
+    sprintf(buffer, "%s-%s-%d", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
+  }
+  fileSystemWriteCache->writeString(buffer);
   fileSystemWriteCache->writeString((char *)",");
-  char buffer[10];
   sprintf(buffer, "%ld,", settings.deploymentTimestamp);
   fileSystemWriteCache->writeString(buffer);
   fileSystemWriteCache->writeString(uuidString);
@@ -825,14 +833,17 @@ bool Datalogger::deploy()
     return false;
   }
 
-  setDeploymentIdentifier();
-  setDeploymentTimestamp(timestamp());
+  setDeploymentTimestamp(timestamp());  // TODO: deployment should span across power cycles
+  enterFieldLoggingMode();
+}
+
+bool Datalogger::enterFieldLoggingMode()
+{
   strcpy(loggingFolder, settings.siteName);
   fileSystem->closeFileSystem();
   initializeFilesystem();
   changeMode(logging);
   storeMode(logging);
-  powerCycle = false; // not a powercycle loop
   return true;
 }
 
@@ -1072,20 +1083,17 @@ void Datalogger::storeSensorConfiguration(generic_config *configuration)
 
 void Datalogger::setSiteName(char *siteName)
 {
-  strcpy(this->settings.siteName, siteName);
+  strncpy(this->settings.siteName, siteName, 7);
   storeDataloggerConfiguration();
 }
 
-void Datalogger::setDeploymentIdentifier()
+void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
 {
-  // std::string id = uuids::to_string(uuids::uuid_system_generator{}());
-  // byte uuidNumber[16];
-  // TODO need to generate this UUID number
-  // lets use a timestamp plus the UUID of the board
-  // https://www.cryptosys.net/pki/Uuid.c.html
-  // memcpy(this->settings.deploymentIdentifier, id.c_str(), 16);
+  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 15);
   storeDataloggerConfiguration();
 }
+
+
 
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {

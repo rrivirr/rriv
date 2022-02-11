@@ -51,7 +51,7 @@ void WriteCache::endOfLine()
 
 void WriteCache::flushCache()
 {
-  notify("flushing cache");
+  // notify("flushing cache");
   char hello[100] = "\0";
   outputDevice->writeString(hello); // why is this required??
   outputDevice->writeString(cache);
