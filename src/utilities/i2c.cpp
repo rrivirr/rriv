@@ -127,12 +127,12 @@ void enableI2C1()
   i2c_master_enable(I2C1, 0, 0);
   Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
 
-  delay(1000);
+  delay(500);
   // i2c_bus_reset(I2C1); // hangs here if this is called
   // Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
 
   WireOne.begin();
-  delay(500);
+  delay(250);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
   
@@ -149,7 +149,7 @@ void enableI2C2()
 
   //i2c_bus_reset(I2C2); // hang if this is called
   WireTwo.begin();
-  delay(500);
+  delay(250);
 
   Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
 
