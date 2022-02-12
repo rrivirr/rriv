@@ -19,11 +19,12 @@
 #ifndef WATERBEAR_WATCHDOG
 #define WATERBEAR_WATCHDOG
 
-#define WATCHDOG_TIMEOUT_SECONDS 20
+#define DEFAULT_WATCHDOG_TIMEOUT_SECONDS 20
+#define MAX_WATCHDOG_TIMEOUT_SECONDS 65
 
 void timerFired();
 
-//void reloadCustomWatchdog();
+void reloadCustomWatchdog();
 
 //void extendCustomWatchdog(int seconds);
 

@@ -171,7 +171,7 @@ void Datalogger::loop()
         {
           notify(F("Waiting for burst delay, starting custom watchdog"));
           int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
-          int customWatchTime = interBurstDelay + WATCHDOG_TIMEOUT_SECONDS;
+          int customWatchTime = interBurstDelay + DEFAULT_WATCHDOG_TIMEOUT_SECONDS;
           Serial2.println(interBurstDelay);
           Serial2.println(customWatchTime);
           Serial2.flush();
@@ -429,6 +429,63 @@ void Datalogger::initializeBurst()
   }
 }
 
+// void delaySeconds(int seconds)
+// {
+//   delayMilliseconds(seconds * 60);
+// }
+
+void sleep(int milliseconds)
+{
+  
+  if(milliseconds >= 1000)
+  {
+    // if we are delaying for a long time, sleep the processor
+    short seconds = milliseconds / 1000;
+    Serial2.println(seconds);
+    setNextAlarmInternalRTCSeconds(seconds);
+
+    int iser1, iser2, iser3;
+    storeAllInterrupts(iser1, iser2, iser3);
+    clearAllInterrupts();
+    clearAllPendingInterrupts();
+
+    nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+
+    disableCustomWatchDog();
+    enterSleepMode();
+    startCustomWatchDog();
+
+    reenableAllInterrupts(iser1, iser2, iser3);
+    disableManualWakeInterrupt();
+    nvic_irq_disable(NVIC_RTCALARM);
+
+    sleep(milliseconds - 1000 * seconds); // finish up
+  } 
+  else
+  {
+    reloadCustomWatchdog();
+    delay(milliseconds);
+  }
+  reloadCustomWatchdog();
+
+
+  // int remainingMilliseconds = delayMilliseconds;
+  // if(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
+  // {
+  //   startCustomWatchDog(MAX_WATCHDOG_TIMEOUT_SECONDS + 1000);
+  //   while(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
+  //   {
+  //     delay(MAX_WATCHDOG_TIMEOUT_SECONDS);
+  //     milliseconds -= MAX_WATCHDOG_TIMEOUT_SECONDS;
+  //     reloadCustomWatchdog();
+  //   }
+  //   startCustomWatchDog();
+  // } else {
+  //   reloadCustomWatchdog();
+  //   delay(delayMilliseconds);
+  // }
+}
+
 void Datalogger::initializeMeasurementCycle()
 {
   notify(F("setting base time"));
@@ -449,16 +506,12 @@ void Datalogger::initializeMeasurementCycle()
   */
   if (settings.startUpDelay > 0)
   {
-    notify(F("Waiting for start up delay, starting custom watchdog"));
+    notify(F("Waiting for start up delay"));
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
-    int customWatchTime = startUpDelay+WATCHDOG_TIMEOUT_SECONDS; 
-    Serial2.println(startUpDelay);
-    Serial2.println(customWatchTime);
-    Serial2.flush();
-    startCustomWatchDog(customWatchTime);
-    delay(startUpDelay*1000); // convert minutes to milliseconds
+    notify(startUpDelay);
+    sleep(startUpDelay * 1000); // convert minutes to milliseconds
+    notify("done with sleep");
   }
-  //delay(settings.startUpDelay); // can be zero
 
   bool sensorsWarmedUp = false;
   while(sensorsWarmedUp == false)
@@ -911,7 +964,7 @@ void Datalogger::powerUpSwitchableComponents()
   // might be possible to turn off after exADC discovered, not certain.
   gpioPinOn(GPIO_PIN_4);
   
-  delay(500);
+  delay(250);
   enableI2C1();
   enableI2C2();
 
@@ -1061,7 +1114,7 @@ void Datalogger::stopAndAwaitTrigger()
   debug(F("Awakened by interrupt"));
 
   startCustomWatchDog(); // could go earlier once working reliably
-  // delay( (WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
+  // delay( (DEFAULT_WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
 
   if (awakenedByUser == true)
   {

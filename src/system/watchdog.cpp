@@ -33,33 +33,35 @@ void timerFired() // trigger a reset
   nvic_sys_reset();
 }
 
-/*void reloadCustomWatchdog()
+void reloadCustomWatchdog()
 {
   debug(F("reloadCustomWatchdog"));
   timer_generate_update(TIMER1);
 }
 
+
+/*
 void extendCustomWatchdog(int seconds)
 {
   while (seconds > 0)
   {
     debug(seconds);
     reloadCustomWatchdog();
-    if (seconds > WATCHDOG_TIMEOUT_SECONDS - 1)
+    if (seconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS - 1)
     {
-      delay((WATCHDOG_TIMEOUT_SECONDS-1)*1000);
+      delay((DEFAULT_WATCHDOG_TIMEOUT_SECONDS-1)*1000);
     }
     else
     {
       delay(seconds * 1000);
     }
-    seconds = seconds - (WATCHDOG_TIMEOUT_SECONDS - 1);
+    seconds = seconds - (DEFAULT_WATCHDOG_TIMEOUT_SECONDS - 1);
   }
 }*/
 
 void startCustomWatchDog()
 {
-  startCustomWatchDog(WATCHDOG_TIMEOUT_SECONDS);
+  startCustomWatchDog(DEFAULT_WATCHDOG_TIMEOUT_SECONDS);
 }
 
 void startCustomWatchDog(int watchdogSeconds)
