@@ -122,6 +122,7 @@ class CommandInterface
     void _stopLogging();
     void _go();
     void _reloadSensorConfigurations();
+    void _enterStop();
 
     void _help();
 

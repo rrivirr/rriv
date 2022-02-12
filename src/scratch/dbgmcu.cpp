@@ -33,7 +33,7 @@ void notifyDebugStatus()
   }
 }
 
-void printDebugStatus()
+void printMCUDebugStatus()
 {
   notify("Setup:DBGMCU_BASE->CR=");
   notify(DBGMCU_BASE->CR);

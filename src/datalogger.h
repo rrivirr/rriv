@@ -121,6 +121,7 @@ public:
     const char * getUUIDString();
 
     void reloadSensorConfigurations(); // for dev & debug
+    void stopAndAwaitTrigger(); // public for dev & debug
 
 private:
     // modules
@@ -168,7 +169,7 @@ private:
  
     // run loop
     void initializeFilesystem();
-    void stopAndAwaitTrigger();
+    // void stopAndAwaitTrigger();
     void writeStatusFields();
     void prepareForUserInteraction();
     void powerUpSwitchableComponents();
