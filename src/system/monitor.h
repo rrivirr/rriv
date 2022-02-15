@@ -35,6 +35,7 @@ void notify(short number);
 void notify(int number);
 void notify(unsigned int number);
 void notify(uint32 number);
+void notify(double number);
 
 class Monitor
 {

@@ -29,23 +29,24 @@
 
 CommandInterface * commandInterface;
 
-const __FlashStringHelper * conditions = F(R"RRIV(
-RRIV - Open Source Environmental Data Logging Platform
-Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+const __FlashStringHelper * conditions = F("conditions...");
+// F(R"RRIV(
+// RRIV - Open Source Environmental Data Logging Platform
+// Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>
-)RRIV");
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>
+// )RRIV");
 
 CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
 {
@@ -341,6 +342,7 @@ void CommandInterface::_getConfig()
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
   // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_name")), dataloggerSettings.deploymentIdentifier);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
@@ -358,6 +360,7 @@ void CommandInterface::_getConfig()
   
   cJSON_Delete(json);
   
+  notify(this->datalogger->sensorCount);
   for(int i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
@@ -526,14 +529,15 @@ void calibrate(int arg_cnt, char **args)
     return;
   }
 
-
   int slot = atoi(args[1]);
   char * subcommand = args[2];
+  notify(subcommand);
   CommandInterface::instance()->_calibrate(slot, subcommand, arg_cnt - 3, &args[3]);
 }
 
 void CommandInterface::_calibrate(int slot, char * subcommand, int arg_cnt, char ** args)
 {
+  notify(subcommand);
   this->datalogger->calibrate(slot, subcommand, arg_cnt, args);
 }
 

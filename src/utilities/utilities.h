@@ -24,7 +24,7 @@
 #include "configuration.h"
 #include "system/command.h"
 
-void printInterruptStatus(HardwareSerial &serial);
+// void printInterruptStatus(HardwareSerial &serial);
 void printDateTime(HardwareSerial &serial, DateTime now);
 
 void blink(int times, int duration);

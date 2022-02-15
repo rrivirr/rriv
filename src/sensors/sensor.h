@@ -57,24 +57,24 @@ class SensorDriver {
     virtual ~SensorDriver();
     void configureFromJSON(cJSON * json);
     void configure(generic_config configuration);
+    void setDefaults();
 
     // Interface
-    virtual generic_config getConfiguration();
-    virtual void setConfiguration(generic_config configuration);
-    virtual cJSON * getConfigurationJSON(); // returns unprotected pointer
-    virtual void setup();
-    virtual void setDefaults();
-    virtual void stop();
-    virtual bool takeMeasurement(); // return true if measurement successful
-    virtual char * getDataString();
-    virtual char * getCSVColumnNames();
-    virtual protocol_type getProtocol();
-    virtual const char * getBaseColumnHeaders();
+    virtual generic_config getConfiguration() = 0;
+    virtual void setConfiguration(generic_config configuration) = 0;
+    virtual cJSON * getConfigurationJSON() = 0; // returns unprotected pointer
+    virtual void setup() = 0;
+    virtual void stop() = 0;
+    virtual bool takeMeasurement() = 0; // return true if measurement successful
+    virtual char * getDataString() = 0;
+    virtual char * getCSVColumnNames() = 0;
+    virtual protocol_type getProtocol() = 0;;
+    virtual const char * getBaseColumnHeaders() = 0;
     virtual bool isWarmedUp();
 
     // Calibration
-    virtual void initCalibration();
-    virtual void calibrationStep(char * step, int value);
+    virtual void initCalibration() = 0;;
+    virtual void calibrationStep(char * step, int arg_cnt, char ** args) = 0;
 
     void initializeBurst();
     void incrementBurst();
@@ -85,8 +85,8 @@ class SensorDriver {
     void configureCSVColumns();
 
     // Implementation interface
-    virtual void configureDriverFromJSON(cJSON * json);
-    virtual void setDriverDefaults();
+    virtual void configureDriverFromJSON(cJSON * json) = 0;
+    virtual void setDriverDefaults() = 0;
 
   private:
     short burstCount = 0;
