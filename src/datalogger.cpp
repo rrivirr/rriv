@@ -777,8 +777,6 @@ void Datalogger::clearSlot(unsigned short slot)
 
 cJSON *Datalogger::getSensorConfiguration(short index) // returns unprotected **
 {
-  notify("get confi json");
-  notify(drivers[index]->getConfiguration().common.sensor_type);
   return drivers[index]->getConfigurationJSON();
 }
 

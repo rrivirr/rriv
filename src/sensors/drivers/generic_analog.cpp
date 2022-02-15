@@ -169,8 +169,6 @@ void GenericAnalog::setConfiguration(generic_config configuration)
 // getDriverSpecificConfigurationJSON: this class
 cJSON *GenericAnalog::getConfigurationJSON() // returns unprotected pointer
 {
-    notify("gettting it");
-
   cJSON *json = cJSON_CreateObject();
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
   cJSON_AddStringToObject(json, "type", "generic_analog");
@@ -188,8 +186,6 @@ cJSON *GenericAnalog::getConfigurationJSON() // returns unprotected pointer
   default:
     break;
   }
-      notify("gettting it");
-
   addCalibrationParametersToJSON(json);
   return json;
 }
