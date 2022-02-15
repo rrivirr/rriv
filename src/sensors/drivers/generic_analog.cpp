@@ -225,15 +225,19 @@ bool GenericAnalog::takeMeasurement()
   return true;
 }
 
-#define BURST_SIZE 20
+#define DEFAULT_CALIBRATION_BURST_LENGTH 20
+#define MAX_CALIBRATION_BURST_LENGTH 200
 void GenericAnalog::takeCalibrationBurstMeasurement()
 {
-
-  int x[BURST_SIZE];
+  if(this->configuration.calibrationBurstCount < 1 || this->configuration.calibrationBurstCount > MAX_CALIBRATION_BURST_LENGTH)
+  {
+    this->configuration.calibrationBurstCount = DEFAULT_CALIBRATION_BURST_LENGTH;
+  }
+  int x[MAX_CALIBRATION_BURST_LENGTH];
   int sum = 0;
   double sum1 = 0;
   notify("Calibration measurments:");
-  for (int i = 0; i < BURST_SIZE; i++)
+  for (int i = 0; i < this->configuration.calibrationBurstCount; i++)
   {
     if (this->configuration.adc_select == ADC_SELECT_EXTERNAL)
     {
@@ -245,17 +249,17 @@ void GenericAnalog::takeCalibrationBurstMeasurement()
     x[i] = this->value;
     delay(100);
   }
-  int average = sum / BURST_SIZE;
+  int average = sum / this->configuration.calibrationBurstCount;
   this->value = average;
 
   /*  Compute  variance */
-  for (int i = 0; i < BURST_SIZE; i++)
+  for (int i = 0; i < this->configuration.calibrationBurstCount; i++)
   {
     sum1 = sum1 + power((x[i] - average), 2);
   }
-  double variance = sum1 / (float)(BURST_SIZE);
+  calibrationVariance = sum1 / (float)(this->configuration.calibrationBurstCount);
   char buffer[50];
-  sprintf(buffer, "variance of measurements = %.2f\n", variance);
+  sprintf(buffer, "variance of measurements = %.2f\n", calibrationVariance);
   notify(buffer);
 }
 
@@ -294,9 +298,13 @@ void GenericAnalog::printCalibrationStatus()
   char buffer[50];
   sprintf(buffer, "calibrate_high_reading: %d", calibrate_high_reading);
   notify(buffer);
+  sprintf(buffer, "calibrate_high_variance: %d", calibrate_high_variance);
+  notify(buffer);
   sprintf(buffer, "calibrate_high_value: %f", calibrate_high_value);
   notify(buffer);
   sprintf(buffer, "calibrate_low_reading: %d", calibrate_low_reading);
+  notify(buffer);
+  sprintf(buffer, "calibrate_low_variance: %d", calibrate_low_variance);
   notify(buffer);
   sprintf(buffer, "calibrate_low_value: %f", calibrate_low_value);
   notify(buffer);
@@ -316,6 +324,7 @@ void GenericAnalog::calibrationStep(char *step, int arg_cnt, char ** args)
     takeCalibrationBurstMeasurement();
     calibrate_high_reading = this->value;
     calibrate_high_value = atof(args[0]);
+    calibrate_high_variance = this->calibrationVariance;
     printCalibrationStatus();
   }
   else if (strcmp(step, "low") == 0)
@@ -329,7 +338,7 @@ void GenericAnalog::calibrationStep(char *step, int arg_cnt, char ** args)
 
     calibrate_low_reading = this->value;
     calibrate_low_value = atof(args[0]);;
-      notify(calibrate_low_value);
+    calibrate_low_variance = this->calibrationVariance;
 
     printCalibrationStatus();
   }
@@ -358,6 +367,10 @@ void GenericAnalog::calibrationStep(char *step, int arg_cnt, char ** args)
     }
     notify(string);
     free(json);
+  }
+  else if(strcmp(step, "set-cal-burst-length") == 0)
+  {
+    this->configuration.calibrationBurstCount = atoi(args[0]);
   }
   else if(strcmp(step, "test-cal") == 0)
   {
@@ -414,9 +427,12 @@ void GenericAnalog::addCalibrationParametersToJSON(cJSON *json)
   {  
     cJSON_AddNumberToObject(json, "m", configuration.m);
     cJSON_AddNumberToObject(json, "b", configuration.b);
-    cJSON_AddNumberToObject(json, "order_of_magnitude", configuration.order_of_magnitude);
+    // cJSON_AddNumberToObject(json, "order_of_magnitude", configuration.order_of_magnitude);
     cJSON_AddNumberToObject(json, "x1", configuration.x1);
+    cJSON_AddNumberToObject(json, "x1 var", configuration.x1Var);
     cJSON_AddNumberToObject(json, "x2", configuration.x2);
+    cJSON_AddNumberToObject(json, "x2 var", configuration.x2Var);
+    cJSON_AddNumberToObject(json, "cal burst length", configuration.calibrationBurstCount);
     int exponent = -(3 - configuration.order_of_magnitude);
     cJSON_AddNumberToObject(json, "y1", configuration.y1 * power(10, exponent));
     cJSON_AddNumberToObject(json, "y2", configuration.y2 * power(10, exponent));

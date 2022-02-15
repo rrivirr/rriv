@@ -34,16 +34,18 @@ typedef struct generic_linear_analog_type // 64 bytes
   unsigned long long cal_timestamp;    // 8 byte epoch timestamp at calibration
   float m;                            // 4bytes, slope
   float b;                            // 4bytes, y-intercept
-  short order_of_magnitude;
   short x1;                         // 2bytes for 2pt calibration
+  short x1Var;                      // variance of x1
   short y1;                         // 2bytes for 2pt calibration
   short x2;                         // 2bytes for 2pt calibration
+  short x2Var;                      // variance of x2
   short y2;                         // 2bytes for 2pt calibration
   short adc_select : 2;             // two bits, support hardware expansion (addnl adc chips)
   short sensor_port : 4;
   short calibrated : 1;
-
-  char padding[4];
+  byte order_of_magnitude;         // for converting stored values back into entered values
+  byte calibrationBurstCount;
+  // char padding[5];
 
 } generic_linear_analog_sensor;
 
@@ -82,10 +84,13 @@ private:
   int value;
   const char *baseColumnHeaders = "raw,cal";
   char dataString[16];
+  float calibrationVariance = -1;
 
   short calibrate_high_reading = 0;
+  float calibrate_high_variance = -1;
   double calibrate_high_value = 0;
   short calibrate_low_reading = 0;
+  float calibration_low_variance = -1;
   double calibrate_low_value = 0;
 
   void computeCalibratedCurve();
