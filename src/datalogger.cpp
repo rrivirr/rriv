@@ -994,6 +994,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   gpioPinOff(GPIO_PIN_3); //not in use currently
   gpioPinOff(GPIO_PIN_4); //turn off 5v booster
   i2c_disable(I2C2);
+  digitalWrite(EXADC_RESET,LOW);
   debug(F("Switchable components powered down"));
 }
 
