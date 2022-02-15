@@ -32,14 +32,14 @@ int ADC_PINS[5] = {
 
 #define FLOATING_POINT_STORAGE_MULTIPLIER 100
 
-int power1 (int x, unsigned int y)
+int power (int x, unsigned int y)
 {
     if (y == 0)
         return 1;
     else if ((y % 2) == 0)
-        return power1 (x, y / 2) * power1 (x, y / 2);
+        return power (x, y / 2) * power (x, y / 2);
     else
-        return x * power1 (x, y / 2) * power1 (x, y / 2);
+        return x * power (x, y / 2) * power (x, y / 2);
 
 }
 
@@ -243,7 +243,7 @@ void GenericAnalog::takeCalibrationBurstMeasurement()
   /*  Compute  variance */
   for (int i = 0; i < BURST_SIZE; i++)
   {
-    sum1 = sum1 + power1((x[i] - average), 2);
+    sum1 = sum1 + power((x[i] - average), 2);
   }
   double variance = sum1 / (float)(BURST_SIZE);
   char buffer[50];
@@ -253,8 +253,8 @@ void GenericAnalog::takeCalibrationBurstMeasurement()
 
 char *GenericAnalog::getDataString()
 {
-  int exponent = -(4 - configuration.order_of_magnitude);
-  double calibratedValue = (configuration.m * value + configuration.b) * power1(10, exponent);
+  int exponent = -(3 - configuration.order_of_magnitude);
+  double calibratedValue = (configuration.m * value + configuration.b) * power(10, exponent);
   sprintf(dataString, "%d,%0.3f", value, calibratedValue);
   return dataString;
 }
@@ -351,6 +351,22 @@ void GenericAnalog::calibrationStep(char *step, int arg_cnt, char ** args)
     notify(string);
     free(json);
   }
+  else if(strcmp(step, "test-cal") == 0)
+  {
+      calibrate_high_reading = 3000;
+      calibrate_high_value = 30.5;
+      calibrate_low_reading = 1100;
+      calibrate_low_value = 20.1;
+  }
+  else if(strcmp(step, "test-curve") == 0)
+  {
+      value = 1100;
+      notify(getDataString());
+      value = 3000;
+      notify(getDataString());
+      value = 2000;
+      notify(getDataString());
+  }
   else
   {
     notify("Invalid calibration step");
@@ -365,9 +381,9 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
   // figure out orders of magnitude
   int orderOfMagnitude = (int) rrivlog10(calibrate_low_value); // TODO this isn't enough to know OoM !
   notify(orderOfMagnitude);
-  int exponent = 4 - orderOfMagnitude;
-  double scaledCalibrateHighValue = calibrate_high_value * power1(10, exponent);
-  double scaledCalibrateLowValue = calibrate_low_value * power1(10, exponent);
+  int exponent = 3 - orderOfMagnitude;
+  double scaledCalibrateHighValue = calibrate_high_value * power(10, exponent);
+  double scaledCalibrateLowValue = calibrate_low_value * power(10, exponent);
   notify(scaledCalibrateHighValue);
   notify(scaledCalibrateLowValue);
 
@@ -379,7 +395,7 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
   configuration.order_of_magnitude = orderOfMagnitude;
   configuration.x1 = calibrate_low_reading;
   configuration.x2 = calibrate_high_reading;
-  configuration.y1 = scaledCalibrateLowValue;
+  configuration.y1 = scaledCalibrateLowValue; // TODO: larger storage for y values probably necessary
   configuration.y2 = scaledCalibrateHighValue;
   configuration.cal_timestamp = timestamp();
 }
@@ -392,7 +408,7 @@ void GenericAnalog::addCalibrationParametersToJSON(cJSON *json)
   cJSON_AddNumberToObject(json, "x1", configuration.x1);
   cJSON_AddNumberToObject(json, "x2", configuration.x2);
   int exponent = -(4 - configuration.order_of_magnitude);
-  cJSON_AddNumberToObject(json, "y1", configuration.y1 * power1(10, exponent));
-  cJSON_AddNumberToObject(json, "y2", configuration.y2 * power1(10, exponent));
+  cJSON_AddNumberToObject(json, "y1", configuration.y1 * power(10, exponent));
+  cJSON_AddNumberToObject(json, "y2", configuration.y2 * power(10, exponent));
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
 }
