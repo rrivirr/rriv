@@ -62,7 +62,7 @@ class SensorDriver {
     // Interface
     virtual generic_config getConfiguration() = 0;
     virtual void setConfiguration(generic_config configuration) = 0;
-    virtual cJSON * getConfigurationJSON() = 0;; // returns unprotected pointer
+    virtual cJSON * getConfigurationJSON() = 0; // returns unprotected pointer
     virtual void setup() = 0;
     virtual void stop() = 0;
     virtual bool takeMeasurement() = 0; // return true if measurement successful

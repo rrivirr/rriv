@@ -32,16 +32,22 @@ int ADC_PINS[5] = {
 
 #define FLOATING_POINT_STORAGE_MULTIPLIER 100
 
-int power (int x, unsigned int y)
-{
-    if (y == 0)
-        return 1;
-    else if ((y % 2) == 0)
-        return power (x, y / 2) * power (x, y / 2);
+float power(float x, int y) 
+{ 
+    float temp; 
+    if(y == 0) 
+        return 1; 
+    temp = power(x, y / 2); 
+    if (y % 2 == 0) 
+        return temp * temp; 
     else
-        return x * power (x, y / 2) * power (x, y / 2);
-
-}
+    { 
+        if(y > 0) 
+            return x * temp * temp; 
+        else
+            return (temp * temp) / x; 
+    } 
+} 
 
 double ln(double x)
 {
@@ -68,6 +74,8 @@ double ln(double x)
 double rrivlog10( double x ) {
     return ln(x) / LN10;    
 }
+
+float rrivfloor(float x){    int i = (int)x;    return (float)((x<0.0f) ? i-1 : i);}
 
 GenericAnalog::GenericAnalog()
 {
@@ -161,6 +169,8 @@ void GenericAnalog::setConfiguration(generic_config configuration)
 // getDriverSpecificConfigurationJSON: this class
 cJSON *GenericAnalog::getConfigurationJSON() // returns unprotected pointer
 {
+    notify("gettting it");
+
   cJSON *json = cJSON_CreateObject();
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
   cJSON_AddStringToObject(json, "type", "generic_analog");
@@ -178,6 +188,8 @@ cJSON *GenericAnalog::getConfigurationJSON() // returns unprotected pointer
   default:
     break;
   }
+      notify("gettting it");
+
   addCalibrationParametersToJSON(json);
   return json;
 }
@@ -354,9 +366,9 @@ void GenericAnalog::calibrationStep(char *step, int arg_cnt, char ** args)
   else if(strcmp(step, "test-cal") == 0)
   {
       calibrate_high_reading = 3000;
-      calibrate_high_value = 30.5;
+      calibrate_high_value = .305;
       calibrate_low_reading = 1100;
-      calibrate_low_value = 20.1;
+      calibrate_low_value = .201;
   }
   else if(strcmp(step, "test-curve") == 0)
   {
@@ -379,13 +391,13 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
   // all x and y are integers.  m and b are scale up and cast to int for storage
 
   // figure out orders of magnitude
-  int orderOfMagnitude = (int) rrivlog10(calibrate_low_value); // TODO this isn't enough to know OoM !
-  notify(orderOfMagnitude);
+  int orderOfMagnitude = rrivfloor(rrivlog10(calibrate_low_value)); // TODO this isn't enough to know OoM !
+  // notify(orderOfMagnitude);
   int exponent = 3 - orderOfMagnitude;
   double scaledCalibrateHighValue = calibrate_high_value * power(10, exponent);
   double scaledCalibrateLowValue = calibrate_low_value * power(10, exponent);
-  notify(scaledCalibrateHighValue);
-  notify(scaledCalibrateLowValue);
+  // notify(scaledCalibrateHighValue);
+  // notify(scaledCalibrateLowValue);
 
   double m = (double)(scaledCalibrateHighValue - scaledCalibrateLowValue) / (double)(calibrate_high_reading - calibrate_low_reading);
   double b = scaledCalibrateHighValue - m * calibrate_high_reading;
@@ -402,13 +414,27 @@ void GenericAnalog::computeCalibratedCurve() // calibrate using linear slope equ
 
 void GenericAnalog::addCalibrationParametersToJSON(cJSON *json)
 {
-  cJSON_AddNumberToObject(json, "m", configuration.m);
-  cJSON_AddNumberToObject(json, "b", configuration.b);
-  cJSON_AddNumberToObject(json, "order_of_magnitude", configuration.order_of_magnitude);
-  cJSON_AddNumberToObject(json, "x1", configuration.x1);
-  cJSON_AddNumberToObject(json, "x2", configuration.x2);
-  int exponent = -(4 - configuration.order_of_magnitude);
-  cJSON_AddNumberToObject(json, "y1", configuration.y1 * power(10, exponent));
-  cJSON_AddNumberToObject(json, "y2", configuration.y2 * power(10, exponent));
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  if(configuration.order_of_magnitude > -6 && configuration.order_of_magnitude < 6)
+  {  
+    cJSON_AddNumberToObject(json, "m", configuration.m);
+    cJSON_AddNumberToObject(json, "b", configuration.b);
+    cJSON_AddNumberToObject(json, "order_of_magnitude", configuration.order_of_magnitude);
+    cJSON_AddNumberToObject(json, "x1", configuration.x1);
+    cJSON_AddNumberToObject(json, "x2", configuration.x2);
+    int exponent = -(3 - configuration.order_of_magnitude);
+    cJSON_AddNumberToObject(json, "y1", configuration.y1 * power(10, exponent));
+    cJSON_AddNumberToObject(json, "y2", configuration.y2 * power(10, exponent));
+    cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  }
+  else
+  {
+    cJSON_AddNumberToObject(json, "m", 0);
+    cJSON_AddNumberToObject(json, "b", 0);
+    cJSON_AddNumberToObject(json, "order_of_magnitude", 0);
+    cJSON_AddNumberToObject(json, "x1", 0);
+    cJSON_AddNumberToObject(json, "x2", 0);
+    cJSON_AddNumberToObject(json, "y1", 0);
+    cJSON_AddNumberToObject(json, "y2", 0);
+    cJSON_AddNumberToObject(json, "calibration_time", 0);
+  }
 }

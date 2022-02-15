@@ -30,10 +30,10 @@
 typedef struct generic_linear_analog_type // 64 bytes
 {
   // analog sensor that can be 2pt calibrated
-  common_config_sensor common;      // 32 bytes
-  unsigned long long cal_timestamp; // 8 byte epoch timestamp at calibration
-  short m;                            // 2bytes, slope
-  short b;                            // 2bytes, y-intercept
+  common_config_sensor common;         // 32 bytes
+  unsigned long long cal_timestamp;    // 8 byte epoch timestamp at calibration
+  float m;                            // 4bytes, slope
+  float b;                            // 4bytes, y-intercept
   short order_of_magnitude;
   short x1;                         // 2bytes for 2pt calibration
   short y1;                         // 2bytes for 2pt calibration
@@ -43,7 +43,7 @@ typedef struct generic_linear_analog_type // 64 bytes
   short sensor_port : 4;
   short calibrated : 1;
 
-  char padding[8];
+  char padding[4];
 
 } generic_linear_analog_sensor;
 
@@ -59,7 +59,7 @@ public:
   // Interface
   generic_config getConfiguration();
   void setConfiguration(generic_config configuration);
-  cJSON *getConfigurationJSON(); // returns unprotected pointer
+  cJSON * getConfigurationJSON();
   void setup();
   void stop();
   bool takeMeasurement();
