@@ -30,6 +30,66 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 
+void sleep(int milliseconds)
+{
+  
+  if(milliseconds >= 1000)
+  {
+    // if we are delaying for a long time, sleep the processor
+    short seconds = milliseconds / 1000;
+    setNextAlarmInternalRTCSeconds(seconds);
+
+    int iser1, iser2, iser3;
+    storeAllInterrupts(iser1, iser2, iser3);
+
+    disableCustomWatchDog();
+    disableSerialLog();
+
+    clearAllInterrupts();
+    clearAllPendingInterrupts();
+
+    nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+
+    enterSleepMode();
+
+    nvic_irq_disable(NVIC_RTCALARM);
+
+    reenableAllInterrupts(iser1, iser2, iser3);
+
+    enableSerialLog();
+    startCustomWatchDog();
+
+    sleep(milliseconds - 1000 * seconds); // finish up
+
+  } 
+  else
+  {   
+
+    reloadCustomWatchdog();
+    delay(milliseconds);
+  }
+
+  reloadCustomWatchdog();
+
+
+  // int remainingMilliseconds = delayMilliseconds;
+  // if(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
+  // {
+  //   startCustomWatchDog(MAX_WATCHDOG_TIMEOUT_SECONDS + 1000);
+  //   while(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
+  //   {
+  //     delay(MAX_WATCHDOG_TIMEOUT_SECONDS);
+  //     milliseconds -= MAX_WATCHDOG_TIMEOUT_SECONDS;
+  //     reloadCustomWatchdog();
+  //   }
+  //   startCustomWatchDog();
+  // } else {
+  //   reloadCustomWatchdog();
+  //   delay(delayMilliseconds);
+  // }
+}
+
+
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type *settings)
 {
@@ -169,24 +229,10 @@ void Datalogger::loop()
         
         if (settings.interBurstDelay > 0)
         {
-          notify(F("Waiting for burst delay, starting custom watchdog"));
+          notify(F("Waiting for burst delay"));
           int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
-          int customWatchTime = interBurstDelay + DEFAULT_WATCHDOG_TIMEOUT_SECONDS;
-          Serial2.println(interBurstDelay);
-          Serial2.println(customWatchTime);
-          Serial2.flush();
-          startCustomWatchDog(customWatchTime);
-          delay(interBurstDelay*1000); // convert minutes to milliseconds
+          sleep(interBurstDelay*1000); // convert minutes to milliseconds
         }
-        
-        //extendCustomWatchdog(settings.interBurstDelay*60); // convert minutes to seconds
-        
-        /*
-        pauseCustomWatchDog();
-        notify(F("Waiting for burst delay"));
-        delay(settings.interBurstDelay * 1000 * 60); //convert minutes to milliseconds
-        resumeCustomWatchDog();
-        */
 
         initializeBurst();
         return;
@@ -434,57 +480,6 @@ void Datalogger::initializeBurst()
 //   delayMilliseconds(seconds * 60);
 // }
 
-void sleep(int milliseconds)
-{
-  
-  if(milliseconds >= 1000)
-  {
-    // if we are delaying for a long time, sleep the processor
-    short seconds = milliseconds / 1000;
-    Serial2.println(seconds);
-    setNextAlarmInternalRTCSeconds(seconds);
-
-    int iser1, iser2, iser3;
-    storeAllInterrupts(iser1, iser2, iser3);
-    clearAllInterrupts();
-    clearAllPendingInterrupts();
-
-    nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
-
-    disableCustomWatchDog();
-    enterSleepMode();
-    startCustomWatchDog();
-
-    reenableAllInterrupts(iser1, iser2, iser3);
-    disableManualWakeInterrupt();
-    nvic_irq_disable(NVIC_RTCALARM);
-
-    sleep(milliseconds - 1000 * seconds); // finish up
-  } 
-  else
-  {
-    reloadCustomWatchdog();
-    delay(milliseconds);
-  }
-  reloadCustomWatchdog();
-
-
-  // int remainingMilliseconds = delayMilliseconds;
-  // if(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  // {
-  //   startCustomWatchDog(MAX_WATCHDOG_TIMEOUT_SECONDS + 1000);
-  //   while(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  //   {
-  //     delay(MAX_WATCHDOG_TIMEOUT_SECONDS);
-  //     milliseconds -= MAX_WATCHDOG_TIMEOUT_SECONDS;
-  //     reloadCustomWatchdog();
-  //   }
-  //   startCustomWatchDog();
-  // } else {
-  //   reloadCustomWatchdog();
-  //   delay(delayMilliseconds);
-  // }
-}
 
 void Datalogger::initializeMeasurementCycle()
 {
@@ -496,18 +491,16 @@ void Datalogger::initializeMeasurementCycle()
 
   completedBursts = 0;
 
-  // extendCustomWatchdog(settings.startUpDelay*60);
-
-  /*
-  pauseCustomWatchDog();
-  notify(F("Waiting for start up delay"));
-  delay(settings.startUpDelay * 1000 * 60);
-  resumeCustomWatchDog();
-  */
   if (settings.startUpDelay > 0)
   {
+    // notify("current test");
+    // disableCustomWatchDog();
+    // delay(20000);
+    // startCustomWatchDog();
+
     notify(F("Waiting for start up delay"));
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
+    // startUpDelay = 2;
     notify(startUpDelay);
     sleep(startUpDelay * 1000); // convert minutes to milliseconds
     notify("done with sleep");
@@ -1101,7 +1094,6 @@ void Datalogger::stopAndAwaitTrigger()
   nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
   enterStopMode();
-  //enterSleepMode();
 
   reenableAllInterrupts(iser1, iser2, iser3);
   disableManualWakeInterrupt();

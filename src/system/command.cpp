@@ -23,6 +23,7 @@
 #include "version.h"
 #include "system/clock.h"
 #include "utilities/qos.h"
+#include "scratch/dbgmcu.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -581,6 +582,27 @@ void doScanIC2(int arg_cnt, char**args)
   // scanIC2(&Wire2);
 }
 
+void switchedPowerOff(int arg_cnt, char**args)
+{
+  disableSwitchedPower();
+}
+
+void enterStop(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_enterStop();
+}
+
+void CommandInterface::_enterStop()
+{
+  this->datalogger->stopAndAwaitTrigger();
+  notify("OK");
+}
+
+void mcuDebugStatus(int arg_cnt, char**args)
+{
+  printMCUDebugStatus();
+}
+
 void go(int arg_cnt, char**args)
 {
   CommandInterface::instance()->_go();
@@ -684,6 +706,10 @@ void CommandInterface::setup(){
   cmdAdd("scan-ic2", doScanIC2);
   cmdAdd("go", go);
   cmdAdd("reload-sensors", reloadSensorConfigurations);
+  cmdAdd("switched-power-off", switchedPowerOff);
+  // cmdAdd("enter-sleep", enterSleep);
+  cmdAdd("enter-stop", enterStop);
+  cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
 

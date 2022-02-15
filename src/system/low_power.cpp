@@ -73,15 +73,25 @@ void enterStopMode()
 
 void enterSleepMode()
 {
+  rcc_switch_sysclk(RCC_CLKSRC_HSI); 
+  rcc_turn_off_clk(RCC_CLK_PLL);
+
   __asm__ volatile( "dsb" );
   systick_disable();
   __asm__ volatile( "wfi" );
   systick_enable();
-  //__asm volatile( "isb" );
+  __asm volatile( "isb" );
+
+  rcc_turn_on_clk(RCC_CLK_PLL); 
+  while(!rcc_is_clk_ready(RCC_CLK_PLL));
+  rcc_switch_sysclk(RCC_CLKSRC_PLL);
 }
 
 void componentsAlwaysOff()
 {
+
+  rcc_turn_off_clk(RCC_CLK_LSI);  
+
   usb_power_off();
 
   usart_disable(Serial1.c_dev());

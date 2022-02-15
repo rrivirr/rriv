@@ -78,4 +78,4 @@ typedef struct dbgmcu_reg_map {
 
 bool checkDebugSystemDisabled();
 void notifyDebugStatus();
-void printDebugStatus();
+void printMCUDebugStatus();

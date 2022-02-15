@@ -66,7 +66,7 @@ void setup(void)
   debug(F("done with setup"));
   notifyDebugStatus();
 
-  startCustomWatchDog(); // printDebugStatus delays with user message, don't want watchdog to trigger
+  startCustomWatchDog(); // printMCUDebugStatus delays with user message, don't want watchdog to trigger
 
   Monitor::instance()->debugToSerial = false;
 
