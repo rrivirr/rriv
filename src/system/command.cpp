@@ -15,9 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-
 #include "command.h"
-#include <re.h>
+//#include <re.h>
 #include <Cmd.h>
 #include <libmaple/libmaple.h>
 #include "version.h"
@@ -359,7 +358,7 @@ void CommandInterface::_getConfig()
   Serial2.flush();
   
   cJSON_Delete(json);
-  
+  notify("sensorCount is:");
   notify(this->datalogger->sensorCount);
   for(int i=0; i<this->datalogger->sensorCount; i++)
   {

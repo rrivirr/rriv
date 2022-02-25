@@ -15,6 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
+#ifndef WATERBEAR_GENERIC_ANALOG
+#define WATERBEAR_GENERIC_ANALOG
 
 #include "sensors/sensor.h"
 
@@ -93,3 +95,5 @@ private:
   void takeCalibrationBurstMeasurement(); // for calibration
 
 };
+
+#endif

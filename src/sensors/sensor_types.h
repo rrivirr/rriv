@@ -21,8 +21,11 @@
 
 #define GENERIC_ANALOG_SENSOR 0x0000
 #define GENERIC_ATLAS_SENSOR 0x0001
+#define ADAFRUIT_DHT22_SENSOR 0x002
+
+#define DRIVER_TEMPLATE 0xFFFE
 #define NO_SENSOR 0xFFFF
 
-#define MAX_SENSOR_TYPE 0x0001
+#define MAX_SENSOR_TYPE 0xFFFE // max value for number of sensor type
 
 #endif

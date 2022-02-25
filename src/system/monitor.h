@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef WATERBEAR_LOGGER
-#define WATERBEAR_LOGGER
+#ifndef WATERBEAR_MONITOR
+#define WATERBEAR_MONITOR
 
 #include "filesystem.h"
 

@@ -15,13 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-
-#ifndef WATERBEAR_MEASUREMENT_COMPONENTS
-#define WATERBEAR_MEASUREMENT_COMPONENTS
-
 #include "measurement_components.h"
 
 // Components
 AD7091R * externalADC;
-
-#endif

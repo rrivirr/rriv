@@ -15,59 +15,63 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ATLAS_EC
-#define WATERBEAR_ATLAS_EC
+#ifndef WATERBEAR_ADAFRUIT_DHT22
+#define WATERBEAR_ADAFRUIT_DHT22
 
 #include "sensors/sensor.h"
-#include "EC_OEM.h"
+#include "sensors/sensor_types.h"
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
 
+#define DHTPIN PC11     // Digital pin connected to the DHT sensor 
+#define DHTTYPE DHT22   // DHT 22 (AM2302)
 
-typedef struct generic_atlas_type // 64 bytes
+typedef struct adafruit_dht22_type // 64 bytes
 {
-    common_config_sensor common; // 32 bytes
-    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration
-    char padding[24];
-} generic_atlas_sensor;
+  common_config_sensor common;      // 32 bytes
+  unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
+
+  char padding[24]; // space to be used for any sensor specific variables
+
+} adafruit_dht22_sensor;
 
 
-class AtlasEC : public I2CSensorDriver
+class AdaDHT22 : public GPIOSensorDriver
 {
-
-  public: 
+  public:
     // Constructor
-    AtlasEC();
-    ~AtlasEC();
+    AdaDHT22();
+    ~AdaDHT22();
 
     // Interface
-    void setup();
-    void configure(generic_config * configuration);
     generic_config getConfiguration();
     void setConfiguration(generic_config configuration);
-    cJSON * getConfigurationJSON(); // returns unprotected pointer
+    cJSON * getConfigurationJSON();
+    void setup();
     void stop();
     bool takeMeasurement();
     char * getDataString();
     char * getCSVColumnNames();
     protocol_type getProtocol();
     const char * getBaseColumnHeaders();
-
     void initCalibration();
-    void calibrationStep(char * step, int arg_cnt, char ** args);
-    void addCalibrationParametersToJSON(cJSON * json);
+    void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    // Implementatino interface
+    void configureDriverFromJSON(cJSON *json);
     void setDriverDefaults();
-    void configureDriverFromJSON(cJSON * json);
 
   private:
-    generic_atlas_sensor configuration;
-    EC_OEM *oem_ec;
+    adafruit_dht22_sensor configuration;
+    DHT_Unified *dht;
 
-    int value;
-    const char * baseColumnHeaders = "ec.mS";
-    char dataString[16];
+    float temperature;
+    float humidity;
+    const char *baseColumnHeaders = "C,RH"; // will be written to .csv
+    char dataString[16]; // will be written to .csv
 
+    void addCalibrationParametersToJSON(cJSON *json);
 };
 
 #endif

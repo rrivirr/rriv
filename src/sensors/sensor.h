@@ -23,7 +23,7 @@
 #include <Wire_slave.h>
 #include <cJSON.h>
 
-typedef enum protocol { analog, i2c } protocol_type;
+typedef enum protocol { analog, i2c, gpio , drivertemplate} protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64
 
@@ -107,6 +107,15 @@ class I2CSensorDriver : public SensorDriver {
     TwoWire * wire;
 };
 
+class DriverTemplateSensorDriver : public SensorDriver {
+  public:
+    ~DriverTemplateSensorDriver();
+};
+
+class GPIOSensorDriver : public SensorDriver {
+  public:
+    ~GPIOSensorDriver();
+};
 
 void getDefaultsCommon(common_config_sensor *fillValues);
 void readCommonConfigOnly(common_config_sensor *readValues); //not made
