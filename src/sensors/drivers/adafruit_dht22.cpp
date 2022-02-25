@@ -30,7 +30,7 @@ cJSON * AdaDHT22::getConfigurationJSON()
   cJSON *json = cJSON_CreateObject();
   //common config, leave alone
   cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
-  cJSON_AddStringToObject(json, "type", "driver_template"); // change value of "driver_template"
+  cJSON_AddStringToObject(json, "type", "dht22");
   cJSON_AddStringToObject(json, "tag", configuration.common.tag);
   cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
   

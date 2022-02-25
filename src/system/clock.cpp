@@ -225,6 +225,6 @@ void t_t2ts(time_t epochTS, uint32 currentMillis, char *humanTime)
   // Format time, "yyyy-mm-dd hh:mm:ss.sss" = "%Y/%m/%d %H:%M:%S" (yyyy/mm/dd hh:mm:ss.sss) = 23
   ts.tm_sec = ts.tm_sec + currentMillis/1000; // correct seconds
   strftime(buf, 20, "%Y-%m-%d %H:%M:%S", &ts);
-  sprintf(humanTime, "%s.%i", buf, (int)currentMillis % 1000);
+  sprintf(humanTime, "%s.%03i", buf, (int)currentMillis % 1000);
 }
 
