@@ -554,11 +554,11 @@ void Datalogger::writeStatusFieldsToLogFile()
   char humanTimeString[20];
   sprintf(currentTimeString, "%10.3f", currentTime);                  // convert double value into string
   t_t2ts(currentTime, currentMillis - offsetMillis, humanTimeString); // convert time_t value to human readable timestamp
-
-  char buffer[100];
-
+  
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
+
+  char buffer[100];
   if(settings.deploymentIdentifier[0] == 0xFF)
   {
     sprintf(buffer, "%s-%s", uuidString, settings.deploymentTimestamp);
@@ -582,7 +582,7 @@ void Datalogger::writeStatusFieldsToLogFile()
   fileSystemWriteCache->writeString(currentTimeString);
   fileSystemWriteCache->writeString((char *)",");
   fileSystemWriteCache->writeString(humanTimeString);
-  fileSystemWriteCache->writeString((char *)",");
+  //fileSystemWriteCache->writeString((char *)","); // there is somehow already a comma here?
 }
 
 bool Datalogger::writeMeasurementToLogFile()
