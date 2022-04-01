@@ -357,8 +357,8 @@ void CommandInterface::_getConfig()
   notify(string);
   
   cJSON_Delete(json);
-  notify("sensorCount is:");
-  notify(this->datalogger->sensorCount);
+  debug("sensorCount is:");
+  debug(short(this->datalogger->sensorCount));
   for(int i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);

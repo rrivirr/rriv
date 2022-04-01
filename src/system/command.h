@@ -126,7 +126,7 @@ class CommandInterface
 
     void _help();
 
-    void _gpiotest();
+    void _gpiotest(); // toggles gpio pin state (low/high)
 
 
 
