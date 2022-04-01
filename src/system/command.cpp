@@ -201,9 +201,9 @@ void setDeploymentIdentifier(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   char * deploymentIdentifier = args[1];
-  if(strlen(deploymentIdentifier) > 8)
+  if(strlen(deploymentIdentifier) > 15)
   {
-    invalidArgumentsMessage(F("Deployment identifier must be 16 characters or less"));
+    invalidArgumentsMessage(F("Deployment identifier must be 15 characters or less"));
     return;
   }
   CommandInterface::instance()->_setDeploymentIdentifier(deploymentIdentifier);
