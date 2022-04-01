@@ -355,7 +355,6 @@ void CommandInterface::_getConfig()
     return;
   }
   notify(string);
-  Serial2.flush();
   
   cJSON_Delete(json);
   notify("sensorCount is:");
@@ -370,7 +369,6 @@ void CommandInterface::_getConfig()
       return;
     }
     notify(string);
-    Serial2.flush();
 
     cJSON_Delete(sensorConfiguration);
   }
@@ -626,6 +624,7 @@ void CommandInterface::_help()
   char commands[] = "Command List:\n"
   "version\n"
   "show-warranty\n"
+  "show-conditions\n"
   "get-config\n"
   "set-config\n"
   "set-slot-config\n"
@@ -643,17 +642,33 @@ void CommandInterface::_help()
   "set-user-note\n"
   "set-user-value\n"
   "start-logging\n"
+  "stop-logging\n"
   "deploy-now\n"
-  "interactive\n"
+  "interactive or i\n"
   "trace\n"
   "check-memory\n"
-  "scan-ic2\n";
+  "scan-ic2\n"
+  "go\n"
+  "reload-sensors\n"
+  "switched-power-off\n"
+  "enter-stop\n"
+  "mcu-debug-status\n";
 
-
-  Serial2.println(commands);
-  Serial2.flush();
+  notify(commands);
 }
 
+void gpiotest(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_gpiotest();
+}
+
+void CommandInterface::_gpiotest()
+{
+  if (digitalRead(GPIO_PIN_3) == HIGH)
+    digitalWrite(GPIO_PIN_3, LOW);
+  else
+    digitalWrite(GPIO_PIN_3, HIGH);
+}
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
 {
@@ -715,6 +730,8 @@ void CommandInterface::setup(){
   cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
+
+  cmdAdd("gpio-test", gpiotest);
 
 }
 

@@ -126,6 +126,8 @@ class CommandInterface
 
     void _help();
 
+    void _gpiotest();
+
 
 
 
