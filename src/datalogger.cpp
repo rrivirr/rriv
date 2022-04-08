@@ -30,7 +30,7 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 
-void sleep(int milliseconds)
+void Datalogger::sleep(int milliseconds)
 {
   
   if(milliseconds >= 1000)
@@ -60,6 +60,7 @@ void sleep(int milliseconds)
     startCustomWatchDog();
 
     sleep(milliseconds - 1000 * seconds); // finish up
+    currentEpoch += seconds;
 
   } 
   else
@@ -548,7 +549,7 @@ void Datalogger::writeStatusFieldsToLogFile()
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
-  double currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
+  double currentTime = (double) currentEpoch + ( (double) ( currentMillis - offsetMillis) ) / 1000;
 
   char currentTimeString[20];
   char humanTimeString[24]; // YYYY-MM-DD HH:MM:SS:sss

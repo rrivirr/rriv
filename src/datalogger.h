@@ -166,6 +166,7 @@ private:
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(generic_config * configuration);
 
+    void sleep(int milliseconds);
  
     // run loop
     void initializeFilesystem();
