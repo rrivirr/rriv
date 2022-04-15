@@ -44,6 +44,7 @@ typedef struct generic_linear_analog_type // 64 bytes
   short adc_select : 2;             // two bits, support hardware expansion (addnl adc chips)
   short sensor_port : 4;
   short calibrated : 1;
+  short unused : 9; // 9 bits left in the short for boolean configurations
 
   char padding[4];
 
