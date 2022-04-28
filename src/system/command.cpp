@@ -489,7 +489,9 @@ void getRTC(int arg_cnt, char **args)
 {
   int time = timestamp();
   char message[100];
-  sprintf(message, "current timestamp: %i", time);
+  char humanTimeString[25];
+  t_t2ts(time, millis(), humanTimeString);
+  sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
   notify(message);
 }
 

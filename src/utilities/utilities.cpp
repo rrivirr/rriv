@@ -30,7 +30,7 @@
 //   serial.println(F("NVIC->ISER:"));
 //   serial.println(NVIC_BASE->ISER[0], BIN);
 //   serial.println(NVIC_BASE->ISER[1], BIN);
-//   serial.println(NVIC_BASE->ISER[2], BIN);
+//   serial.println(NVIC_BASE->ISER[2], BIN);printD
 //   serial.println(EXTI_BASE->PR, BIN);
 //   serial.flush();
 // }
