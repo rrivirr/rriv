@@ -699,9 +699,6 @@ void CommandInterface::setup(){
   cmdAdd("start-logging", startLogging);
   cmdAdd("stop-logging", stopLogging);
 
-  // cmdAdd("start-logging", toggleInteractiveLogging);
-
-  // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
   cmdAdd("i", switchToInteractiveMode);
