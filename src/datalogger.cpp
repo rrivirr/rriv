@@ -30,7 +30,7 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 
-void sleep(int milliseconds)
+void Datalogger::sleep(int milliseconds)
 {
   
   if(milliseconds >= 1000)
@@ -60,6 +60,7 @@ void sleep(int milliseconds)
     startCustomWatchDog();
 
     sleep(milliseconds - 1000 * seconds); // finish up
+    currentEpoch += seconds;
 
   } 
   else
@@ -548,20 +549,20 @@ void Datalogger::writeStatusFieldsToLogFile()
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
-  double currentTime = (double)currentEpoch + (((double)currentMillis - offsetMillis) / 1000);
+  double currentTime = (double) currentEpoch + ( (double) ( currentMillis - offsetMillis) ) / 1000;
 
   char currentTimeString[20];
-  char humanTimeString[20];
+  char humanTimeString[24]; // YYYY-MM-DD HH:MM:SS:sss
   sprintf(currentTimeString, "%10.3f", currentTime);                  // convert double value into string
   t_t2ts(currentTime, currentMillis - offsetMillis, humanTimeString); // convert time_t value to human readable timestamp
 
-  char buffer[100];
-
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
+
+  char buffer[100];
   if(settings.deploymentIdentifier[0] == 0xFF)
   {
-    sprintf(buffer, "%s-%s", uuidString, settings.deploymentTimestamp);
+    sprintf(buffer, "%s-%lu", uuidString, settings.deploymentTimestamp);
   }
   else 
   {
@@ -582,7 +583,7 @@ void Datalogger::writeStatusFieldsToLogFile()
   fileSystemWriteCache->writeString(currentTimeString);
   fileSystemWriteCache->writeString((char *)",");
   fileSystemWriteCache->writeString(humanTimeString);
-  fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString((char *)","); // there is somehow already a comma here?
 }
 
 bool Datalogger::writeMeasurementToLogFile()
@@ -591,7 +592,7 @@ bool Datalogger::writeMeasurementToLogFile()
 
   // write out the raw battery reading
   int batteryValue = analogRead(PB0);
-  char buffer[100];
+  char buffer[150];
   sprintf(buffer, "%d,", batteryValue);
   fileSystemWriteCache->writeString(buffer);
 
@@ -599,7 +600,7 @@ bool Datalogger::writeMeasurementToLogFile()
   debug(F("Write out sensor data"));
   for (unsigned int i = 0; i < sensorCount; i++)
   {
-    // get values from the sensor
+    // get values from the sensors
     char *dataString = drivers[i]->getDataString();
     fileSystemWriteCache->writeString(dataString);
     if (i < sensorCount - 1)

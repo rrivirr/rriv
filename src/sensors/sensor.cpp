@@ -37,7 +37,6 @@ bool SensorDriver::burstCompleted(){
   return burstCount == getConfiguration().common.burst_size;
 }
 
-
 void SensorDriver::configureCSVColumns()
 {
   notify("config csv columns");
@@ -137,3 +136,5 @@ void I2CSensorDriver::setWire(TwoWire * wire)
 // placeholder for required virtual destructors
 AnalogSensorDriver::~AnalogSensorDriver(){}
 I2CSensorDriver::~I2CSensorDriver(){}
+DriverTemplateSensorDriver::~DriverTemplateSensorDriver(){}
+GPIOSensorDriver::~GPIOSensorDriver(){}
