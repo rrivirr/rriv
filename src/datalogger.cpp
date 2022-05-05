@@ -247,14 +247,7 @@ void Datalogger::loop()
 
   processCLI();
 
-  // not currently used
-  // TODO: do we want to cache dirty config to reduce writes to EEPROM?
-  // if (configurationIsDirty())
-  // {
-  //   debug("Configuration is dirty");
-  //   storeConfiguration();
-  //   stopLogging();
-  // }
+  storeSensorConfigurationIfNeedsSave();
 
   if (inMode(logging) || inMode(deploy_on_trigger))
   {
@@ -327,22 +320,21 @@ void Datalogger::loadSensorConfigurations()
 
   // load sensor configurations from EEPROM and count them
   sensorCount = 0;
-  generic_config *configs[EEPROM_TOTAL_SENSOR_SLOTS];
+  configuration_bytes sensorConfigs[EEPROM_TOTAL_SENSOR_SLOTS];
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
     notify("reading slot");
-    generic_config *sensorConfig = (generic_config *)malloc(sizeof(generic_config));
+    readSensorConfigurationFromEEPROM(i, &sensorConfigs[i]);
 
-    readSensorConfigurationFromEEPROM(i, sensorConfig);
+    common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
-    notify(sensorConfig->common.sensor_type);
-    if (sensorConfig->common.sensor_type <= MAX_SENSOR_TYPE)
+    notify(commonConfiguration->sensor_type);
+    if (commonConfiguration->sensor_type <= MAX_SENSOR_TYPE)
     {
       notify("found configured sensor");
       sensorCount++;
     }
-    sensorConfig->common.slot = i;
-    configs[i] = sensorConfig;
+    commonConfiguration->slot = i;
   }
   if (sensorCount == 0)
   {
@@ -359,15 +351,17 @@ void Datalogger::loadSensorConfigurations()
   {
     notify("FREE MEM");
     printFreeMemory();
-    if (configs[i]->common.sensor_type > MAX_SENSOR_TYPE)
+    common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
+
+    if (commonConfiguration->sensor_type > MAX_SENSOR_TYPE)
     {
       notify("no sensor");
       continue;
     }
 
     debug("getting driver for sensor type");
-    debug(configs[i]->common.sensor_type);
-    SensorDriver *driver = driverForSensorTypeCode(configs[i]->common.sensor_type);
+    debug(commonConfiguration->sensor_type);
+    SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
     debug("got sensor driver");
     checkMemory();
 
@@ -384,21 +378,10 @@ void Datalogger::loadSensorConfigurations()
     driver->setup();
 
     debug("configure sensor driver");
-    driver->configure(*configs[i]); //pass configuration struct to the driver
+    driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
     debug("configured sensor driver");
   }
 
-  for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
-  {
-    free(configs[i]);
-  }
-
-  // set up bookkeeping for dirty configurations
-  // if (dirtyConfigurations != NULL)
-  // {
-  //   free(dirtyConfigurations);
-  // }
-  // dirtyConfigurations = (bool *)malloc(sizeof(bool) * (sensorCount + 1));
 }
 
 void Datalogger::reloadSensorConfigurations() // for dev & debug
@@ -630,30 +613,18 @@ void Datalogger::processCLI()
   cli->poll();
 }
 
-// not currently used
-// bool Datalogger::configurationIsDirty()
-// {
-//   for(int i=0; i<sensorCount+1; i++)
-//   {
-//     if(dirtyConfigurations[i])
-//     {
-//       return true;
-//     }
-//   }
 
-//   return false;
-// }
+void Datalogger::storeSensorConfigurationIfNeedsSave()
+{
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    if(drivers[i]->getNeedsSave())
+    {
+      storeSensorConfiguration(drivers[i]);
+    }
 
-// not curretnly used
-// void Datalogger::storeConfiguration()
-// {
-//   for(int i=0; i<sensorCount+1; i++)
-//   {
-//     if(dirtyConfigurations[i]){
-//       //store this config block to EEPROM
-//     }
-//   }
-// }
+  }
+}
 
 void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
 {
@@ -683,15 +654,14 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     notify("do setup");
     driver->setup();
     notify("done setup");
-    generic_config configuration = driver->getConfiguration();
-    storeSensorConfiguration(&configuration);
+    storeSensorConfiguration(driver);
 
     notify(F("updating slots"));
     bool slotReplacement = false;
     notify(sensorCount);
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      if (drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
+      if (drivers[i]->getCommonConfigurations()->slot == driver->getCommonConfigurations()->slot)
       {
         slotReplacement = true;
         notify(F("slot replacement"));
@@ -712,10 +682,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       // printFreeMemory();
       // if(sensorCount > 1)
       // {
-      //   notify(drivers[i]->getConfiguration().common.slot);
-      //   notify(driver->getConfiguration().common.slot);
+      //   notify(drivers[i]->getCommonConfigurations()->slot);
+      //   notify(driver->getCommonConfigurations()->slot);
       // }
-      for (; i < sensorCount-1 && drivers[i]->getConfiguration().common.slot < driver->getConfiguration().common.slot ; i++)
+      for (; i < sensorCount-1 && drivers[i]->getCommonConfigurations()->slot < driver->getCommonConfigurations()->slot ; i++)
       {
         updatedDrivers[i] = drivers[i];
       }
@@ -738,7 +708,7 @@ void Datalogger::clearSlot(unsigned short slot)
   bool slotConfigured = false;
   for (unsigned short i = 0; i < sensorCount; i++)
   {
-    if (drivers[i]->getConfiguration().common.slot == slot)
+    if (drivers[i]->getCommonConfigurations()->slot == slot)
     {
       slotConfigured = true;
       break;
@@ -762,8 +732,7 @@ void Datalogger::clearSlot(unsigned short slot)
   int j = 0;
   for (unsigned short i = 0; i < sensorCount + 1; i++)
   {
-    generic_config configuration = this->drivers[i]->getConfiguration();
-    if (configuration.common.slot != slot)
+    if (this->drivers[i]->getCommonConfigurations()->slot != slot)
     {
       updatedDrivers[j] = this->drivers[i];
       j++;
@@ -832,7 +801,7 @@ SensorDriver *Datalogger::getDriver(unsigned short slot)
 {
   for (unsigned short i = 0; i < sensorCount; i++)
   {
-    if (this->drivers[i]->getConfiguration().common.slot == slot)
+    if (this->drivers[i]->getCommonConfigurations()->slot == slot)
     {
       return this->drivers[i];
     }
@@ -1144,12 +1113,11 @@ void Datalogger::storeDataloggerConfiguration()
   writeDataloggerSettingsToEEPROM(&this->settings);
 }
 
-void Datalogger::storeSensorConfiguration(generic_config *configuration)
+void Datalogger::storeSensorConfiguration(SensorDriver * driver)
 {
   notify(F("Storing sensor configuration"));
-  // notify(configuration->common.slot);
-  // notify(configuration->common.sensor_type);
-  writeSensorConfigurationToEEPROM(configuration->common.slot, configuration);
+  const configuration_bytes configurationBytes = driver->getConfigurationBytes();
+  writeSensorConfigurationToEEPROM(driver->getSlot(), &configurationBytes);
 }
 
 void Datalogger::setSiteName(char *siteName)

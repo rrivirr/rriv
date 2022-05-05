@@ -24,7 +24,6 @@
 typedef struct // 64 bytes
 {
   // analog sensor that can be 2pt calibrated
-  common_sensor_driver_config common; // 32 bytes
   unsigned long long cal_timestamp;   // 8 byte epoch timestamp at calibration  // TODO: move to common
   float m;                            // 4bytes, slope
   float b;                            // 4bytes, y-intercept
@@ -39,7 +38,6 @@ typedef struct // 64 bytes
   short calibrated : 1;
   byte order_of_magnitude; // for converting stored values back into entered values
   byte calibrationBurstCount;
-  // char padding[5];
 
 } generic_linear_analog_config;
 
@@ -52,7 +50,7 @@ public:
   ~GenericAnalogDriver();
 
 private:
-  generic_linear_analog_config configuration;
+  generic_linear_analog_config configurations;
 
   int value;
   const char *sensorTypeString = "generic_analog";
@@ -76,9 +74,9 @@ private:
   //
 public:
   const char * getSensorTypeString();
-  generic_config getConfiguration();
-  void setConfiguration(generic_config configuration);
+  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
   cJSON *getConfigurationJSON();
+  configuration_bytes_partition getDriverSpecificConfigurationBytes();
   void stop();
   bool takeMeasurement();
   const char *getDataString();

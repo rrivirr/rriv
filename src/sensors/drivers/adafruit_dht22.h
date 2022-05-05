@@ -44,9 +44,9 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     AdaDHT22();
     ~AdaDHT22();
 
-    // Interface
-    generic_config getConfiguration();
-    void setConfiguration(generic_config configuration);
+    // Interface Implementation
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
@@ -55,6 +55,7 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
+
 
   protected:
     void configureDriverFromJSON(cJSON *json);

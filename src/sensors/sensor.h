@@ -44,8 +44,19 @@ typedef struct
   byte slot;                      // 1 byte
   byte burst_size;                // 1 byte
 
-  char padding[20]; // 32-12  // TODO: reorganize memory allocation to make padding unnecessary.
 } common_sensor_driver_config;
+
+typedef struct 
+{ 
+  byte common[32];
+  byte specific[32];
+} configuration_bytes;
+
+typedef struct 
+{
+  byte partition[32];
+} configuration_bytes_partition;
+
 
 typedef struct
 {
@@ -61,7 +72,9 @@ public:
   SensorDriver();
   virtual ~SensorDriver();
   void configureFromJSON(cJSON *json);
-  void configure(generic_config configuration); // TODO: pass 2 vars, one is the common struct, the other is 32 unstructured bytes to be copied to the config struct defined within the driver code.
+  void configureFromBytes(configuration_bytes configurationBytes); 
+  const configuration_bytes getConfigurationBytes();
+  const common_sensor_driver_config * getCommonConfigurations();
   void setDefaults();
 
   void initializeBurst();
@@ -71,13 +84,20 @@ public:
   char *getCSVColumnHeaders();
   cJSON *getConfigurationJSON(); // returns unprotected pointer
 
+  short getSlot();
+  void setConfigurationNeedsSave();
+  void clearConfigurationNeedsSave();
+  bool getNeedsSave();
+
 protected:
+  common_sensor_driver_config commonConfigurations;
   void configureCSVColumns();
 
 private:
   char csvColumnHeaders[100] = "column_header";
   short burstCount = 0;
   char sensorTypeString[40] = "no_type";
+  bool configurationNeedsSave = false;
 
   //
   // Subclass Implementation Interface
@@ -96,14 +116,9 @@ public:
 
   virtual const char * getSensorTypeString();
 
-  /*
-   * Configurations are stored privately by driver implementations.
-   * This method passes a storable 64 byte representation of the driver configuration
-   * with the first 32 bytes formatted as a common_sensor_driver_config struct.
-   */
-  virtual generic_config getConfiguration() = 0;
+  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
 
-  virtual void setConfiguration(generic_config configuration) = 0; // TODO: probably becomes setDriverSpecificConfiguration()
+  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
 
 
 

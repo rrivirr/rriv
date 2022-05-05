@@ -10,18 +10,16 @@ DriverTemplate::DriverTemplate()
 
 DriverTemplate::~DriverTemplate(){}
 
-generic_config DriverTemplate::getConfiguration()
+configuration_bytes_partition DriverTemplate::getDriverSpecificConfigurationBytes()
 {
-  // debug("getting driver template configuration");
-  generic_config configuration;
-  memcpy(&configuration, &this->configuration, sizeof(driver_template_sensor));
-  return configuration;
+  configuration_bytes_partition partition;
+  memcpy(&partition, &configuration, sizeof(driver_template_sensor));
+  return partition;
 }
 
-void DriverTemplate::setConfiguration(generic_config configuration)
+void DriverTemplate::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  // debug("setting driver template configuration");
-  memcpy(&this->configuration, &configuration, sizeof(generic_config));
+  memcpy(&configuration, &configurationPartition, sizeof(driver_template_sensor));
 }
 
 void DriverTemplate::appendDriverSpecificConfigurationJSON(cJSON * json)

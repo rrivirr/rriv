@@ -108,6 +108,8 @@ public:
 
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
+    void storeSensorConfigurationIfNeedsSave();
+
     void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
     void setExternalADCEnabled(bool enabled);
 
@@ -164,7 +166,7 @@ private:
     void initializeMeasurementCycle();
 
     void storeDataloggerConfiguration();
-    void storeSensorConfiguration(generic_config * configuration);
+    void storeSensorConfiguration(SensorDriver * driver);
 
     void sleep(int milliseconds);
  

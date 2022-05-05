@@ -36,6 +36,17 @@ void AtlasECDriver::configureDriverFromJSON(cJSON * json)
 }
 
 
+configuration_bytes_partition AtlasECDriver::getDriverSpecificConfigurationBytes()
+{
+  configuration_bytes_partition partition;
+  memcpy(&partition, &configuration, sizeof(generic_atlas_config));
+  return partition;
+}
+
+void AtlasECDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
+{
+  memcpy(&configuration, &configurationPartition, sizeof(generic_atlas_config));
+}
 
 
 void AtlasECDriver::setup()
@@ -78,21 +89,6 @@ void AtlasECDriver::stop()
 void AtlasECDriver::setDriverDefaults()
 {
   configuration.cal_timestamp = 0;
-}
-
-
-// base class
-generic_config AtlasECDriver::getConfiguration()
-{
-  generic_config configuration;
-  memcpy(&configuration, &this->configuration, sizeof(generic_atlas_config));
-  return configuration;
-}
-
-
-void AtlasECDriver::setConfiguration(generic_config configuration)
-{
-  memcpy(&this->configuration, &configuration, sizeof(generic_config));
 }
 
 

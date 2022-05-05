@@ -98,7 +98,7 @@ void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
   writeObjectToEEPROM(EEPROM_DATALOGGER_CONFIGURATION_START, dataloggerSettings, EEPROM_DATALOGGER_CONFIGURATION_SIZE);
 }
 
-void writeSensorConfigurationToEEPROM(short slot, void * configuration)
+void writeSensorConfigurationToEEPROM(short slot, const void * configuration)
 {
   int block = slot / 4 + 1;
   int offset = slot % 4;
@@ -106,7 +106,7 @@ void writeSensorConfigurationToEEPROM(short slot, void * configuration)
   int memoryAddress = offset * EEPROM_DATALOGGER_SENSOR_SIZE;
   // notify(deviceAddress);
   // notify(memoryAddress);
-  writeObjectToEEPROM(deviceAddress, memoryAddress, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+  writeObjectToEEPROM(deviceAddress, memoryAddress, (void *) configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 }
 
 void readSensorConfigurationFromEEPROM(short slot, void * configuration)

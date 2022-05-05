@@ -46,13 +46,12 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     char dataString[20]; // local storage for data string
 
   //
-  // Interface
+  // Interface Implementation
   //
   public:
     void setup();
-    void configure(generic_config * configuration);
-    generic_config getConfiguration();
-    void setConfiguration(generic_config configuration);
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
     void stop();
     bool takeMeasurement();

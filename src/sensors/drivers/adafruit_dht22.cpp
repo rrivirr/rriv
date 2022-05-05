@@ -9,19 +9,19 @@ AdaDHT22::AdaDHT22()
 
 AdaDHT22::~AdaDHT22(){}
 
-generic_config AdaDHT22::getConfiguration()
+
+configuration_bytes_partition AdaDHT22::getDriverSpecificConfigurationBytes()
 {
-  // debug("getting AdaDHT22 configuration");
-  generic_config configuration;
-  memcpy(&configuration, &this->configuration, sizeof(adafruit_dht22_sensor));
-  return configuration;
+  configuration_bytes_partition partition;
+  memcpy(&partition, &configuration, sizeof(adafruit_dht22_sensor));
+  return partition;
 }
 
-void AdaDHT22::setConfiguration(generic_config configuration)
+void AdaDHT22::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  // debug("setting AdaDHT22 configuration");
-  memcpy(&this->configuration, &configuration, sizeof(generic_config));
+  memcpy(&configuration, &configurationPartition, sizeof(adafruit_dht22_sensor));
 }
+
 
 void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 {

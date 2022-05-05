@@ -45,7 +45,7 @@ void writeEEPROMBytes(short address, unsigned char * data, uint8_t size);
 void readEEPROMBytes(short address, unsigned char * data, uint8_t size);
 
 void writeDataloggerSettingsToEEPROM(void * dataloggerSettings);
-void writeSensorConfigurationToEEPROM(short slot, void * configuration);
+void writeSensorConfigurationToEEPROM(short slot, const void * configuration);
 void readSensorConfigurationFromEEPROM(short slot, void * configuration);
 
 void readEEPROMBytesMem(short address, void * destination, uint8_t size); // Little Endian

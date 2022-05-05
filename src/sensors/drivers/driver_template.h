@@ -26,9 +26,6 @@ typedef struct driver_template_type // 64 bytes
 {
   common_sensor_driver_config common;      // 32 bytes
   unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
-
-  char padding[24]; // space to be used for any sensor specific variables
-
 } driver_template_sensor;
 
 
@@ -40,8 +37,8 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     ~DriverTemplate();
 
     // Interface
-    generic_config getConfiguration();
-    void setConfiguration(generic_config configuration);
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
