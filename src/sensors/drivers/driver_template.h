@@ -15,60 +15,55 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ATLAS_EC
-#define WATERBEAR_ATLAS_EC
+#ifndef WATERBEAR_DRIVER_TEMPLATE
+#define WATERBEAR_DRIVER_TEMPLATE
 
 #include "sensors/sensor.h"
-#include "EC_OEM.h"
 
+//#define any pins/static options used
 
-typedef struct  // 64 bytes
+typedef struct driver_template_type // 64 bytes
 {
-    common_sensor_driver_config common; // 32 bytes
-    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
-    char padding[24];
-} generic_atlas_config;
+  common_sensor_driver_config common;      // 32 bytes
+  unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
+} driver_template_sensor;
 
 
-class AtlasECDriver : public I2CProtocolSensorDriver
+class DriverTemplate : public DriverTemplateProtocolSensorDriver
 {
-
-  public: 
-    AtlasECDriver();
-    ~AtlasECDriver();
-  
-  private:
-    generic_atlas_config configuration;
-    EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
-
-    int value;
-    const char * baseColumnHeaders = "ec.mS";
-    char dataString[20]; // local storage for data string
-
-  //
-  // Interface Implementation
-  //
   public:
-    void setup();
+    // Constructor
+    DriverTemplate();
+    ~DriverTemplate();
+
+    // Interface
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
+    void setup();
     void stop();
     bool takeMeasurement();
     const char * getDataString();
     const char * getBaseColumnHeaders();
-
     void initCalibration();
-    void calibrationStep(char * step, int arg_cnt, char ** args);
-    void addCalibrationParametersToJSON(cJSON * json);
+    void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    // Implementatino interface
+    void configureDriverFromJSON(cJSON *json);
     void setDriverDefaults();
-    void configureDriverFromJSON(cJSON * json);
 
+  private:
+    //sensor specific variables, functions, etc.
 
+    driver_template_sensor configuration;
 
+    /*value(s) to be placed in dataString, should correspond to number of 
+    column headers and entries in dataString*/
+    int value; // sensor raw return(s) to be added to dataString
+    const char *baseColumnHeaders = "raw,cal"; // will be written to .csv
+    char dataString[16]; // will be written to .csv
+
+    void addCalibrationParametersToJSON(cJSON *json);
 };
 
 #endif

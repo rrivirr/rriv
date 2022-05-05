@@ -115,7 +115,6 @@ bool scanIC2(TwoWire *wire, int searchAddress)
   }
   if (nDevices == 0)
     Serial.println(F("No I2C devices found"));
-  else
 
   return found;
 }

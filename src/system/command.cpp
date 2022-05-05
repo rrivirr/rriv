@@ -15,9 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-
 #include "command.h"
-#include <re.h>
+//#include <re.h>
 #include <Cmd.h>
 #include <libmaple/libmaple.h>
 #include "version.h"
@@ -202,9 +201,9 @@ void setDeploymentIdentifier(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   char * deploymentIdentifier = args[1];
-  if(strlen(deploymentIdentifier) > 8)
+  if(strlen(deploymentIdentifier) > 15)
   {
-    invalidArgumentsMessage(F("Deployment identifier must be 16 characters or less"));
+    invalidArgumentsMessage(F("Deployment identifier must be 15 characters or less"));
     return;
   }
   CommandInterface::instance()->_setDeploymentIdentifier(deploymentIdentifier);
@@ -356,12 +355,11 @@ void CommandInterface::_getConfig()
     return;
   }
   notify(string);
-  Serial2.flush();
   
   cJSON_Delete(json);
-  
-  notify(this->datalogger->sensorCount);
-  for(int i=0; i<this->datalogger->sensorCount; i++)
+  debug("sensorCount is:");
+  debug(short(this->datalogger->sensorCount));
+  for(uint i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
     cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);
@@ -371,7 +369,6 @@ void CommandInterface::_getConfig()
       return;
     }
     notify(string);
-    Serial2.flush();
 
     cJSON_Delete(sensorConfiguration);
   }
@@ -489,7 +486,9 @@ void getRTC(int arg_cnt, char **args)
 {
   int time = timestamp();
   char message[100];
-  sprintf(message, "current timestamp: %i", time);
+  char humanTimeString[25];
+  t_t2ts(time, millis(), humanTimeString);
+  sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
   notify(message);
 }
 
@@ -627,6 +626,7 @@ void CommandInterface::_help()
   char commands[] = "Command List:\n"
   "version\n"
   "show-warranty\n"
+  "show-conditions\n"
   "get-config\n"
   "set-config\n"
   "set-slot-config\n"
@@ -644,17 +644,33 @@ void CommandInterface::_help()
   "set-user-note\n"
   "set-user-value\n"
   "start-logging\n"
+  "stop-logging\n"
   "deploy-now\n"
-  "interactive\n"
+  "interactive or i\n"
   "trace\n"
   "check-memory\n"
-  "scan-ic2\n";
+  "scan-ic2\n"
+  "go\n"
+  "reload-sensors\n"
+  "switched-power-off\n"
+  "enter-stop\n"
+  "mcu-debug-status\n";
 
-
-  Serial2.println(commands);
-  Serial2.flush();
+  notify(commands);
 }
 
+void gpiotest(int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_gpiotest();
+}
+
+void CommandInterface::_gpiotest()
+{
+  if (digitalRead(GPIO_PIN_3) == HIGH)
+    digitalWrite(GPIO_PIN_3, LOW);
+  else
+    digitalWrite(GPIO_PIN_3, HIGH);
+}
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
 {
@@ -697,9 +713,6 @@ void CommandInterface::setup(){
   cmdAdd("start-logging", startLogging);
   cmdAdd("stop-logging", stopLogging);
 
-  // cmdAdd("start-logging", toggleInteractiveLogging);
-
-  // cmdAdd("debug", debugMode);
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
   cmdAdd("i", switchToInteractiveMode);
@@ -716,6 +729,8 @@ void CommandInterface::setup(){
   cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
+
+  cmdAdd("gpio-test", gpiotest);
 
 }
 

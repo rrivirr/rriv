@@ -24,7 +24,7 @@
 class OutputDevice
 {
   public:
-    virtual void writeString(char * string);
+    virtual void writeString(const char * string);
 
 
 };
@@ -35,7 +35,7 @@ class WriteCache
   public:
   // methods
   WriteCache(OutputDevice * outputDevice);
-  void writeString(char * string);
+  void writeString(const char * string);
   void endOfLine();
   void flushCache();
 

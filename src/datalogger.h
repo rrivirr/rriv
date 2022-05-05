@@ -45,19 +45,19 @@
 
 typedef struct datalogger_settings { // 64 bytes
     char deploymentIdentifier[16]; // 16 bytes
+    char siteName[8]; // 8 bytes
+    unsigned long deploymentTimestamp; // 8 bytes
     unsigned short interval;  // 2 bytes minutes
     unsigned short reserved; // 2 bytes, unused
     unsigned short burstNumber; // 2 bytes
     unsigned short startUpDelay; // 2 bytes minutes
     unsigned short interBurstDelay; // 2 bytes minutes
-    char mode;       // i(interactive), d(debug), l(logging), t(deploy on trigger) 1 byte
-    char siteName[8]; // 8 bytes
-    unsigned long deploymentTimestamp; // 8 bytes
+    char mode;       // 1 byte i(interactive), d(debug), l(logging), t(deploy on trigger)
     byte externalADCEnabled : 1;
     byte debug_values : 1;
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
     byte reserved2 : 5;
-    char unused2[20];        // padding
+    char unused2[20];        // padding 64-44 bytes
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
@@ -71,7 +71,7 @@ class Datalogger
 public:
 
     // sensors
-    unsigned int sensorCount = 0;
+    unsigned short sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
@@ -108,6 +108,8 @@ public:
 
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
+    void storeSensorConfigurationIfNeedsSave();
+
     void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
     void setExternalADCEnabled(bool enabled);
 
@@ -164,8 +166,9 @@ private:
     void initializeMeasurementCycle();
 
     void storeDataloggerConfiguration();
-    void storeSensorConfiguration(generic_config * configuration);
+    void storeSensorConfiguration(SensorDriver * driver);
 
+    void sleep(int milliseconds);
  
     // run loop
     void initializeFilesystem();
