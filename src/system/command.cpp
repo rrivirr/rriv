@@ -359,7 +359,7 @@ void CommandInterface::_getConfig()
   cJSON_Delete(json);
   debug("sensorCount is:");
   debug(short(this->datalogger->sensorCount));
-  for(int i=0; i<this->datalogger->sensorCount; i++)
+  for(uint i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
     cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);

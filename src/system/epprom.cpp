@@ -33,7 +33,7 @@ byte readEEPROM(TwoWire * wire, int deviceaddress, short eeaddress )
   i2cSendTransmission(deviceaddress, eeaddress, 0, 0);
   delay(5);
 
-  short numBytes = wire->requestFrom(deviceaddress,1);
+  // short numBytes = wire->requestFrom(deviceaddress,1);
   // char debugMessage[100];
   // sprintf(debugMessage, "ee got %i bytes", numBytes);
   // debug(debugMessage);

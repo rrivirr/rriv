@@ -22,6 +22,17 @@
 SensorDriver::SensorDriver(){}
 SensorDriver::~SensorDriver(){}
 
+cJSON *SensorDriver::getConfigurationJSON() // returns unprotected pointer
+{
+  cJSON *json = cJSON_CreateObject();
+  cJSON_AddNumberToObject(json, "slot", getConfiguration().common.slot);
+  cJSON_AddStringToObject(json, "type", getSensorTypeString());
+  cJSON_AddStringToObject(json, "tag", getConfiguration().common.tag);
+  cJSON_AddNumberToObject(json, "burst_size", getConfiguration().common.burst_size);
+  this->appendDriverSpecificConfigurationJSON(json);
+  return json;
+}
+
 
 void SensorDriver::initializeBurst(){
   burstCount = 0;
@@ -61,6 +72,12 @@ void SensorDriver::configureCSVColumns()
   notify("done");
 }
 
+char *SensorDriver::getCSVColumnHeaders()
+{
+  debug(csvColumnHeaders);
+  return csvColumnHeaders;
+}
+
 void SensorDriver::setDefaults()
 {
   generic_config configuration = this->getConfiguration();
@@ -76,8 +93,19 @@ void SensorDriver::setDefaults()
 
 void SensorDriver::configureFromJSON(cJSON * json)
 {
+  
+#ifndef PRODUCTION_FIRMWARE_BUILD
+  if( sizeof(this->getConfiguration()) != SENSOR_CONFIGURATION_SIZE )
+  { 
+    // TODO: improve these messages to indicate how much overflow there is
+    // TODO: tell which driver is causing the issue, along the lines of this->getType()
+    notify("Invalid memory size for driver configuration");
+    exit(1);
+  }
+#endif
+
   generic_config configuration = this->getConfiguration();
-  memset(&configuration, SENSOR_CONFIGURATION_SIZE, 0);
+  memset(&configuration, 0, SENSOR_CONFIGURATION_SIZE);
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON))
@@ -122,19 +150,54 @@ void SensorDriver::configure(generic_config configuration)
   this->configureCSVColumns();
 }
 
+void SensorDriver::setup()
+{
+  // by default no setup
+  return;
+}
+
 bool SensorDriver::isWarmedUp()
 {
   return true;
 }
 
 
-void I2CSensorDriver::setWire(TwoWire * wire)
+
+AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver(){}
+
+protocol_type AnalogProtocolSensorDriver::getProtocol()
+{
+  notify(F("getting protocol"));
+  return analog;
+}
+
+
+I2CProtocolSensorDriver::~I2CProtocolSensorDriver(){}
+
+protocol_type I2CProtocolSensorDriver::getProtocol()
+{
+  return i2c;
+}
+
+void I2CProtocolSensorDriver::setWire(TwoWire * wire)
 {
   this->wire = wire;
 }
 
-// placeholder for required virtual destructors
-AnalogSensorDriver::~AnalogSensorDriver(){}
-I2CSensorDriver::~I2CSensorDriver(){}
-DriverTemplateSensorDriver::~DriverTemplateSensorDriver(){}
-GPIOSensorDriver::~GPIOSensorDriver(){}
+
+GPIOProtocolSensorDriver::~GPIOProtocolSensorDriver(){}
+
+protocol_type GPIOProtocolSensorDriver::getProtocol()
+{
+  // debug("getting gpio protocol");
+  return gpio;
+}
+
+
+DriverTemplateProtocolSensorDriver::~DriverTemplateProtocolSensorDriver(){}
+
+protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
+{
+  // debug("getting driver template protocol");
+  return drivertemplate;
+}

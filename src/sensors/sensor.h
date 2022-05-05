@@ -1,17 +1,17 @@
-/* 
+/*
  *  RRIV - Open Source Environmental Data Logging Platform
  *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
- *  
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
@@ -23,101 +23,181 @@
 #include <Wire_slave.h>
 #include <cJSON.h>
 
-typedef enum protocol { analog, i2c, gpio , drivertemplate} protocol_type;
+typedef enum protocol
+{
+  analog,
+  i2c,
+  gpio,
+  drivertemplate
+} protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64
 
-typedef struct 
+typedef struct
 {
-    // note needs to be 32 bytes total (multiple of 4)
-    // rearrange in blocks of 4bytes for diagram
-    // sensor.h
-    char tag[6]; // 6 bytes
-    unsigned short int sensor_type; // 2 bytes
-    unsigned short int warmup; // 2 bytes, in seconds? (65535 max value/60=1092 min)
-    byte slot; // 1 byte
-    byte burst_size; // 1 byte
-    
-    char padding[20]; // 32-12
-} common_config_sensor;
+  // needs to be 32 bytes total
+  // arrange from biggest type to smallest type
+  // sensor.h
+  char tag[6];                    // 6 bytes
+  unsigned short int sensor_type; // 2 bytes
+  unsigned short int warmup;      // 2 bytes - in seconds (65535 max value/60=1092 min)
+  byte slot;                      // 1 byte
+  byte burst_size;                // 1 byte
 
-typedef struct 
+  char padding[20]; // 32-12  // TODO: reorganize memory allocation to make padding unnecessary.
+} common_sensor_driver_config;
+
+typedef struct
 {
-  common_config_sensor common;
-  char padding[32];
+  common_sensor_driver_config common;
+  char padding[32]; // TODO: can we reorganize memory allocation to make this padding placeholder unnecessary
 } generic_config;
 
+class SensorDriver
+{
 
-class SensorDriver {
+public:
+  // Constructor
+  SensorDriver();
+  virtual ~SensorDriver();
+  void configureFromJSON(cJSON *json);
+  void configure(generic_config configuration); // TODO: pass 2 vars, one is the common struct, the other is 32 unstructured bytes to be copied to the config struct defined within the driver code.
+  void setDefaults();
 
-  public: 
-    // Constructor
-    SensorDriver();
-    virtual ~SensorDriver();
-    void configureFromJSON(cJSON * json);
-    void configure(generic_config configuration);
-    void setDefaults();
+  void initializeBurst();
+  void incrementBurst();
+  bool burstCompleted();
 
-    // Interface
-    virtual generic_config getConfiguration() = 0;
-    virtual void setConfiguration(generic_config configuration) = 0;
-    virtual cJSON * getConfigurationJSON() = 0; // returns unprotected pointer
-    virtual void setup() = 0;
-    virtual void stop() = 0;
-    virtual bool takeMeasurement() = 0; // return true if measurement successful
-    virtual char * getDataString() = 0;
-    virtual char * getCSVColumnNames() = 0;
-    virtual protocol_type getProtocol() = 0;;
-    virtual const char * getBaseColumnHeaders() = 0;
-    virtual bool isWarmedUp();
+  char *getCSVColumnHeaders();
+  cJSON *getConfigurationJSON(); // returns unprotected pointer
 
-    // Calibration
-    virtual void initCalibration() = 0;;
-    virtual void calibrationStep(char * step, int arg_cnt, char ** args) = 0;
+protected:
+  void configureCSVColumns();
 
-    void initializeBurst();
-    void incrementBurst();
-    bool burstCompleted();
+private:
+  char csvColumnHeaders[100] = "column_header";
+  short burstCount = 0;
+  char sensorTypeString[40] = "no_type";
 
-  protected:
-    char csvColumnHeaders[100] = "column_header";
-    void configureCSVColumns();
+  //
+  // Subclass Implementation Interface
+  //
+public:
 
-    // Implementation interface
-    virtual void configureDriverFromJSON(cJSON * json) = 0;
-    virtual void setDriverDefaults() = 0;
+  /*
+  * Identifies to the datalogger which communication protocol object
+  * to pass into the driver.
+  *
+  * @return a value from the protocol_type enum.  Currently analog, i2c, or gpio
+  */
+  virtual protocol_type getProtocol() = 0;
 
-  private:
-    short burstCount = 0;
 
+
+  virtual const char * getSensorTypeString();
+
+  /*
+   * Configurations are stored privately by driver implementations.
+   * This method passes a storable 64 byte representation of the driver configuration
+   * with the first 32 bytes formatted as a common_sensor_driver_config struct.
+   */
+  virtual generic_config getConfiguration() = 0;
+
+  virtual void setConfiguration(generic_config configuration) = 0; // TODO: probably becomes setDriverSpecificConfiguration()
+
+
+
+  virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
+
+  /*
+   *  Perform any sensor specific allocations, object creation, or commands.
+   *  The sensor should be ready to read values after this method completes.
+   *  This method is optional.
+   */
+  virtual void setup();
+
+  virtual void stop();
+
+  /*
+   *  Retrieve a measurement from the sensor
+   *  and store read measurement(s) privately for later output.
+   * 
+   *  @return true indicates a measurement was read and stored.
+   *  @return false indicates that the sensor is not ready to read and store a
+   *  new measurement.
+   * 
+   *  This method is required.
+   */
+  virtual bool takeMeasurement() = 0;
+
+  /*
+   * Returns a comma separated string that contains one or more
+   * measurement values from the last reading the driver successfully
+   * preformed.
+   * 
+   * @return comma separate string of measurement values
+   */
+  virtual const char *getDataString() = 0;
+
+  /*
+   * Returns a comma separated string that contains header values
+   * for columns of data corresponding to the values retured by
+   * getDataString().
+   * 
+   * @return comma separated string of columen headers
+   */
+  virtual const char *getBaseColumnHeaders() = 0;
+
+
+  virtual bool isWarmedUp();
+
+  // Calibration
+  virtual void initCalibration() = 0;
+  ;
+  virtual void calibrationStep(char *step, int arg_cnt, char **args) = 0;
+
+protected:
+  virtual void configureDriverFromJSON(cJSON *json) = 0;
+  virtual void setDriverDefaults() = 0;
 };
 
-class AnalogSensorDriver : public SensorDriver {
-  public:
-    ~AnalogSensorDriver();
+#include "base/analog_protocol_driver.h"
+
+/*
+*  Base class for sensor drivers using the I2C protocol
+*/
+class I2CProtocolSensorDriver : public SensorDriver
+{
+public:
+  ~I2CProtocolSensorDriver();
+  protocol_type getProtocol();
+  void setWire(TwoWire *wire);
+
+protected:
+  TwoWire *wire;
 };
 
-class I2CSensorDriver : public SensorDriver {
-  public:
-    ~I2CSensorDriver();
-    void setWire(TwoWire * wire);
-
-  protected:
-    TwoWire * wire;
+/*
+*  Base class for sensor drivers using the GPIO protocol
+*/
+class GPIOProtocolSensorDriver : public SensorDriver
+{
+public:
+  ~GPIOProtocolSensorDriver();
+  protocol_type getProtocol();
 };
 
-class DriverTemplateSensorDriver : public SensorDriver {
-  public:
-    ~DriverTemplateSensorDriver();
+/*
+*  Base class for the sensor driver template
+*/
+class DriverTemplateProtocolSensorDriver : public SensorDriver
+{
+public:
+  ~DriverTemplateProtocolSensorDriver();
+  protocol_type getProtocol();
 };
 
-class GPIOSensorDriver : public SensorDriver {
-  public:
-    ~GPIOSensorDriver();
-};
-
-void getDefaultsCommon(common_config_sensor *fillValues);
-void readCommonConfigOnly(common_config_sensor *readValues); //not made
-
+void getDefaultsCommon(common_sensor_driver_config *fillValues);
+void readCommonConfigOnly(common_sensor_driver_config *readValues); // not made //TODO: what is this
 
 #endif

@@ -22,33 +22,41 @@
 #include "EC_OEM.h"
 
 
-typedef struct generic_atlas_type // 64 bytes
+typedef struct  // 64 bytes
 {
-    common_config_sensor common; // 32 bytes
-    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration
+    common_sensor_driver_config common; // 32 bytes
+    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
     char padding[24];
-} generic_atlas_sensor;
+} generic_atlas_config;
 
 
-class AtlasEC : public I2CSensorDriver
+class AtlasECDriver : public I2CProtocolSensorDriver
 {
 
   public: 
-    // Constructor
-    AtlasEC();
-    ~AtlasEC();
+    AtlasECDriver();
+    ~AtlasECDriver();
+  
+  private:
+    generic_atlas_config configuration;
+    EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
 
-    // Interface
+    int value;
+    const char * baseColumnHeaders = "ec.mS";
+    char dataString[20]; // local storage for data string
+
+  //
+  // Interface
+  //
+  public:
     void setup();
     void configure(generic_config * configuration);
     generic_config getConfiguration();
     void setConfiguration(generic_config configuration);
-    cJSON * getConfigurationJSON(); // returns unprotected pointer
+    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void stop();
     bool takeMeasurement();
-    char * getDataString();
-    char * getCSVColumnNames();
-    protocol_type getProtocol();
+    const char * getDataString();
     const char * getBaseColumnHeaders();
 
     void initCalibration();
@@ -60,13 +68,7 @@ class AtlasEC : public I2CSensorDriver
     void setDriverDefaults();
     void configureDriverFromJSON(cJSON * json);
 
-  private:
-    generic_atlas_sensor configuration;
-    EC_OEM *oem_ec;
 
-    int value;
-    const char * baseColumnHeaders = "ec.mS";
-    char dataString[16];
 
 };
 

@@ -23,20 +23,12 @@ void AdaDHT22::setConfiguration(generic_config configuration)
   memcpy(&this->configuration, &configuration, sizeof(generic_config));
 }
 
-cJSON * AdaDHT22::getConfigurationJSON()
+void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
   // debug("getting AdaDHT22 json");
-
-  cJSON *json = cJSON_CreateObject();
-  //common config, leave alone
-  cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
-  cJSON_AddStringToObject(json, "type", "dht22");
-  cJSON_AddStringToObject(json, "tag", configuration.common.tag);
-  cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
   
   //driver specific config, customize
   addCalibrationParametersToJSON(json);
-  return json;
 }
 
 void AdaDHT22::setup()
@@ -91,24 +83,12 @@ bool AdaDHT22::takeMeasurement()
   return measurementTaken;
 }
 
-char *AdaDHT22::getDataString()
+const char *AdaDHT22::getDataString()
 {
   // debug("configuring AdaDHT22 dataString");
   // process data string for .csv
   sprintf(dataString, "%.2f,%.2f", temperature, humidity);
   return dataString;
-}
-
-char * AdaDHT22::getCSVColumnNames()
-{
-  // debug("AdaDHT22: getting csv column names");
-  return csvColumnHeaders;
-}
-
-protocol_type AdaDHT22::getProtocol()
-{
-  // debug("getting AdaDHT22 protocol");
-  return gpio;
 }
 
 const char *AdaDHT22::getBaseColumnHeaders()

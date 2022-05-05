@@ -272,9 +272,9 @@ void Datalogger::loop()
         if(interactiveModeLogging)
         {
           Serial2.print("\n");
-          for (unsigned int i = 0; i < sensorCount; i++)
+          for (unsigned short i = 0; i < sensorCount; i++)
           {
-            Serial2.print(drivers[i]->getCSVColumnNames());
+            Serial2.print(drivers[i]->getCSVColumnHeaders());
             if (i < sensorCount - 1)
             {
               Serial2.print(F(","));
@@ -285,7 +285,7 @@ void Datalogger::loop()
             }
           }
 
-          for (unsigned int i = 0; i < sensorCount; i++)
+          for (unsigned short i = 0; i < sensorCount; i++)
           {
             Serial2.print(drivers[i]->getDataString());
             if (i < sensorCount - 1)
@@ -367,7 +367,7 @@ void Datalogger::loadSensorConfigurations()
 
     debug("getting driver for sensor type");
     debug(configs[i]->common.sensor_type);
-    SensorDriver *driver = driverForSensorType(configs[i]->common.sensor_type);
+    SensorDriver *driver = driverForSensorTypeCode(configs[i]->common.sensor_type);
     debug("got sensor driver");
     checkMemory();
 
@@ -377,7 +377,7 @@ void Datalogger::loadSensorConfigurations()
     if (driver->getProtocol() == i2c)
     {
       debug("got i2c sensor");
-      ((I2CSensorDriver *)driver)->setWire(&WireTwo);
+      ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
       debug("set wire");
     }
     debug("do setup");
@@ -408,7 +408,7 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
   notify("FREE MEM reload");
   printFreeMemory();
   // free sensor configs
-  for(int i=0; i<sensorCount; i++)
+  for(unsigned short i=0; i<sensorCount; i++)
   {
     delete(drivers[i]);
   }
@@ -452,7 +452,7 @@ bool Datalogger::shouldExitLoggingMode()
 
 bool Datalogger::shouldContinueBursting()
 {
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned short i = 0; i < sensorCount; i++)
   {
     notify(F("check sensor burst"));
     notify(i);
@@ -507,7 +507,7 @@ void Datalogger::initializeMeasurementCycle()
   while(sensorsWarmedUp == false)
   {
     sensorsWarmedUp = true;
-    for (int i = 0; i < sensorCount; i++)
+    for (unsigned short i = 0; i < sensorCount; i++)
     {
       notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
@@ -598,10 +598,10 @@ bool Datalogger::writeMeasurementToLogFile()
 
   // and write out the sensor data
   debug(F("Write out sensor data"));
-  for (unsigned int i = 0; i < sensorCount; i++)
+  for (unsigned short i = 0; i < sensorCount; i++)
   {
     // get values from the sensors
-    char *dataString = drivers[i]->getDataString();
+    const char *dataString = drivers[i]->getDataString();
     fileSystemWriteCache->writeString(dataString);
     if (i < sensorCount - 1)
     {
@@ -665,7 +665,8 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
 
   SensorDriver *driver = NULL;
   notify("get driver");
-  driver = driverForSensorTypeString(type);
+  short typeCode = typeCodeForSensorTypeString(type);
+  driver = driverForSensorTypeCode(typeCode);
   notify("got driver");
 
   if (driver != NULL)
@@ -676,7 +677,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     if (driver->getProtocol() == i2c)
     {
       notify("got i2c sensor");
-      ((I2CSensorDriver *)driver)->setWire(&WireTwo);
+      ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
       notify("set wire");
     }
     notify("do setup");
@@ -688,7 +689,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     notify(F("updating slots"));
     bool slotReplacement = false;
     notify(sensorCount);
-    for (int i = 0; i < sensorCount; i++)
+    for (unsigned short i = 0; i < sensorCount; i++)
     {
       if (drivers[i]->getConfiguration().common.slot == driver->getConfiguration().common.slot)
       {
@@ -707,7 +708,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       sensorCount = sensorCount + 1;
       SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
-      int i = 0;
+      unsigned short i = 0;
       // printFreeMemory();
       // if(sensorCount > 1)
       // {
@@ -735,7 +736,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
 void Datalogger::clearSlot(unsigned short slot)
 {
   bool slotConfigured = false;
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned short i = 0; i < sensorCount; i++)
   {
     if (drivers[i]->getConfiguration().common.slot == slot)
     {
@@ -759,7 +760,7 @@ void Datalogger::clearSlot(unsigned short slot)
 
   SensorDriver **updatedDrivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
   int j = 0;
-  for (int i = 0; i < sensorCount + 1; i++)
+  for (unsigned short i = 0; i < sensorCount + 1; i++)
   {
     generic_config configuration = this->drivers[i]->getConfiguration();
     if (configuration.common.slot != slot)
@@ -829,7 +830,7 @@ void Datalogger::toggleTraceValues()
 
 SensorDriver *Datalogger::getDriver(unsigned short slot)
 {
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned short i = 0; i < sensorCount; i++)
   {
     if (this->drivers[i]->getConfiguration().common.slot == slot)
     {
@@ -936,12 +937,12 @@ void Datalogger::initializeFilesystem()
   const char *statusFields = "site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
   debug(header);
-  for (int i = 0; i < sensorCount; i++)
+  for (unsigned short i = 0; i < sensorCount; i++)
   {
     debug(i);
-    debug(drivers[i]->getCSVColumnNames());
+    debug(drivers[i]->getCSVColumnHeaders());
     strcat(header, ",");
-    strcat(header, drivers[i]->getCSVColumnNames());
+    strcat(header, drivers[i]->getCSVColumnHeaders());
   }
   strcat(header, ",user_note,user_value");
 

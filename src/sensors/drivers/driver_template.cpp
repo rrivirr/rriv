@@ -24,20 +24,12 @@ void DriverTemplate::setConfiguration(generic_config configuration)
   memcpy(&this->configuration, &configuration, sizeof(generic_config));
 }
 
-cJSON * DriverTemplate::getConfigurationJSON()
+void DriverTemplate::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
-  // debug("getting driver template json");
-
-  cJSON *json = cJSON_CreateObject();
-  //common config, leave alone
-  cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
-  cJSON_AddStringToObject(json, "type", "driver_template"); // change value of "driver_template"
-  cJSON_AddStringToObject(json, "tag", configuration.common.tag);
-  cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
+  // debug("appeding driver specific driver template json");
   
   //driver specific config, customize
   addCalibrationParametersToJSON(json);
-  return json;
 }
 
 void DriverTemplate::setup()
@@ -63,24 +55,12 @@ bool DriverTemplate::takeMeasurement()
   return measurementTaken;
 }
 
-char *DriverTemplate::getDataString()
+const char *DriverTemplate::getDataString()
 {
   // debug("configuring driver template dataString");
   // process data string for .csv
   sprintf(dataString, "%d,%d",value,int(value*31.83));
   return dataString;
-}
-
-char * DriverTemplate::getCSVColumnNames()
-{
-  // debug("driver template: getting csv column names");
-  return csvColumnHeaders;
-}
-
-protocol_type DriverTemplate::getProtocol()
-{
-  // debug("getting driver template protocol");
-  return drivertemplate;
 }
 
 const char *DriverTemplate::getBaseColumnHeaders()

@@ -28,7 +28,7 @@ WriteCache::WriteCache(OutputDevice * outputDevice)
 }
 
 
-void WriteCache::writeString(char * string)
+void WriteCache::writeString(const char * string)
 {
   if(nextPosition + strlen(string) > cacheSize - 1)
   {
