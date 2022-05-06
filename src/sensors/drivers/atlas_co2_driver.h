@@ -61,6 +61,8 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     AtlasScientificCO2 *modularSensorDriver;
     driver_config configuration;
 
+    const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
+
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/
     int value; // sensor raw return(s) to be added to dataString

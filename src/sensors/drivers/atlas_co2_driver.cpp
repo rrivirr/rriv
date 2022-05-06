@@ -1,7 +1,5 @@
 #include "sensors/drivers/atlas_co2_driver.h"
-#include "sensors/sensor_types.h"
 #include "system/monitor.h" // for debug() and notify()
-// #include "system/measurement_components.h" // if external adc is used
 
 AtlasCO2Driver::AtlasCO2Driver()
 {
@@ -9,6 +7,11 @@ AtlasCO2Driver::AtlasCO2Driver()
 }
 
 AtlasCO2Driver::~AtlasCO2Driver(){}
+
+const char * AtlasCO2Driver::getSensorTypeString()
+{
+  return sensorTypeString;
+}
 
 configuration_bytes_partition AtlasCO2Driver::getDriverSpecificConfigurationBytes()
 {

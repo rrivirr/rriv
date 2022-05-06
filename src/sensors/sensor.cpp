@@ -170,6 +170,13 @@ void SensorDriver::setup()
   return;
 }
 
+void SensorDriver::stop()
+{
+  // by default no stop
+  return;
+}
+
+
 bool SensorDriver::isWarmedUp()
 {
   return true;

@@ -24,7 +24,6 @@
 #include "system/command.h"
 #include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
-#include "sensors/sensor_types.h"
 #include "sensors/drivers/registry.h"
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
@@ -179,7 +178,6 @@ void Datalogger::setup()
 
 void Datalogger::loop()
 {
-
   if (inMode(deploy_on_trigger))
   {
     deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
@@ -189,6 +187,7 @@ void Datalogger::loop()
 
   if (inMode(logging))
   {
+
     if (powerCycle)
     {
       debug("Powercycle");
@@ -330,7 +329,7 @@ void Datalogger::loadSensorConfigurations()
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
     notify(commonConfiguration->sensor_type);
-    if (commonConfiguration->sensor_type <= MAX_SENSOR_TYPE)
+    if( sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
       notify("found configured sensor");
       sensorCount++;
@@ -354,7 +353,7 @@ void Datalogger::loadSensorConfigurations()
     printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
-    if (commonConfiguration->sensor_type > MAX_SENSOR_TYPE)
+    if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
       notify("no sensor");
       continue;
@@ -363,6 +362,7 @@ void Datalogger::loadSensorConfigurations()
     debug("getting driver for sensor type");
     debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
+    if(driver == NULL) continue;
     debug("got sensor driver");
     checkMemory();
 
@@ -617,7 +617,7 @@ void Datalogger::processCLI()
 
 void Datalogger::storeSensorConfigurationIfNeedsSave()
 {
-  for(int i=0; i<sensorCount+1; i++)
+  for(unsigned short i=0; i<sensorCount; i++)
   {
     if(drivers[i]->getNeedsSave())
     {

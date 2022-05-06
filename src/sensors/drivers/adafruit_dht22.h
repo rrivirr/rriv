@@ -19,7 +19,6 @@
 #define WATERBEAR_ADAFRUIT_DHT22
 
 #include "sensors/sensor.h"
-#include "sensors/sensor_types.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
