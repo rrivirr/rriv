@@ -23,7 +23,7 @@
 
 //#define any pins/static options used
 
-#define ATLAS_CO2_DRIVER_TYPE_STRING "altas_co2"
+#define ATLAS_CO2_DRIVER_TYPE_STRING "atlas_co2"
 
 
 class AtlasCO2Driver : public I2CProtocolSensorDriver

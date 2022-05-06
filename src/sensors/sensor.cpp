@@ -108,11 +108,11 @@ void SensorDriver::configureFromJSON(cJSON * json)
 {
   
 #ifndef PRODUCTION_FIRMWARE_BUILD
-  if( sizeof(commonConfigurations) != sizeof(configuration_bytes_partition) )
+  if( sizeof(commonConfigurations) > sizeof(configuration_bytes_partition) )
   { 
     // TODO: improve these messages to indicate how much overflow there is
     // TODO: tell which driver is causing the issue, along the lines of this->getType()
-    notify("Invalid memory size for driver configuration");
+    notify("Invalid memory size for driver common configuration");
     exit(1);
   }
 #endif
