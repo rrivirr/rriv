@@ -22,15 +22,6 @@
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;
 
-void buildDriverSensorMap()
-{
-  // debug("building driver sensor map");
-  
-  setupSensorMaps<GenericAnalogDriver>(GENERIC_ANALOG_SENSOR, F(GENERIC_ANALOG_DRIVER_TYPE_STRING));
-  // setupSensorMaps<AtlasEC>(GENERIC_ATLAS_SENSOR, F(ATLAS_EC_TYPE_STRING));
-  setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
-  setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
-}
 
 template <class T>
 void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString )
