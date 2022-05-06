@@ -25,6 +25,7 @@
 #include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
 #include "sensors/sensor_types.h"
+#include "sensors/drivers/registry.h"
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"

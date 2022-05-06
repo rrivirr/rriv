@@ -32,6 +32,8 @@ template<typename T> SensorDriver * createInstance() { return new T; }
 
 typedef std::map<short, SensorDriver*(*)()> sensor_type_map_type;
 
+template <class T>
+void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString );
 void buildDriverSensorMap();
 short typeCodeForSensorTypeString(const char * type);
 SensorDriver * driverForSensorTypeCode(short type);

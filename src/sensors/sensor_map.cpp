@@ -22,28 +22,13 @@
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;
 
-void buildDriverSensorMap()
+
+template <class T>
+void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString )
 {
-  // debug("building driver sensor map");
-  // sensorTypeMap[GENERIC_ANALOG_SENSOR] = &createInstance<GenericAnalogDriver>;
-  // std::string genericAnalogString(reinterpret_cast<const char *> F(GENERIC_ANALOG_DRIVER_TYPE_STRING));
-  // sensorTypeCodeMap[genericAnalogString] = GENERIC_ANALOG_SENSOR;
-
-  // sensorTypeMap[GENERIC_ATLAS_SENSOR] = &createInstance<AtlasEC>;
-  // std::string atlasECString(reinterpret_cast<const char *> F(ATLAS_EC_TYPE_STRING));
-  // sensorTypeCodeMap[atlasECString] = GENERIC_ATLAS_SENSOR;
-
-  // sensorTypeMap[DRIVER_TEMPLATE] = &createInstance<DriverTemplate>;
-  // std::string driverTemplateString(reinterpret_cast<const char *> F(DRIVER_TEMPLATE_TYPE_STRING));
-  // sensorTypeCodeMap[driverTemplateString] = DRIVER_TEMPLATE;
-
-  // sensorTypeMap[ADAFRUIT_DHT22_SENSOR] = &createInstance<AdaDHT22>;
-  // std::string dht22String(reinterpret_cast<const char *> F(ADAFRUIT_DHT22_TYPE_STRING));
-  // sensorTypeCodeMap[dht22String] = ADAFRUIT_DHT22_SENSOR;
-
-  sensorTypeMap[ATLAS_CO2_SENSOR] = &createInstance<AtlasCO2Driver>;
-  std::string atlasco2string(reinterpret_cast<const char *> F(ATLAS_CO2_DRIVER_TYPE_STRING));
-  sensorTypeCodeMap[atlasco2string] = ATLAS_CO2_SENSOR;
+  sensorTypeMap[sensorCode] = &createInstance<T>;
+  std::string dht22String( reinterpret_cast<const char *> (sensorTypeString) );
+  sensorTypeCodeMap[dht22String] = sensorCode;
 }
 
 short typeCodeForSensorTypeString(const char * type)
