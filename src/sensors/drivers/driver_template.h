@@ -40,9 +40,6 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     // Interface Implementation
     //
     const char * getSensorTypeString();
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-    configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
     bool takeMeasurement();
@@ -52,11 +49,11 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void configureDriverFromJSON(cJSON *json) = 0;
+    void configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
-    void setDriverDefaults() = 0;
+    void setDriverDefaults();
 
   private:
     //sensor specific variables, functions, etc.

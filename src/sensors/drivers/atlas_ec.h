@@ -50,9 +50,6 @@ class AtlasECDriver : public I2CProtocolSensorDriver
   //
   public:
     const char * getSensorTypeString();
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-    configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
     bool takeMeasurement();
@@ -64,11 +61,11 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     void addCalibrationParametersToJSON(cJSON * json);
 
   protected:
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void configureDriverFromJSON(cJSON *json) = 0;
+    void configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
-    void setDriverDefaults() = 0;
+    void setDriverDefaults();
 };
 
 #endif

@@ -74,9 +74,6 @@ private:
   //
 public:
   const char *getSensorTypeString();
-  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-  cJSON *getConfigurationJSON();
-  configuration_bytes_partition getDriverSpecificConfigurationBytes();
   void stop();
   bool takeMeasurement();
   const char *getDataString();
@@ -84,14 +81,13 @@ public:
 
   void initCalibration();
   void calibrationStep(char *step, int arg_cnt, char **args);
-  void appendDriverSpecificConfigurationJSON(cJSON *json);
 
 protected:
-  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
   configuration_bytes_partition getDriverSpecificConfigurationBytes();
-  void configureDriverFromJSON(cJSON *json) = 0;
+  void configureDriverFromJSON(cJSON *json);
   void appendDriverSpecificConfigurationJSON(cJSON *json);
-  void setDriverDefaults() = 0;
+  void setDriverDefaults();
 
 private:
   void addCalibrationParametersToJSON(cJSON *json);
