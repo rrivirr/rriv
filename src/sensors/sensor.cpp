@@ -198,15 +198,6 @@ bool SensorDriver::getNeedsSave()
 }
 
 
-AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver(){}
-
-protocol_type AnalogProtocolSensorDriver::getProtocol()
-{
-  notify(F("getting protocol"));
-  return analog;
-}
-
-
 I2CProtocolSensorDriver::~I2CProtocolSensorDriver(){}
 
 protocol_type I2CProtocolSensorDriver::getProtocol()
