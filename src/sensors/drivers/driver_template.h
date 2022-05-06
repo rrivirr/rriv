@@ -22,21 +22,21 @@
 
 //#define any pins/static options used
 
-typedef struct driver_template_type // 64 bytes
-{
-  common_sensor_driver_config common;      // 32 bytes
-  unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
-} driver_template_sensor;
-
-
 class DriverTemplate : public DriverTemplateProtocolSensorDriver
 {
+  // configuration parameters specific to this driver
+  typedef struct
+  {
+    unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration
+  } driver_configuration;
+
   public:
     // Constructor
     DriverTemplate();
     ~DriverTemplate();
 
     // Interface
+    const char * getSensorTypeString();
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
@@ -54,8 +54,8 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
 
   private:
     //sensor specific variables, functions, etc.
-
-    driver_template_sensor configuration;
+    const char *sensorTypeString = "driver_template";
+    driver_configuration configuration;
 
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/

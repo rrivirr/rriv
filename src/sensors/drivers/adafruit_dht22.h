@@ -27,24 +27,23 @@
 #define DHTPIN PC11     // Digital pin connected to the DHT sensor 
 #define DHTTYPE DHT22   // DHT 22 (AM2302)
 
-typedef struct adafruit_dht22_type // 64 bytes
-{
-  common_sensor_driver_config common;      // 32 bytes
-  unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
-
-  char padding[24]; // space to be used for any sensor specific variables
-
-} adafruit_dht22_sensor;
 
 
 class AdaDHT22 : public GPIOProtocolSensorDriver
 {
+
+  typedef struct 
+  {
+    unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
+  } driver_configuration;
+
   public:
     // Constructor
     AdaDHT22();
     ~AdaDHT22();
 
     // Interface Implementation
+    const char * getSensorTypeString();
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
@@ -62,7 +61,8 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     void setDriverDefaults();
 
   private:
-    adafruit_dht22_sensor configuration;
+    const char *sensorTypeString = "driver_configuration";
+    driver_configuration configuration;
     DHT_Unified *dht;
 
     float temperature;
