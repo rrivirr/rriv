@@ -20,6 +20,7 @@
 
 #include "sensors/sensor.h"
 
+#define GENERIC_ANALOG_DRIVER_TYPE_STRING "generic_analog"
 
 class GenericAnalogDriver : public AnalogProtocolSensorDriver
 {
@@ -49,7 +50,7 @@ public:
   ~GenericAnalogDriver();
 
 private:
-  const char *sensorTypeString = "generic_analog";
+  const char *sensorTypeString = GENERIC_ANALOG_DRIVER_TYPE_STRING;
   generic_linear_analog_config configurations;
 
   int value;
@@ -72,8 +73,8 @@ private:
   // Interface Implementation
   //
 public:
-  const char * getSensorTypeString();
-  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
+  const char *getSensorTypeString();
+  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
   cJSON *getConfigurationJSON();
   configuration_bytes_partition getDriverSpecificConfigurationBytes();
   void stop();
@@ -83,11 +84,14 @@ public:
 
   void initCalibration();
   void calibrationStep(char *step, int arg_cnt, char **args);
-  void appendDriverSpecificConfigurationJSON(cJSON * json);
+  void appendDriverSpecificConfigurationJSON(cJSON *json);
 
 protected:
-  void setDriverDefaults();
-  void configureDriverFromJSON(cJSON *json);
+  void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+  configuration_bytes_partition getDriverSpecificConfigurationBytes();
+  void configureDriverFromJSON(cJSON *json) = 0;
+  void appendDriverSpecificConfigurationJSON(cJSON *json);
+  void setDriverDefaults() = 0;
 
 private:
   void addCalibrationParametersToJSON(cJSON *json);

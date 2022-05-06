@@ -43,7 +43,9 @@
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
-typedef struct datalogger_settings { // 64 bytes
+// 64 bytes max, one configuration_partition_bytes
+// Currently there are 20 bytes unused
+typedef struct datalogger_settings { 
     char deploymentIdentifier[16]; // 16 bytes
     char siteName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
@@ -57,9 +59,8 @@ typedef struct datalogger_settings { // 64 bytes
     byte debug_values : 1;
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
     byte reserved2 : 5;
-    char unused2[20];        // padding 64-44 bytes
 } datalogger_settings_type;
-
+ 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
 
 // Forward declaration of class

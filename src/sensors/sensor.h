@@ -33,19 +33,6 @@ typedef enum protocol
 
 #define SENSOR_CONFIGURATION_SIZE 64
 
-typedef struct
-{
-  // needs to be 32 bytes total
-  // arrange from biggest type to smallest type
-  // sensor.h
-  char tag[6];                    // 6 bytes
-  unsigned short int sensor_type; // 2 bytes
-  unsigned short int warmup;      // 2 bytes - in seconds (65535 max value/60=1092 min)
-  byte slot;                      // 1 byte
-  byte burst_size;                // 1 byte
-
-} common_sensor_driver_config;
-
 typedef struct 
 { 
   byte common[32];
@@ -58,11 +45,20 @@ typedef struct
 } configuration_bytes_partition;
 
 
+// common_sensor_driver_config
+// configurations shared between all drivers
+// needs to be 32 bytes total (one configuration_partition_bytes)
+// 20 bytes currently usused
 typedef struct
 {
-  common_sensor_driver_config common;
-  char padding[32]; // TODO: can we reorganize memory allocation to make this padding placeholder unnecessary
-} generic_config;
+  // arrange from biggest type to smallest type
+  char tag[6];                    // 6 bytes
+  unsigned short int sensor_type; // 2 bytes
+  unsigned short int warmup;      // 2 bytes - in seconds (65535 max value/60=1092 min)
+  byte slot;                      // 1 byte
+  byte burst_size;                // 1 byte
+
+} common_sensor_driver_config;
 
 class SensorDriver
 {
@@ -96,7 +92,6 @@ protected:
 private:
   char csvColumnHeaders[100] = "column_header";
   short burstCount = 0;
-  char sensorTypeString[40] = "no_type";
   bool configurationNeedsSave = false;
 
   //
@@ -112,17 +107,12 @@ public:
   */
   virtual protocol_type getProtocol() = 0;
 
-
-
+  /*
+  *  Returns a unique string that identifies this sensor
+  *
+  */
   virtual const char * getSensorTypeString();
 
-  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
-
-  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
-
-
-
-  virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
 
   /*
    *  Perform any sensor specific allocations, object creation, or commands.
@@ -172,7 +162,15 @@ public:
   virtual void calibrationStep(char *step, int arg_cnt, char **args) = 0;
 
 protected:
+
+  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
+  
+  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
+
   virtual void configureDriverFromJSON(cJSON *json) = 0;
+  
+  virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
+  
   virtual void setDriverDefaults() = 0;
 };
 
