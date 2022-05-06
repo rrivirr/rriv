@@ -41,11 +41,6 @@ AnalogProtocolSensorDriver::AnalogProtocolSensorDriver()
 
 AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver() {}
 
-const char * AnalogProtocolSensorDriver::getSensorTypeString()
-{
-  return sensorTypeString;
-}
-
 void AnalogProtocolSensorDriver::configureDriverFromJSON(cJSON *json)
 {
 
