@@ -9,17 +9,22 @@ AdaDHT22::AdaDHT22()
 
 AdaDHT22::~AdaDHT22(){}
 
+const char * AdaDHT22::getSensorTypeString()
+{
+  return sensorTypeString;
+}
+
 
 configuration_bytes_partition AdaDHT22::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
-  memcpy(&partition, &configuration, sizeof(adafruit_dht22_sensor));
+  memcpy(&partition, &configuration, sizeof(driver_configuration));
   return partition;
 }
 
 void AdaDHT22::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  memcpy(&configuration, &configurationPartition, sizeof(adafruit_dht22_sensor));
+  memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
 
 
@@ -118,9 +123,7 @@ void AdaDHT22::addCalibrationParametersToJSON(cJSON *json)
 
 void AdaDHT22::configureDriverFromJSON(cJSON *json)
 {
-  // retrieve sensor type from sensor_types.h
-  // debug("configuring AdaDHT22 driver from json");
-  configuration.common.sensor_type = ADAFRUIT_DHT22_SENSOR;
+
 }
 
 void AdaDHT22::setDriverDefaults()

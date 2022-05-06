@@ -30,22 +30,26 @@ AtlasECDriver::AtlasECDriver()
 
 AtlasECDriver::~AtlasECDriver(){}
 
+const char * AtlasECDriver::getSensorTypeString()
+{
+  return sensorTypeString;
+}
+
 void AtlasECDriver::configureDriverFromJSON(cJSON * json)
 {
-  configuration.common.sensor_type = GENERIC_ATLAS_SENSOR;
 }
 
 
 configuration_bytes_partition AtlasECDriver::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
-  memcpy(&partition, &configuration, sizeof(generic_atlas_config));
+  memcpy(&partition, &configuration, sizeof(driver_configuration));
   return partition;
 }
 
 void AtlasECDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  memcpy(&configuration, &configurationPartition, sizeof(generic_atlas_config));
+  memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
 
 

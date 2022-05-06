@@ -20,29 +20,28 @@
 
 #include "sensors/sensor.h"
 
-// TODO handle common storage completely separately from driver specific settings
-typedef struct // 64 bytes
-{
-  // analog sensor that can be 2pt calibrated
-  unsigned long long cal_timestamp;   // 8 byte epoch timestamp at calibration  // TODO: move to common
-  float m;                            // 4bytes, slope
-  float b;                            // 4bytes, y-intercept
-  short x1;                           // 2bytes for 2pt calibration
-  short x1Var;                        // variance of x1
-  short y1;                           // 2bytes for 2pt calibration
-  short x2;                           // 2bytes for 2pt calibration
-  short x2Var;                        // variance of x2
-  short y2;                           // 2bytes for 2pt calibration
-  short adc_select : 2;               // two bits, support hardware expansion (addnl adc chips)
-  short sensor_port : 4;
-  short calibrated : 1;
-  byte order_of_magnitude; // for converting stored values back into entered values
-  byte calibrationBurstCount;
-
-} generic_linear_analog_config;
 
 class GenericAnalogDriver : public AnalogProtocolSensorDriver
 {
+
+  typedef struct // 32 bytes
+  {
+    // analog sensor that can be 2pt calibrated
+    unsigned long long cal_timestamp; // 8 byte epoch timestamp at calibration  // TODO: move to common
+    float m;                          // 4bytes, slope
+    float b;                          // 4bytes, y-intercept
+    short x1;                         // 2bytes for 2pt calibration
+    short x1Var;                      // variance of x1
+    short y1;                         // 2bytes for 2pt calibration
+    short x2;                         // 2bytes for 2pt calibration
+    short x2Var;                      // variance of x2
+    short y2;                         // 2bytes for 2pt calibration
+    short adc_select : 2;             // two bits, support hardware expansion (addnl adc chips)
+    short sensor_port : 4;
+    short calibrated : 1;
+    byte order_of_magnitude; // for converting stored values back into entered values
+    byte calibrationBurstCount;
+  } generic_linear_analog_config;
 
 public:
   // Constructor
@@ -50,10 +49,10 @@ public:
   ~GenericAnalogDriver();
 
 private:
+  const char *sensorTypeString = "generic_analog";
   generic_linear_analog_config configurations;
 
   int value;
-  const char *sensorTypeString = "generic_analog";
   const char *baseColumnHeaders = "raw,cal";
   char dataString[16];
   float calibrationVariance = -1;

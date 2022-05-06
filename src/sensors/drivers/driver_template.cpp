@@ -10,16 +10,26 @@ DriverTemplate::DriverTemplate()
 
 DriverTemplate::~DriverTemplate(){}
 
+const char * DriverTemplate::getSensorTypeString()
+{
+  return sensorTypeString;
+}
+
 configuration_bytes_partition DriverTemplate::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
-  memcpy(&partition, &configuration, sizeof(driver_template_sensor));
+  memcpy(&partition, &configuration, sizeof(driver_configuration));
   return partition;
 }
 
+void configureDriverFromJSON(cJSON *json)
+{
+}
+
+
 void DriverTemplate::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  memcpy(&configuration, &configurationPartition, sizeof(driver_template_sensor));
+  memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
 
 void DriverTemplate::appendDriverSpecificConfigurationJSON(cJSON * json)
@@ -84,13 +94,6 @@ void DriverTemplate::addCalibrationParametersToJSON(cJSON *json)
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
   cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
-}
-
-void DriverTemplate::configureDriverFromJSON(cJSON *json)
-{
-  // retrieve sensor type from sensor_types.h
-  // debug("configuring driver template driver from json");
-  configuration.common.sensor_type = DRIVER_TEMPLATE;
 }
 
 void DriverTemplate::setDriverDefaults()

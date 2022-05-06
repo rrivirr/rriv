@@ -22,24 +22,25 @@
 #include "EC_OEM.h"
 
 
-typedef struct  // 64 bytes
-{
-    common_sensor_driver_config common; // 32 bytes
-    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
-    char padding[24];
-} generic_atlas_config;
 
 
 class AtlasECDriver : public I2CProtocolSensorDriver
 {
+
+  typedef struct // 32 bytes max
+  {
+    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
+  } driver_configuration;
 
   public: 
     AtlasECDriver();
     ~AtlasECDriver();
   
   private:
-    generic_atlas_config configuration;
+    const char *sensorTypeString = "atlas_ec";
+    driver_configuration configuration;
     EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
+    
 
     int value;
     const char * baseColumnHeaders = "ec.mS";
@@ -49,10 +50,11 @@ class AtlasECDriver : public I2CProtocolSensorDriver
   // Interface Implementation
   //
   public:
-    void setup();
+    const char * getSensorTypeString();
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void appendDriverSpecificConfigurationJSON(cJSON * json);
+    void setup();
     void stop();
     bool takeMeasurement();
     const char * getDataString();
