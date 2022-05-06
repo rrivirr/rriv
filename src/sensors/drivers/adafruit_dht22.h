@@ -27,7 +27,7 @@
 #define DHTPIN PC11     // Digital pin connected to the DHT sensor 
 #define DHTTYPE DHT22   // DHT 22 (AM2302)
 
-
+#define ADAFRUIT_DHT22_TYPE_STRING "adafruit_dht22"
 
 class AdaDHT22 : public GPIOProtocolSensorDriver
 {
@@ -42,7 +42,9 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     AdaDHT22();
     ~AdaDHT22();
 
+    //
     // Interface Implementation
+    //
     const char * getSensorTypeString();
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
@@ -55,13 +57,15 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
-
   protected:
-    void configureDriverFromJSON(cJSON *json);
-    void setDriverDefaults();
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    void configureDriverFromJSON(cJSON *json) = 0;
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
+    void setDriverDefaults() = 0;
 
   private:
-    const char *sensorTypeString = "driver_configuration";
+    const char *sensorTypeString = "adafruit_dht22";
     driver_configuration configuration;
     DHT_Unified *dht;
 

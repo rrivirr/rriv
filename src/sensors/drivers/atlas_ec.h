@@ -22,7 +22,7 @@
 #include "EC_OEM.h"
 
 
-
+#define ATLAS_EC_TYPE_STRING "atlas_ec"
 
 class AtlasECDriver : public I2CProtocolSensorDriver
 {
@@ -37,11 +37,10 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     ~AtlasECDriver();
   
   private:
-    const char *sensorTypeString = "atlas_ec";
+    const char *sensorTypeString = ATLAS_EC_TYPE_STRING;
     driver_configuration configuration;
     EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
     
-
     int value;
     const char * baseColumnHeaders = "ec.mS";
     char dataString[20]; // local storage for data string
@@ -65,12 +64,11 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     void addCalibrationParametersToJSON(cJSON * json);
 
   protected:
-    // Implementatino interface
-    void setDriverDefaults();
-    void configureDriverFromJSON(cJSON * json);
-
-
-
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    void configureDriverFromJSON(cJSON *json) = 0;
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
+    void setDriverDefaults() = 0;
 };
 
 #endif

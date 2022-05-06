@@ -20,7 +20,8 @@
 
 #include "sensors/sensor.h"
 
-//#define any pins/static options used
+
+#define DRIVER_TEMPLATE_TYPE_STRING "driver_template"
 
 class DriverTemplate : public DriverTemplateProtocolSensorDriver
 {
@@ -35,7 +36,9 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     DriverTemplate();
     ~DriverTemplate();
 
-    // Interface
+    //
+    // Interface Implementation
+    //
     const char * getSensorTypeString();
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
@@ -49,12 +52,15 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    void configureDriverFromJSON(cJSON *json);
-    void setDriverDefaults();
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0;
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    void configureDriverFromJSON(cJSON *json) = 0;
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
+    void setDriverDefaults() = 0;
 
   private:
     //sensor specific variables, functions, etc.
-    const char *sensorTypeString = "driver_template";
+    const char *sensorTypeString = DRIVER_TEMPLATE_TYPE_STRING;
     driver_configuration configuration;
 
     /*value(s) to be placed in dataString, should correspond to number of 
