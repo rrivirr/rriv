@@ -26,6 +26,7 @@
 #include "drivers/atlas_ec.h"
 #include "drivers/driver_template.h"
 #include "drivers/adafruit_dht22.h"
+#include "drivers/atlas_co2_driver.h"
 
 template<typename T> SensorDriver * createInstance() { return new T; }
 
