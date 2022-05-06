@@ -292,6 +292,7 @@ void Datalogger::loop()
           }
           Serial2.print("CMD >> ");
         }
+        Serial2.flush();
         writeMeasurementToLogFile();
         lastInteractiveLogTime = timestamp();
       }

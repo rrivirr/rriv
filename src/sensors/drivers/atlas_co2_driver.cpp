@@ -35,8 +35,15 @@ void AtlasCO2Driver::appendDriverSpecificConfigurationJSON(cJSON * json)
 
 void AtlasCO2Driver::setup()
 {
-  modularSensorDriver = new AtlasScientificCO2(wire,-1);
   // debug("setup AtlasCO2Driver");
+  modularSensorDriver = new AtlasScientificCO2(wire,-1);
+  if(!modularSensorDriver->setup()){
+    notify("Setup failed");
+    exit(1);
+  }
+  notify("Setup success");
+  delay(2000);
+  modularSensorDriver->wake();
 }
 
 void AtlasCO2Driver::stop()
@@ -49,13 +56,21 @@ bool AtlasCO2Driver::takeMeasurement()
 {
   // debug("taking measurement from driver template");
   //return true if measurement taken store in class value(s), false if not
+  modularSensorDriver->startSingleMeasurement();
+  modularSensorDriver->waitForMeasurementCompletion();
   bool measurementTaken = modularSensorDriver->addSingleMeasurementResult();
   if(measurementTaken)
   {
-    value = modularSensorDriver->sensorValues[1];
+    value = modularSensorDriver->sensorValues[0];
     modularSensorDriver->clearValues();
     measurementTaken = true;
   }
+  else
+  {
+    value = -1;
+  }
+
+
   return measurementTaken;
 }
 

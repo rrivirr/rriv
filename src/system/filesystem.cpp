@@ -68,7 +68,7 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
-void WaterBear_FileSystem::writeString(char * string)
+void WaterBear_FileSystem::writeString(const char * string)
 {
   // notify("printing to log file");
   // notify((int)strlen(string));

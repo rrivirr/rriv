@@ -144,24 +144,25 @@ bool AtlasParent::addSingleMeasurementResult(void) {
         // the first byte is the response code, we read this separately.
         uint8_t code = _i2c->read();
 
-        MS_DBG(getSensorNameAndLocation(), F("is reporting:"));
+        // Serial2.println(getSensorNameAndLocation(), F("is reporting:"));
+        Serial2.println(F("is reporting:"));
         // Parse the response code
         switch (code) {
             case 1:  // the command was successful.
-                MS_DBG(F("  Measurement successful"));
+                Serial2.println(F("  Measurement successful"));
                 success = true;
                 break;
 
             case 2:  // the command has failed.
-                MS_DBG(F("  Measurement Failed"));
+                Serial2.println(F("  Measurement Failed"));
                 break;
 
             case 254:  // the command has not yet been finished calculating.
-                MS_DBG(F("  Measurement Pending"));
+                Serial2.println(F("  Measurement Pending"));
                 break;
 
             case 255:  // there is no further data to send.
-                MS_DBG(F("  No Data"));
+                Serial2.println(F("  No Data"));
                 break;
         }
         // If the response code is successful, parse the remaining results
@@ -170,14 +171,16 @@ bool AtlasParent::addSingleMeasurementResult(void) {
                 float result = _i2c->parseFloat();
                 if (isnan(result)) result = -9999;
                 if (result < -1020) result = -9999;
-                MS_DBG(F("  Result #"), i, ':', result);
+                Serial2.println("Result");
+                // Serial2.println(F("  Result #"), i, ':', result);
                 verifyAndAddMeasurementResult(i, result);
             }
         }
     } else {
         // If there's no measurement, need to make sure we send over all
         // of the "failed" result values
-        MS_DBG(getSensorNameAndLocation(), F("is not currently measuring!"));
+        Serial2.println(F("is not currently measuring!"));
+        // Serial2.println(getSensorNameAndLocation(), F("is not currently measuring!"));
         for (uint8_t i = 0; i < _numReturnedValues; i++) {
             verifyAndAddMeasurementResult(i, static_cast<float>(-9999));
         }
