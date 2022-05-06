@@ -19,13 +19,4 @@
 #ifndef WATERBEAR_SENSOR_TYPES
 #define WATERBEAR_SENSOR_TYPES
 
-#define GENERIC_ANALOG_SENSOR 0x0000
-#define GENERIC_ATLAS_SENSOR 0x0001
-#define ADAFRUIT_DHT22_SENSOR 0x0002
-
-#define DRIVER_TEMPLATE 0xFFFE
-#define NO_SENSOR 0xFFFF
-
-#define MAX_SENSOR_TYPE 0xFFFE // max value for number of sensor types, change if causing issues on v0.2 blue boards
-
 #endif
