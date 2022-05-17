@@ -20,6 +20,8 @@
 
 #include "sensors/sensor.h"
 #include <sensors/AtlasScientificCO2.h>
+#include <sensors/CampbellOBS3.h>
+
 
 //#define any pins/static options used
 
@@ -59,6 +61,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
   private:
     //sensor specific variables, functions, etc.
     AtlasScientificCO2 *modularSensorDriver;
+    CampbellOBS3 * campbell;
     driver_config configuration;
 
     const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
