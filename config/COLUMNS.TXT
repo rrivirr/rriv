@@ -1,1 +1,0 @@
-duuid,uuid,time.s,time.h,battery.V,sensor.V,data3,data4,data5,data6,conductivity.mS
