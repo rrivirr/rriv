@@ -27,6 +27,8 @@ void debug(const __FlashStringHelper * message);
 void debug(short number);
 void debug(int number);
 void debug(uint32 number);
+void debug(float number);
+void debug(double number);
 
 
 void notify(const char*);

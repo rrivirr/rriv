@@ -18,7 +18,7 @@
 
 #include "adc.h"
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/watchdog.h"
 #include "utilities/i2c.h"
 

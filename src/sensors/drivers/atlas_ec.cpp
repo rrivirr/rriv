@@ -17,11 +17,10 @@
  */
 
 #include "atlas_ec.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
-#include "sensors/sensor_types.h"
 
 AtlasECDriver::AtlasECDriver()
 {
@@ -82,13 +81,20 @@ void AtlasECDriver::setup()
   oem_ec->setProbeType(1.0);
 }
 
-
-void AtlasECDriver::stop()
+void AtlasECDriver::hibernate()
 {
   oem_ec->setHibernate();
-  delete  oem_ec;
 }
 
+void AtlasECDriver::wake()
+{
+  oem_ec->wakeUp();
+}
+
+void AtlasECDriver::setDebugMode(bool debug) // for setting internal debug parameters, such as LED on
+{
+  oem_ec->setLedOn(debug);
+}
 
 void AtlasECDriver::setDriverDefaults()
 {
@@ -110,31 +116,40 @@ const char * AtlasECDriver::getBaseColumnHeaders()
 
 bool AtlasECDriver::takeMeasurement()
 {
-  bool waitForMeasurement = true;
-  bool newDataAvailable = false;
-  while(!newDataAvailable)
-  {
-    newDataAvailable = oem_ec->singleReading();
+
+    // if we know the time to wait, we don't need to ask until elapsed
+    bool newDataAvailable = oem_ec->singleReading();
     if(newDataAvailable)
     {
       value = oem_ec->getConductivity();
       oem_ec->clearNewDataRegister();
+      lastSuccessfulReadingMillis = millis();
+      return true;
     }
-    else if (!waitForMeasurement)
+    else
     {
       return false;
     }
-  }
 
-  return true;
 }
 
-const char * AtlasECDriver::getDataString()
+unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 640 - (millis() - lastSuccessfulReadingMillis);
+}
+
+const char * AtlasECDriver::getRawDataString()
 {
   sprintf(dataString, "%d", value);
   return dataString;
 }
 
+const char * AtlasECDriver::getSummaryDataString()
+{
+  // TODO: just echoing out values.  Use mean of burst.
+  sprintf(dataString, "%d", value);
+  return dataString;
+}
 
 void AtlasECDriver::initCalibration()
 {

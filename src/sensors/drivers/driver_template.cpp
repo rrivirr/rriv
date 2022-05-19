@@ -1,6 +1,5 @@
 #include "sensors/drivers/driver_template.h"
-#include "sensors/sensor_types.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 
 DriverTemplate::DriverTemplate()
@@ -60,15 +59,23 @@ bool DriverTemplate::takeMeasurement()
     value = 42;
     measurementTaken = true;
   }
+  addValueToBurstSummaryMean("var", value); // use the default option for computing the burst summary value
   return measurementTaken;
 }
 
-const char *DriverTemplate::getDataString()
+const char *DriverTemplate::getRawDataString()
 {
   // debug("configuring driver template dataString");
   // process data string for .csv
-  sprintf(dataString, "%d,%d",value,int(value*31.83));
+  sprintf(dataString, "%d,%0.3f",value,value*31.83);
   return dataString;
+}
+
+const char *DriverTemplate::getSummaryDataString()
+{
+  double burstSummaryMean = getBurstSummaryMean("var");
+  sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, burstSummaryMean*31.83);
+  return dataString;  
 }
 
 const char *DriverTemplate::getBaseColumnHeaders()

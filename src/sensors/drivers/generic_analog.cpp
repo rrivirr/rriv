@@ -17,11 +17,10 @@
  */
 
 #include "generic_analog.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
-#include "sensors/sensor_types.h"
 #include "sensors/sensor_map.h"
 #include "system/hardware.h"
 #include "utilities/rrivmath.h"
@@ -33,6 +32,8 @@ int ADC_PINS[5] = {
     ANALOG_INPUT_4_PIN,
     ANALOG_INPUT_5_PIN
 };
+
+#define GENERIC_ANALOG_VALUE_TAG "value"
 
 GenericAnalogDriver::GenericAnalogDriver()
 {
@@ -170,6 +171,10 @@ bool GenericAnalogDriver::takeMeasurement()
   break;
   }
 
+  // validate the value
+  // store this->value for summary calculation
+  addValueToBurstSummaryMean(GENERIC_ANALOG_VALUE_TAG, this->value);
+
   return true;
 }
 
@@ -197,7 +202,7 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
     x[i] = this->value;
     delay(100);
   }
-  int average = sum / configurations.calibrationBurstCount;
+  double average = (double) sum / configurations.calibrationBurstCount;
   this->value = average;
 
   /*  Compute  variance */
@@ -211,12 +216,24 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
   notify(buffer);
 }
 
-const char *GenericAnalogDriver::getDataString()
+double GenericAnalogDriver::getCalibratedValue(double value)
 {
   int exponent = -(3 - configurations.order_of_magnitude);
   double calibratedValue = (configurations.m * value + configurations.b) * rrivmath::power(10, exponent);
-  sprintf(dataString, "%d,%0.3f", value, calibratedValue);
+  return calibratedValue;
+}
+
+const char *GenericAnalogDriver::getRawDataString() //TODO: getRawDataString() ??
+{
+  sprintf(dataString, "%d,%0.3f", value, getCalibratedValue(value));
   return dataString;
+}
+
+const char *GenericAnalogDriver::getSummaryDataString()
+{
+  double burstSummaryMean = getBurstSummaryMean(GENERIC_ANALOG_VALUE_TAG);
+  sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, getCalibratedValue(burstSummaryMean));
+  return dataString;  
 }
 
 
@@ -316,11 +333,11 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
   else if(strcmp(step, "test-curve") == 0)
   {
       value = 1100;
-      notify(getDataString());
+      notify(getRawDataString());
       value = 3000;
-      notify(getDataString());
+      notify(getRawDataString());
       value = 2000;
-      notify(getDataString());
+      notify(getRawDataString());
   }
   else
   {
@@ -383,4 +400,10 @@ void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
     cJSON_AddNumberToObject(json, "y2", 0);
     cJSON_AddNumberToObject(json, "calibration_time", 0);
   }
+}
+
+
+unsigned int GenericAnalogDriver::millisecondsUntilNextRequestedReading()
+{
+  return 100;
 }

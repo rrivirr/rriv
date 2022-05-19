@@ -17,7 +17,7 @@
  */
 
 #include "sensor.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "sensors/sensor_map.h"
 
 SensorDriver::SensorDriver(){}
@@ -50,18 +50,39 @@ const common_sensor_driver_config * SensorDriver::getCommonConfigurations()
   return &commonConfigurations;
 }
 
-void SensorDriver::initializeBurst(){
+void SensorDriver::initializeBurst()
+{
   burstCount = 0;
+  // burstSummarySumCounts.clear();
+  // burstSummarySums.clear();
 }
 
-void SensorDriver::incrementBurst(){
+void SensorDriver::incrementBurst()
+{
   burstCount++;
 }
 
-bool SensorDriver::burstCompleted(){
+bool SensorDriver::burstCompleted()
+{
   notify(burstCount);
   notify(commonConfigurations.burst_size);
   return burstCount == commonConfigurations.burst_size;
+}
+
+void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
+{
+  // if(burstSummarySums.count(tag) == 0)
+  // {
+  //   burstSummarySums[tag] = 0;
+  //   burstSummarySumCounts[tag] = 0;
+  // }
+  // burstSummarySums[tag] += value;
+  // burstSummarySumCounts[tag] += 1;
+}
+
+double SensorDriver::getBurstSummaryMean(std::string tag)
+{
+  // return burstSummarySums[tag] / burstSummarySumCounts[tag];
 }
 
 void SensorDriver::configureCSVColumns()
@@ -170,6 +191,21 @@ void SensorDriver::setup()
   return;
 }
 
+void SensorDriver::hibernate()
+{
+
+}
+
+void SensorDriver::wake()
+{
+
+}
+
+void SensorDriver::setDebugMode(bool debug) // for setting internal debug parameters, such as LED on
+{
+
+}
+
 bool SensorDriver::isWarmedUp()
 {
   return true;
@@ -195,6 +231,16 @@ void SensorDriver::clearConfigurationNeedsSave()
 bool SensorDriver::getNeedsSave()
 {
   return this->configurationNeedsSave;
+}
+
+unsigned int SensorDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 0; // return min by default, a larger number in driver implementation causes correct delay
+}
+
+unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+{
+  return MAX_REQUESTED_READING_DELAY; // as slow as possible by default, a smaller number in driver implementation forces faster read
 }
 
 

@@ -20,7 +20,7 @@
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h>
 #include "configuration.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 
 void gpioPinOff(uint8 pin)
 {
@@ -76,4 +76,9 @@ void setupHardwarePins()
 
   pinMode(PC5, OUTPUT); // external ADC reset
   digitalWrite(PC5, HIGH);
+}
+
+int getBatteryValue()
+{
+  return analogRead(PB0);
 }

@@ -21,7 +21,6 @@
 #include "sensors/sensor.h"
 #include "EC_OEM.h"
 
-
 #define ATLAS_EC_TYPE_STRING "atlas_ec"
 
 class AtlasECDriver : public I2CProtocolSensorDriver
@@ -45,20 +44,29 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     const char * baseColumnHeaders = "ec.mS";
     char dataString[20]; // local storage for data string
 
+    unsigned long long lastSuccessfulReadingMillis = 0;
+
   //
   // Interface Implementation
   //
   public:
     const char * getSensorTypeString();
     void setup();
-    void stop();
+
+    void wake();
+    void hibernate();
+    void setDebugMode(bool debug); // for setting internal debug parameters, such as LED on 
+
     bool takeMeasurement();
-    const char * getDataString();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
 
     void initCalibration();
     void calibrationStep(char * step, int arg_cnt, char ** args);
     void addCalibrationParametersToJSON(cJSON * json);
+
+    unsigned int millisecondsUntilNextReadingAvailable();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

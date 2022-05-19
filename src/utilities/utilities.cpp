@@ -17,7 +17,7 @@
  */
 
 #include "utilities.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/clock.h"
 
 // For F103RM convienience in this file

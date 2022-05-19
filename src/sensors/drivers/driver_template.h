@@ -43,7 +43,8 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     void setup();
     void stop();
     bool takeMeasurement();
-    const char * getDataString();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);

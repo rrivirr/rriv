@@ -19,7 +19,6 @@
 #ifndef WATERBEAR_FILESYSTEM
 #define WATERBEAR_FILESYSTEM
 
-// #include "Arduino.h"
 #include "SdFat.h"
 #include "DS3231.h"
 #include "write_cache.h"

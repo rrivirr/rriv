@@ -17,7 +17,7 @@
  */
 
 #include "Arduino.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "dbgmcu.h" 
 
 bool checkDebugSystemDisabled()

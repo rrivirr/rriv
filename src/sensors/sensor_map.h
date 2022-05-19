@@ -20,12 +20,12 @@
 #define WATERBEAR_SENSOR_MAP
 
 #include "sensor.h"
-#include <map>
-#include <string>
 #include "drivers/generic_analog.h"
 #include "drivers/atlas_ec.h"
 #include "drivers/driver_template.h"
 #include "drivers/adafruit_dht22.h"
+// #include <map>
+// #include <string>
 
 template<typename T> SensorDriver * createInstance() { return new T; }
 

@@ -1,6 +1,5 @@
 #include "sensors/drivers/adafruit_dht22.h"
-#include "sensors/sensor_types.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 
 AdaDHT22::AdaDHT22()
 {
@@ -66,7 +65,7 @@ bool AdaDHT22::takeMeasurement()
   else
   {
     notify("Temperature: ");
-    Serial2.print(temperature);
+    debug(temperature);
     notify("°C");
     measurementTaken = true;
   }
@@ -80,18 +79,33 @@ bool AdaDHT22::takeMeasurement()
   else
   {
     notify("Humidity: ");
-    Serial2.print(humidity);
+    debug(humidity);
     notify("%");
     measurementTaken = true;
+  }
+
+  if(measurementTaken)
+  {
+    addValueToBurstSummaryMean("temperature", temperature);
+    addValueToBurstSummaryMean("humidity", humidity);
   }
 
   return measurementTaken;
 }
 
-const char *AdaDHT22::getDataString()
+const char *AdaDHT22::getRawDataString()
 {
   // debug("configuring AdaDHT22 dataString");
   // process data string for .csv
+  sprintf(dataString, "%.2f,%.2f", temperature, humidity);
+  return dataString;
+}
+
+const char *AdaDHT22::getSummaryDataString()
+{
+  // debug("configuring AdaDHT22 dataString");
+  // process data string for .csv
+  // TODO: just reporting the last value, not a true summary
   sprintf(dataString, "%.2f,%.2f", temperature, humidity);
   return dataString;
 }

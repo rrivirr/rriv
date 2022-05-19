@@ -17,7 +17,6 @@
  */
 
 #include "sensor_map.h"
-#include "sensor_types.h"
 
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;

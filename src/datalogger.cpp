@@ -24,21 +24,19 @@
 #include "system/command.h"
 #include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
-#include "sensors/sensor_types.h"
 #include "sensors/drivers/registry.h"
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 
-void Datalogger::sleep(int milliseconds)
+void Datalogger::sleepMCU(int milliseconds)
 {
   
-  if(milliseconds >= 1000)
-  {
+  // if(milliseconds >= 1000)
+  // {
     // if we are delaying for a long time, sleep the processor
-    short seconds = milliseconds / 1000;
-    setNextAlarmInternalRTCSeconds(seconds);
+    setNextAlarmInternalRTCMilliseconds(milliseconds);
 
     int iser1, iser2, iser3;
     storeAllInterrupts(iser1, iser2, iser3);
@@ -57,19 +55,24 @@ void Datalogger::sleep(int milliseconds)
 
     reenableAllInterrupts(iser1, iser2, iser3);
 
+    offsetMillis += milliseconds; // systick was stopped, add slept milliseconds
+    currentEpoch = timestamp();
+
     enableSerialLog();
     startCustomWatchDog();
 
-    sleep(milliseconds - 1000 * seconds); // finish up
-    currentEpoch += seconds;
+    // sleepMCU(milliseconds - 1000 * seconds); // finish up
+    // currentEpoch += seconds;
 
-  } 
-  else
-  {   
+  
 
-    reloadCustomWatchdog();
-    delay(milliseconds);
-  }
+  // } 
+  // else
+  // {   
+
+  //   reloadCustomWatchdog();
+  //   delay(milliseconds);
+  // }
 
   reloadCustomWatchdog();
 
@@ -216,10 +219,25 @@ void Datalogger::loop()
     if (shouldContinueBursting())
     {
       measureSensorValues();
-      writeMeasurementToLogFile();
+      if(settings.log_raw_data) // we are really talking about a burst summary
+      {
+        writeRawMeasurementToLogFile();
+      }
+
+      if(shouldContinueBursting())
+      {
+        // sleep for maximum time before next reading
+        // ask all drivers for maximum time until next burst reading
+        // ask all drivers for maximum time until next available reading
+        // sleep for whichever is less
+        sleepMCU(minMillisecondsUntilNextReading());
+      }
     }
     else
     {
+      // output burst summary
+      writeSummaryMeasurementToLogFile();
+
       completedBursts++;
       if (completedBursts < settings.burstNumber)
       {
@@ -229,7 +247,11 @@ void Datalogger::loop()
         {
           notify(F("Waiting for burst delay"));
           int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
-          sleep(interBurstDelay*1000); // convert minutes to milliseconds
+          // todo: we should sleep any sensors that can be slept without re-warming
+          // this could be called 'standby' mode
+          // placeSensorsInStandbyMode();
+          sleepMCU(interBurstDelay*1000); // convert minutes to milliseconds
+          // wakeSensorsFromStandbyMode();
         }
 
         initializeBurst();
@@ -281,7 +303,7 @@ void Datalogger::loop()
 
           for (unsigned short i = 0; i < sensorCount; i++)
           {
-            Serial2.print(drivers[i]->getDataString());
+            Serial2.print(drivers[i]->getRawDataString());
             if (i < sensorCount - 1)
             {
               Serial2.print(F(","));
@@ -293,7 +315,7 @@ void Datalogger::loop()
           }
           Serial2.print("CMD >> ");
         }
-        writeMeasurementToLogFile();
+        writeRawMeasurementToLogFile();
         lastInteractiveLogTime = timestamp();
       }
     }
@@ -301,7 +323,7 @@ void Datalogger::loop()
   else if (inMode(debugging))
   {
     measureSensorValues(false);
-    writeMeasurementToLogFile();
+    writeRawMeasurementToLogFile();
     delay(5000); // this value could be configurable, also a step / read from CLI is possible
   }
   else
@@ -483,7 +505,7 @@ void Datalogger::initializeMeasurementCycle()
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
     notify(startUpDelay);
-    sleep(startUpDelay * 1000); // convert minutes to milliseconds
+    sleepMCU(startUpDelay * 1000); // convert minutes to milliseconds
     notify("done with sleep");
   }
 
@@ -527,9 +549,12 @@ void Datalogger::measureSensorValues(bool performingBurst)
   }
 }
 
-void Datalogger::writeStatusFieldsToLogFile()
+void Datalogger::writeStatusFieldsToLogFile(const char * type)
 {
   debug(F("Write status fields"));
+
+  fileSystemWriteCache->writeString(type);
+  fileSystemWriteCache->writeString((char *)",");
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
@@ -567,31 +592,16 @@ void Datalogger::writeStatusFieldsToLogFile()
   fileSystemWriteCache->writeString(currentTimeString);
   fileSystemWriteCache->writeString((char *)",");
   fileSystemWriteCache->writeString(humanTimeString);
-  fileSystemWriteCache->writeString((char *)","); // there is somehow already a comma here?
-}
-
-bool Datalogger::writeMeasurementToLogFile()
-{
-  writeStatusFieldsToLogFile();
+  fileSystemWriteCache->writeString((char *)","); 
 
   // write out the raw battery reading
-  int batteryValue = analogRead(PB0);
-  char buffer[150];
-  sprintf(buffer, "%d,", batteryValue);
+  sprintf(buffer, "%d,", getBatteryValue());
   fileSystemWriteCache->writeString(buffer);
+}
 
-  // and write out the sensor data
-  debug(F("Write out sensor data"));
-  for (unsigned short i = 0; i < sensorCount; i++)
-  {
-    // get values from the sensors
-    const char *dataString = drivers[i]->getDataString();
-    fileSystemWriteCache->writeString(dataString);
-    if (i < sensorCount - 1)
-    {
-      fileSystemWriteCache->writeString((char *)reinterpretCharPtr(F(",")));
-    }
-  }
+void Datalogger::writeUserFieldsToLogFile()
+{
+  char buffer[150];
   sprintf(buffer, ",%s,", userNote);
   fileSystemWriteCache->writeString(buffer);
   if (userValue != INT_MIN)
@@ -599,9 +609,51 @@ bool Datalogger::writeMeasurementToLogFile()
     sprintf(buffer, "%d", userValue);
     fileSystemWriteCache->writeString(buffer);
   }
+}
+
+bool Datalogger::writeRawMeasurementToLogFile()
+{
+  writeStatusFieldsToLogFile("raw");
+
+  // and write out the sensor data
+  debug(F("Write out sensor data"));
+  for (unsigned short i = 0; i < sensorCount; i++)
+  {
+    // get values from the sensors
+    const char *dataString = drivers[i]->getRawDataString();
+    fileSystemWriteCache->writeString(dataString);
+    if (i < sensorCount - 1)
+    {
+      fileSystemWriteCache->writeString((char *)reinterpretCharPtr(F(",")));
+    }
+  }
+
+  writeUserFieldsToLogFile();
+  return true;
+}
+
+bool Datalogger::writeSummaryMeasurementToLogFile()
+{
+  writeStatusFieldsToLogFile("summary");
+
+  // and write out the sensor data
+  debug(F("Write out sensor data"));
+  for (unsigned short i = 0; i < sensorCount; i++)
+  {
+    // get values from the sensors
+    const char *dataString = drivers[i]->getSummaryDataString();
+    fileSystemWriteCache->writeString(dataString);
+    if (i < sensorCount - 1)
+    {
+      fileSystemWriteCache->writeString((char *)reinterpretCharPtr(F(",")));
+    }
+  }
+
+  writeUserFieldsToLogFile();
   fileSystemWriteCache->endOfLine();
   return true;
 }
+
 
 void Datalogger::setUpCLI()
 {
@@ -885,6 +937,7 @@ bool Datalogger::enterFieldLoggingMode()
   strcpy(loggingFolder, settings.siteName);
   fileSystem->closeFileSystem();
   initializeFilesystem();
+  setSensorDebugModes(false);
   changeMode(logging);
   storeMode(logging);
   return true;
@@ -904,7 +957,7 @@ void Datalogger::initializeFilesystem()
   notify(setupTS);
 
   char header[200];
-  const char *statusFields = "site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
+  const char *statusFields = "type,site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
   debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
@@ -1144,4 +1197,34 @@ void Datalogger::setDeploymentTimestamp(int timestamp)
 const char *Datalogger::getUUIDString()
 {
   return uuidString;
+}
+
+
+int Datalogger::minMillisecondsUntilNextReading()
+{
+  unsigned int minimumNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    minimumNextRequestedReading = min(minimumNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
+  }
+
+  unsigned int maxDelayUntilNextAvailableReading = 0; 
+  for(int i=0; i<sensorCount+1; i++)
+  {
+    maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
+  }
+  
+  // we want to read as fast the speed requested by the fastest sensor
+  // or as slow as the slowest sensor has a new reading available
+  return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
+
+}
+
+
+void Datalogger::setSensorDebugModes(bool debug)
+{
+  for(unsigned short i=0; i<sensorCount; i++)
+  {
+    drivers[i]->setDebugMode(debug);
+  }
 }
