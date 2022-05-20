@@ -23,6 +23,7 @@
 #include "system/clock.h"
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
+#include "system/logs.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 

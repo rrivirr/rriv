@@ -20,19 +20,24 @@
 #define WATERBEAR_SENSOR_MAP
 
 #include "sensor.h"
-#include "drivers/generic_analog.h"
-#include "drivers/atlas_ec.h"
-#include "drivers/driver_template.h"
-#include "drivers/adafruit_dht22.h"
-// #include <map>
+#include <map>
 // #include <string>
 
 template<typename T> SensorDriver * createInstance() { return new T; }
 
 typedef std::map<short, SensorDriver*(*)()> sensor_type_map_type;
 
+extern sensor_type_map_type sensorTypeMap;
+extern std::map<std::string, short> sensorTypeCodeMap;
+
 template <class T>
-void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString );
+void setupSensorMaps(short sensorCode, __FlashStringHelper const * sensorTypeString )
+{
+  sensorTypeMap[sensorCode] = &createInstance<T>;
+  std::string sensorType( reinterpret_cast<const char *> (sensorTypeString) );
+  sensorTypeCodeMap[sensorType] = sensorCode;
+}
+
 void buildDriverSensorMap();
 short typeCodeForSensorTypeString(const char * type);
 SensorDriver * driverForSensorTypeCode(short type);

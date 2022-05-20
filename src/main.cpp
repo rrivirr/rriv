@@ -27,6 +27,7 @@
 #include "scratch/dbgmcu.h"
 #include "version.h"
 #include "system/eeprom.h"
+#include "system/logs.h"
 
 // Setup and Loop
 Datalogger *datalogger;

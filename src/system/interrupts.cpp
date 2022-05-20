@@ -19,6 +19,7 @@
 #include <Arduino.h>
 #include <RTClock.h>
 #include "monitor.h"
+#include "system/logs.h"
 
 bool awakenedByUser = false;
 void clearManualWakeInterrupt()

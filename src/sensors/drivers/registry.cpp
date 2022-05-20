@@ -1,14 +1,11 @@
 #include "registry.h"
-#include "../sensor_map.h"
+#include "sensors/sensor_map.h"
+#include "system/logs.h"
 //
 // Follow steps to add a new sensor driver
 //
 
-#include "generic_analog.h"
-#include "atlas_ec.h"
-#include "driver_template.h"
-#include "adafruit_dht22.h"
-// Step 1: Include the header for your driver
+// Step 1: Include the header for your driver in sensor_map.h
 
 
 #define GENERIC_ANALOG_SENSOR 0x0000
@@ -24,8 +21,12 @@
 void buildDriverSensorMap()
 {  
   setupSensorMaps<GenericAnalogDriver>(GENERIC_ANALOG_SENSOR, F(GENERIC_ANALOG_DRIVER_TYPE_STRING));
+
   // setupSensorMaps<AtlasEC>(GENERIC_ATLAS_SENSOR, F(ATLAS_EC_TYPE_STRING));
-  setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
-  setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
+
+  // setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
+ 
+  // setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
+ 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
 }

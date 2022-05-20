@@ -19,7 +19,7 @@
 #include "watchdog.h"
 #include <Arduino.h>
 #include <libmaple/libmaple.h>
-#include "monitor.h"
+#include "logs.h"
 
 void timerFired() // trigger a reset
 {

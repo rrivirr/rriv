@@ -21,7 +21,7 @@ configuration_bytes_partition DriverTemplate::getDriverSpecificConfigurationByte
   return partition;
 }
 
-void configureDriverFromJSON(cJSON *json)
+void DriverTemplate::configureDriverFromJSON(cJSON *json)
 {
 }
 

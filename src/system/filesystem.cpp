@@ -19,6 +19,7 @@
 #include "filesystem.h"
 #include "clock.h"
 #include "monitor.h"
+#include "system/logs.h"
 
 char dataDirectory[6] = "/Data";
 
@@ -68,7 +69,7 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
 }
 
-void WaterBear_FileSystem::writeString(char * string)
+void WaterBear_FileSystem::writeString(const char * string)
 {
   // notify("printing to log file");
   // notify((int)strlen(string));
@@ -82,20 +83,6 @@ void WaterBear_FileSystem::endOfLine()
   this->logfile.flush();
 }
 
-
-void WaterBear_FileSystem::writeLog(char **values, short fieldCount){
-  for(int i=0; i<fieldCount; i++)
-  {
-    // notify(values[i]);  Serial2.flush();
-    this->logfile.print(values[i]);
-    if(i+1 < fieldCount)
-    {
-      this->logfile.print(',');
-    }
-  }
-  this->logfile.println();
-  this->logfile.flush();
-}
 
 void WaterBear_FileSystem::writeDebugMessage(const char* message)
 {

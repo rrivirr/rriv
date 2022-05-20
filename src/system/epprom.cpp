@@ -20,6 +20,7 @@
 #include "monitor.h"
 #include "utilities/STM32-UID.h"
 #include "utilities/i2c.h"
+#include "system/logs.h"
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data )
 {

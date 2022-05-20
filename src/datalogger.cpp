@@ -22,13 +22,13 @@
 #include "system/monitor.h"
 #include "system/watchdog.h"
 #include "system/command.h"
-#include "sensors/sensor.h"
 #include "sensors/sensor_map.h"
 #include "sensors/drivers/registry.h"
 #include "utilities/i2c.h"
 #include "utilities/qos.h"
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
+#include "system/logs.h"
 
 void Datalogger::sleepMCU(int milliseconds)
 {
@@ -172,10 +172,16 @@ void Datalogger::setup()
 
   unsigned char uuid[UUID_LENGTH];
   readUniqueId(uuid);
-  decodeUniqueId(uuid, uuidString, UUID_LENGTH);
+  debug("read uuid");
 
+  decodeUniqueId(uuid, uuidString, UUID_LENGTH);
+  debug("decoded uuid");
+
+  checkMemory();
   buildDriverSensorMap();
+  debug("Built driver sensor map");
   loadSensorConfigurations();
+  debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
 }
@@ -385,6 +391,11 @@ void Datalogger::loadSensorConfigurations()
     debug("getting driver for sensor type");
     debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
+    if(driver == NULL)
+    {
+      debug("No driver installed with that code");
+      continue;
+    }
     debug("got sensor driver");
     checkMemory();
 

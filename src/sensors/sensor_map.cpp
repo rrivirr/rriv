@@ -17,25 +17,22 @@
  */
 
 #include "sensor_map.h"
+#include "Arduino.h"
 
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;
 
-
-template <class T>
-void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString )
-{
-  sensorTypeMap[sensorCode] = &createInstance<T>;
-  std::string dht22String( reinterpret_cast<const char *> (sensorTypeString) );
-  sensorTypeCodeMap[dht22String] = sensorCode;
-}
 
 short typeCodeForSensorTypeString(const char * type)
 {
   return sensorTypeCodeMap[std::string(type)];
 }
 
-SensorDriver * driverForSensorType(short type)
+SensorDriver * driverForSensorTypeCode(short type)
 {
+  if(sensorTypeMap[type] == NULL)
+  {
+    return NULL;
+  }
   return sensorTypeMap[type]();
 }

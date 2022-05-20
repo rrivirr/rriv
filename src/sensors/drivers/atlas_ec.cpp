@@ -34,9 +34,6 @@ const char * AtlasECDriver::getSensorTypeString()
   return sensorTypeString;
 }
 
-void AtlasECDriver::configureDriverFromJSON(cJSON * json)
-{
-}
 
 
 configuration_bytes_partition AtlasECDriver::getDriverSpecificConfigurationBytes()

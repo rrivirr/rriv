@@ -43,11 +43,31 @@ const configuration_bytes SensorDriver::getConfigurationBytes()
   return configurationBytes;
 }
 
-
-
 const common_sensor_driver_config * SensorDriver::getCommonConfigurations()
 {
   return &commonConfigurations;
+}
+
+
+void SensorDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations)
+{
+  // override to load driver specific configurations
+} 
+
+configuration_bytes_partition SensorDriver::getDriverSpecificConfigurationBytes()
+{
+  configuration_bytes_partition emptyPartition;
+  return emptyPartition;
+}
+
+void SensorDriver::configureDriverFromJSON(cJSON *json)
+{
+  // override to load driver specific configurations
+}
+  
+void SensorDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
+{
+  // override to return driver specific configurations
 }
 
 void SensorDriver::initializeBurst()
@@ -71,18 +91,18 @@ bool SensorDriver::burstCompleted()
 
 void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
 {
-  // if(burstSummarySums.count(tag) == 0)
-  // {
-  //   burstSummarySums[tag] = 0;
-  //   burstSummarySumCounts[tag] = 0;
-  // }
-  // burstSummarySums[tag] += value;
-  // burstSummarySumCounts[tag] += 1;
+  if(burstSummarySums.count(tag) == 0)
+  {
+    burstSummarySums[tag] = 0;
+    burstSummarySumCounts[tag] = 0;
+  }
+  burstSummarySums[tag] += value;
+  burstSummarySumCounts[tag] += 1;
 }
 
 double SensorDriver::getBurstSummaryMean(std::string tag)
 {
-  // return burstSummarySums[tag] / burstSummarySumCounts[tag];
+  return burstSummarySums[tag] / burstSummarySumCounts[tag];
 }
 
 void SensorDriver::configureCSVColumns()

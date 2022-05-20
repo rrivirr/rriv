@@ -22,7 +22,6 @@
 #include <Arduino.h>
 #include <Wire_slave.h>
 #include <cJSON.h>
-#include <iosfwd>
 #include <map>
 #include <string>
 
@@ -106,8 +105,8 @@ private:
   bool configurationNeedsSave = false;
 
   // Variables for computing burst summary values
-  // std::map<std::string, double> burstSummarySums;
-  // std::map<std::string, int> burstSummarySumCounts;
+  std::map<std::string, double> burstSummarySums;
+  std::map<std::string, int> burstSummarySumCounts;
 
   //
   // Subclass Implementation Interface
@@ -126,7 +125,7 @@ public:
   *  Returns a unique string that identifies this sensor
   *
   */
-  virtual const char * getSensorTypeString();
+  virtual const char * getSensorTypeString() = 0;
 
 
   /*
@@ -190,11 +189,11 @@ public:
 
 protected:
 
-  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
+  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
   
   virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
 
-  virtual void configureDriverFromJSON(cJSON *json) = 0;
+  virtual void configureDriverFromJSON(cJSON *json);
   
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
   
