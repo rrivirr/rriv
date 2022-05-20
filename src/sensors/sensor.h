@@ -100,7 +100,7 @@ protected:
   void configureCSVColumns();
 
 private:
-  char csvColumnHeaders[100] = "column_header";
+  char csvColumnHeaders[200] = "column_header";
   short burstCount = 0;
   bool configurationNeedsSave = false;
 
@@ -191,11 +191,11 @@ protected:
 
   virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
   
-  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
+  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes() = 0;
 
   virtual void configureDriverFromJSON(cJSON *json);
   
-  virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
+  virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
 

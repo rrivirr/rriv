@@ -90,32 +90,13 @@ void setup(void)
   else
   {
     Serial2.print("CMD >> ");
+    Serial2.flush();
   }
 
 }
 
 void loop(void)
 {
-  // short deviceAddress = 0x50;
-  // short memoryAddress = 0;
-  // byte data = 20;
-  // notify((int) data);
-  // writeObjectToEEPROM(deviceAddress, memoryAddress, &data, 1);
-  // data = 0;
-  // readObjectFromEEPROM(deviceAddress, memoryAddress, &data, 1);
-  // notify((int) data);
-
-  // data = 21;
-  // notify((int) data);
-  // writeObjectToEEPROM(deviceAddress + 1, memoryAddress, &data, 1);
-  // data = 0;
-  // readObjectFromEEPROM(deviceAddress + 1, memoryAddress, &data, 1);
-  // notify((int) data);
-
-  // readObjectFromEEPROM(deviceAddress, memoryAddress, &data, 1);
-  // notify((int) data);
-  // exit(0);
-
   startCustomWatchDog();
   printWatchDogStatus();
   checkMemory();
