@@ -15,36 +15,35 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ADAFRUIT_DHT22
-#define WATERBEAR_ADAFRUIT_DHT22
+#ifndef ATLAS_CO2_DRIVER
+#define ATLAS_CO2_DRIVER
 
 #include "sensors/sensor.h"
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+#include <sensors/AtlasScientificCO2.h>
 
-#define DHTPIN PC11     // Digital pin connected to the DHT sensor 
-#define DHTTYPE DHT22   // DHT 22 (AM2302)
+//#define any pins/static options used
 
-#define ADAFRUIT_DHT22_TYPE_STRING "adafruit_dht22"
+#define ATLAS_CO2_DRIVER_TYPE_STRING "atlas_co2"
 
-class AdaDHT22 : public GPIOProtocolSensorDriver
+
+class AtlasCO2Driver : public I2CProtocolSensorDriver
 {
-
-  typedef struct 
+  typedef struct
   {
-    unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
-  } driver_configuration;
+    unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
+  } driver_config;
 
   public:
     // Constructor
-    AdaDHT22();
-    ~AdaDHT22();
+    AtlasCO2Driver();
+    ~AtlasCO2Driver();
 
-    //
-    // Interface Implementation
-    //
     const char * getSensorTypeString();
+
+    // Interface
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
     bool takeMeasurement();
@@ -54,21 +53,21 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void configureDriverFromJSON(cJSON *json);
-    void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 
   private:
-    const char *sensorTypeString = "adafruit_dht22";
-    driver_configuration configuration;
-    DHT_Unified *dht;
+    //sensor specific variables, functions, etc.
+    AtlasScientificCO2 *modularSensorDriver;
+    driver_config configuration;
 
-    float temperature;
-    float humidity;
-    const char *baseColumnHeaders = "C,RH"; // will be written to .csv
-    char dataString[16]; // will be written to .csv
+    const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
+
+    /*value(s) to be placed in dataString, should correspond to number of 
+    column headers and entries in dataString*/
+    int value; // sensor raw return(s) to be added to dataString
+    const char *baseColumnHeaders = "CO2_ppm,temperature_C"; // will be written to .csv
+    char dataString[30]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);
 };

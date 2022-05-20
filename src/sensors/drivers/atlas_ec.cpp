@@ -21,7 +21,6 @@
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
-#include "sensors/sensor_types.h"
 
 AtlasECDriver::AtlasECDriver()
 {

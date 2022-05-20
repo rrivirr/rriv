@@ -90,7 +90,7 @@ protected:
   void configureCSVColumns();
 
 private:
-  char csvColumnHeaders[100] = "column_header";
+  char csvColumnHeaders[200] = "column_header";
   short burstCount = 0;
   bool configurationNeedsSave = false;
 
@@ -111,7 +111,7 @@ public:
   *  Returns a unique string that identifies this sensor
   *
   */
-  virtual const char * getSensorTypeString();
+  virtual const char * getSensorTypeString() = 0;
 
 
   /*
@@ -165,11 +165,11 @@ protected:
 
   virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
   
-  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes();
+  virtual configuration_bytes_partition getDriverSpecificConfigurationBytes() = 0;
 
   virtual void configureDriverFromJSON(cJSON *json) = 0;
   
-  virtual void appendDriverSpecificConfigurationJSON(cJSON * json);
+  virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
 };

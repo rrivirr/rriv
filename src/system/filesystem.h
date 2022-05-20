@@ -49,7 +49,7 @@ public:
   void dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent);
   void closeFileSystem(); // close filesystem when sleeping
   void reopenFileSystem(); // reopen filesystem after wakeup
-  void writeString(char * string);
+  void writeString(const char * string);
   void endOfLine();
 
   // deprecated

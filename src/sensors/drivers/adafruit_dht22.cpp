@@ -1,5 +1,4 @@
 #include "sensors/drivers/adafruit_dht22.h"
-#include "sensors/sensor_types.h"
 #include "system/monitor.h" // for debug() and notify()
 
 AdaDHT22::AdaDHT22()

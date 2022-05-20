@@ -17,18 +17,36 @@
  */
 
 #include "sensor_map.h"
-#include "sensor_types.h"
 
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;
 
+// hacking this for getting sensor working
+#define ATLAS_CO2_SENSOR 0x0003
 
-template <class T>
+void setupSensorMapsLegacy()
+{
+  sensorTypeMap[ATLAS_CO2_SENSOR] = &createInstance<AtlasCO2Driver>;
+
+  std::string dht22String( reinterpret_cast<const char *> (ATLAS_CO2_DRIVER_TYPE_STRING) );
+
+  sensorTypeCodeMap[dht22String] = ATLAS_CO2_SENSOR;
+}
+
+template <typename T>
 void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString )
 {
+  Serial2.println("create sensor map"); Serial2.flush();
   sensorTypeMap[sensorCode] = &createInstance<T>;
+    Serial2.println("create sensor map"); Serial2.flush();
+  
+
   std::string dht22String( reinterpret_cast<const char *> (sensorTypeString) );
+    Serial2.println("create sensor map"); Serial2.flush();
+
   sensorTypeCodeMap[dht22String] = sensorCode;
+    Serial2.println("create sensor map"); Serial2.flush();
+
 }
 
 short typeCodeForSensorTypeString(const char * type)
@@ -36,7 +54,18 @@ short typeCodeForSensorTypeString(const char * type)
   return sensorTypeCodeMap[std::string(type)];
 }
 
-SensorDriver * driverForSensorType(short type)
+bool sensorTypeCodeExists(short type)
 {
-  return sensorTypeMap[type]();
+  return sensorTypeMap.count(type) > 0;
+}
+
+SensorDriver * driverForSensorTypeCode(short type)
+{
+  if(sensorTypeMap[type] != NULL)
+  {
+    Serial2.println("not null");
+    return sensorTypeMap[type]();
+  } else {
+    return NULL;
+  }
 }

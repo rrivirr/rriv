@@ -1,5 +1,4 @@
 #include "sensors/drivers/driver_template.h"
-#include "sensors/sensor_types.h"
 #include "system/monitor.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 

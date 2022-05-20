@@ -26,13 +26,18 @@
 #include "drivers/atlas_ec.h"
 #include "drivers/driver_template.h"
 #include "drivers/adafruit_dht22.h"
+#include "drivers/atlas_co2_driver.h"
 
 template<typename T> SensorDriver * createInstance() { return new T; }
 
 typedef std::map<short, SensorDriver*(*)()> sensor_type_map_type;
 
-template <class T>
+template <typename T>
 void setupSensorMaps(short sensorCode, const __FlashStringHelper * sensorTypeString );
+bool sensorTypeCodeExists(short type);
+
+void setupSensorMapsLegacy();
+
 void buildDriverSensorMap();
 short typeCodeForSensorTypeString(const char * type);
 SensorDriver * driverForSensorTypeCode(short type);
