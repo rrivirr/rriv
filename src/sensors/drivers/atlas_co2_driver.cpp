@@ -1,5 +1,5 @@
 #include "sensors/drivers/atlas_co2_driver.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 
 AtlasCO2Driver::AtlasCO2Driver()
 {

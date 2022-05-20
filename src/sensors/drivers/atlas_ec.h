@@ -21,7 +21,7 @@
 #include "sensors/sensor.h"
 #include "EC_OEM.h"
 
-#define ATLAS_EC_TYPE_STRING "atlas_ec"
+#define ATLAS_EC_OEM_TYPE_STRING "atlas_ec"
 
 class AtlasECDriver : public I2CProtocolSensorDriver
 {
@@ -36,7 +36,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     ~AtlasECDriver();
   
   private:
-    const char *sensorTypeString = ATLAS_EC_TYPE_STRING;
+    const char *sensorTypeString = ATLAS_EC_OEM_TYPE_STRING;
     driver_configuration configuration;
     EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
     

@@ -22,6 +22,10 @@
 sensor_type_map_type sensorTypeMap;
 std::map<std::string, short> sensorTypeCodeMap;
 
+bool sensorTypeCodeExists(short type)
+{
+  return sensorTypeMap.count(type) > 0;
+}
 
 short typeCodeForSensorTypeString(const char * type)
 {

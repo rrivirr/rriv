@@ -21,7 +21,6 @@
 
 #include "sensor.h"
 #include <map>
-// #include <string>
 
 template<typename T> SensorDriver * createInstance() { return new T; }
 
@@ -39,6 +38,7 @@ void setupSensorMaps(short sensorCode, __FlashStringHelper const * sensorTypeStr
 }
 
 void buildDriverSensorMap();
+bool sensorTypeCodeExists(short type);
 short typeCodeForSensorTypeString(const char * type);
 SensorDriver * driverForSensorTypeCode(short type);
 
