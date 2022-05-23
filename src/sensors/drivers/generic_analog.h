@@ -69,6 +69,8 @@ private:
   void printCalibrationStatus();
   void takeCalibrationBurstMeasurement(); // for calibration
   double getCalibratedValue(double value);
+  short getOrderOfMagnitudeToScale();
+
 
   //
   // Interface Implementation

@@ -165,7 +165,7 @@ void printVersion(int arg_cnt, char **args)
 
 void invalidArgumentsMessage(const __FlashStringHelper * message)
 {
-  notify(F("Invalid arguments"));
+  notify(F("Invalid args"));
   notify(message);
   return;
 }
@@ -411,14 +411,13 @@ void setSlotConfig(int arg_cnt, char **args)
 
 void CommandInterface::_setSlotConfig(char * config)
 {
-  debug(F("set slot config check JSON"));
+  // debug(F("set slot config check JSON"));
 
   cJSON *json = cJSON_Parse(config);
   if(json == NULL){
     notify(F("Invalid JSON"));
     return;
   }
-  debug(F("printing json"));
 
   const char * printString = cJSON_Print(json);
   notify(printString);

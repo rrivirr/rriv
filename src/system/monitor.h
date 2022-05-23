@@ -35,14 +35,11 @@ public:
     Monitor();
 
     void writeSerialMessage(const char * message);
-    void writeSerialMessage(const __FlashStringHelper * message);
+    // void writeSerialMessage(const __FlashStringHelper * message);
     void writeDebugMessage(const char * message);
-    void writeDebugMessage(const __FlashStringHelper * message);
-    void writeDebugMessage(int message);
-    void writeDebugMessage(int message, int base);
-
-    void error(const __FlashStringHelper*err);
-
+    // void writeDebugMessage(const __FlashStringHelper * message);
+    // void writeDebugMessage(int message);
+    // void writeDebugMessage(int message, int base);
 };
 
 #endif

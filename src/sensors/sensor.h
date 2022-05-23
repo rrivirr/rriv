@@ -25,6 +25,8 @@
 #include <map>
 #include <string>
 
+#define CALIBRATION_TIME_STRING reinterpret_cast<const char*>(F("calibration_time"))
+
 typedef enum protocol
 {
   analog,

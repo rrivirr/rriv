@@ -25,13 +25,12 @@
 #include "system/command.h"
 
 // void printInterruptStatus(HardwareSerial &serial);
-void printDateTime(HardwareSerial &serial, DateTime now);
+// void printDateTime(HardwareSerial &serial, DateTime now);
 
 void blink(int times, int duration);
 void printDS3231Time();
 
 const char * reinterpretCharPtr(const __FlashStringHelper *string);
 
-void blinkTest();
 
 #endif

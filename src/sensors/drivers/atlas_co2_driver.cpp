@@ -38,11 +38,8 @@ void AtlasCO2Driver::setup()
   // debug("setup AtlasCO2Driver");
   modularSensorDriver = new AtlasScientificCO2(wire,-1);
   if(!modularSensorDriver->setup()){
-    notify("Setup failed");
-    exit(1);
+    notify("CO2 setup failed");
   }
-  notify("Setup success");
-  delay(2000);
   modularSensorDriver->wake();
 }
 
@@ -104,7 +101,7 @@ void AtlasCO2Driver::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
 void AtlasCO2Driver::configureDriverFromJSON(cJSON *json)

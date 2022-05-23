@@ -32,10 +32,10 @@ void i2cError(int transmissionCode)
       debug(F("i2c data error"));
       break;
     case ENACKADDR:
-      debug(F("i2c address not acknowledged"));
+      debug(F("i2c address not ack'd"));
       break;
     case ENACKTRNS:
-      debug(F("i2c transmission not acknowledged"));
+      debug(F("i2c transmission not ack;d"));
       break;
     case EOTHER:
       debug(F("i2c error: other"));
@@ -81,7 +81,7 @@ void scanIC2(TwoWire *wire)
 
 bool scanIC2(TwoWire *wire, int searchAddress)
 {
-  Serial.println("Scanning...");
+  Serial.println("Scanning");
   byte error, address;
   int nDevices;
   nDevices = 0;
@@ -95,7 +95,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.print(F("I2C device found at address 0x"));
+      Serial.print(F("I2C dev at addr 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
@@ -107,7 +107,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     }
     else if (error == 4)
     {
-      Serial.print(F("Unknown error at address 0x"));
+      Serial.print(F("Unknown error at addr 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);

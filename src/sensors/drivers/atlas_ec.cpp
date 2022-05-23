@@ -24,7 +24,7 @@
 
 AtlasECDriver::AtlasECDriver()
 {
-  debug("allocation GenericAtlas");
+  // debug("allocation AtlasECDriver");
 }
 
 AtlasECDriver::~AtlasECDriver(){}
@@ -51,7 +51,7 @@ void AtlasECDriver::configureSpecificConfigurationsFromBytes(configuration_bytes
 
 void AtlasECDriver::setup()
 {
-  notify("setup GenericAtlas");
+  // notify("setup AtlasECDriver");
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
 
   if (true)
@@ -59,19 +59,18 @@ void AtlasECDriver::setup()
     bool awoke = oem_ec->wakeUp();
     notify(awoke);
 
-    char message[300];
-    sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
-            oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
-    debug(message);
+    // char message[300];
+    // sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
+    //         oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
+    // debug(message);
 
     oem_ec->singleReading();
     struct param_OEM_EC parameter;
     parameter = oem_ec->getAllParam();
 
-    debug(F("test:"));
-    sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
-            parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
-    debug(message);
+    // sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
+    //         parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
+    // debug(message);
   }
   // notify("led and probe type");
   oem_ec->setLedOn(true);
@@ -113,8 +112,6 @@ const char * AtlasECDriver::getBaseColumnHeaders()
 
 bool AtlasECDriver::takeMeasurement()
 {
-
-    // if we know the time to wait, we don't need to ask until elapsed
     bool newDataAvailable = oem_ec->singleReading();
     if(newDataAvailable)
     {
@@ -159,17 +156,17 @@ void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
   takeMeasurement();
   if(strcmp(step, "dry") == 0)
   {
-    notify("Dry point calibration");
+    notify("Dry point cal");
     oem_ec->setCalibration(DRY_CALIBRATION);
   }
   else if (strcmp(step, "low") == 0)
   {
-    notify("Low point calibration");
+    notify("Low point cal");
     oem_ec->setCalibration(LOW_POINT_CALIBRATION, atof(args[0]));
   }
   else if (strcmp(step, "high") == 0)
   {
-    notify("High point calibration");
+    notify("High point cal");
     oem_ec->setCalibration(HIGH_POINT_CALIBRATION, atof(args[0]));
     configuration.cal_timestamp = timestamp();
   }
@@ -183,6 +180,6 @@ void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
 
 void AtlasECDriver::addCalibrationParametersToJSON(cJSON * json)
 {
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 

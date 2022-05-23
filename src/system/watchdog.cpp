@@ -66,7 +66,7 @@ void startCustomWatchDog()
 
 void startCustomWatchDog(int watchdogSeconds)
 {
-  debug("Setup custom watchdog!");
+  debug("Setup watchdog");
 
   timer_init(TIMER1);
   timer_set_prescaler(TIMER1, 65535); //  64000000 / 65536 = 976.5 Hz
@@ -79,10 +79,10 @@ void startCustomWatchDog(int watchdogSeconds)
   timer_generate_update(TIMER1);
 
   timer_resume(TIMER1);
-  debug(F("Resumed timer"));
+  // debug(F("Resumed timer"));
 
   timer_attach_interrupt(TIMER1, TIMER_CC1_INTERRUPT, timerFired);
-  debug(F("Attached interrupt!"));
+  // debug(F("Attached interrupt!"));
 }
 
 void disableCustomWatchDog()

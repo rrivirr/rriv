@@ -131,7 +131,7 @@ void setNextAlarmInternalRTCMilliseconds(int milliseconds)
 
 }
 
-
+#ifdef USES_DS3231_ALARM
 void setNextAlarm(short interval)
 {
   Clock.turnOffAlarm(1); // Clear the Control Register
@@ -179,6 +179,7 @@ void setNextAlarm(short interval)
 
   Clock.turnOnAlarm(1);
 }
+#endif
 
 void dateTime(uint16_t* date, uint16_t* time)
 {

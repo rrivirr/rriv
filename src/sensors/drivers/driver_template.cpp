@@ -100,7 +100,7 @@ void DriverTemplate::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
 void DriverTemplate::setDriverDefaults()

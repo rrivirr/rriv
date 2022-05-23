@@ -153,6 +153,7 @@ void SensorDriver::configureFromJSON(cJSON * json)
   { 
     // TODO: improve these messages to indicate how much overflow there is
     // TODO: tell which driver is causing the issue, along the lines of this->getType()
+    // TODO: this is to help during driver dev, not production firmware
     notify("Invalid memory size for driver common configuration");
     exit(1);
   }
@@ -186,11 +187,8 @@ void SensorDriver::configureFromJSON(cJSON * json)
     notify("Invalid burst size");
   }
 
-  notify("set defaults");
   this->setDefaults();
-  notify("configure driver from JSON");
   this->configureDriverFromJSON(json);
-  notify("conf csv cols");
   this->configureCSVColumns();
 
 }
@@ -268,7 +266,6 @@ AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver(){}
 
 protocol_type AnalogProtocolSensorDriver::getProtocol()
 {
-  notify(F("getting protocol"));
   return analog;
 }
 

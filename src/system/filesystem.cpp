@@ -29,16 +29,15 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
   strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
   this->initializeSDCard();
-  debug("initialized filesystem");
  
   this->setLoggingFolder(loggingFolder);
-  debug("set the logging folder");
+  debug("logging folder set");
 }
 
 void WaterBear_FileSystem::initializeSDCard(){
    // initialize the SD card
   //Serial2.print(F("Initializing SD card..."));
-  notify("Initializing SD card...");
+  notify("Start SD card...");
 
   // Make sure chip select pin is set to output
   pinMode(this->chipSelectPin, OUTPUT);
@@ -46,7 +45,7 @@ void WaterBear_FileSystem::initializeSDCard(){
   // see if the card is present and can be initialized:
   if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
-    notify(F(">Card fail<"));
+    notify(F("Card fail"));
     // one way to handle a failure:
     // flash the led in an alert like fashion
     // go to sleep for a short period of time
@@ -197,7 +196,6 @@ bool WaterBear_FileSystem::openFile(char * filename)
 {
   this->sd.chdir("/");
   printCurrentDirListing();
-  notify("OK in root");
   if(!this->sd.exists(dataDirectory))
   {
     notify("mkdir");
@@ -217,34 +215,32 @@ bool WaterBear_FileSystem::openFile(char * filename)
   if(!this->sd.exists(loggingFolder))
   {
     // printCurrentDirListing();
-    Serial2.write("mkdir:");
+    notify("mkdir:");
     notify(loggingFolder);
     this->sd.mkdir(loggingFolder);
   }
 
   if(!this->sd.chdir(this->loggingFolder))
   {
-    Serial2.print("failed:");
+    notify("failed:");
     notify(loggingFolder);
   }
-  else
-  {
-    Serial2.print("cd:");
-    notify(loggingFolder);
-  }
+  // else
+  // {
+  //   Serial2.print("cd:");
+  //   notify(loggingFolder);
+  // }
 
 
-  Serial2.print("Opening file ");
+  notify("Opening file");
   notify(filename);
-  Serial2.flush();
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
-  notify("opened file");
-  Serial2.flush();
+  notify("Opened");
 
   //sd.chdir();
   if(!logfile)
   {
-    Serial2.print(F(">not found<"));
+    notify(F(">not found<"));
     return false;
   }
 
@@ -255,20 +251,17 @@ bool WaterBear_FileSystem::openFile(char * filename)
 void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
 {
 
-  char uniquename[11] = "NEWFILE";
+  char uniquename[11];
   sprintf(uniquename, "%lu", unixtime);
   char suffix[5] = ".CSV";
   strncpy(filename, uniquename, 10);
   strncpy(&filename[10], suffix, 5);
 
   notify("cd");
-  Serial2.flush();
   this->sd.chdir("/");
   delay(1);
 
-  Serial2.print(F(">log:"));
   notify(header);
-  
   strcpy(this->header, header);
 
   bool success = this->openFile(filename);
@@ -279,14 +272,14 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
   }
 
   this->logfile.println(header); // write the headers to the new logfile
-  this->logfile.flush();
+  // this->logfile.flush();
   //Serial2.print("wrote:");
   //notify(ret);
 }
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
-  debug("printCurrentDirListing");
+  debug("dir");
 
   this->sd.vwd()->rewind();
   SdFile dirFile;
@@ -301,7 +294,7 @@ void WaterBear_FileSystem::printCurrentDirListing()
 
 void WaterBear_FileSystem::closeFileSystem()
 {
-  Serial2.print(F(">close filesystem<"));
+  Serial2.print(F("Close filesystem"));
   //this->logfile.sync();
   this->logfile.close(); // syncs then closes
   //this->sd.end // doesn't exist
@@ -314,16 +307,16 @@ void WaterBear_FileSystem::reopenFileSystem()
   bool success = this->openFile(filename);
   if( !success )
   {
-    debug(F("Could not reopen file"));
+    debug(F("Reopen file failed"));
     time_t setupTime = timestamp();
     char setupTS[21];
-    sprintf(setupTS, "unixtime: %lld", setupTime);
+    sprintf(setupTS, "time: %lld", setupTime);
     debug(setupTS);
     setNewDataFile(setupTime, this->header); // open a new file via epoch timestamp
   }
   else 
   {
-    debug(F("Successfully reopened file"));
+    debug(F("Reopen file succeeded"));
   }
 
 }

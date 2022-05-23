@@ -49,7 +49,7 @@ void checkMemory()
   sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
   debug(freeMemoryMessage);
   if(freeMemoryAmount < 500){
-    debug(F("Low memory, resetting!"));
+    debug(F("Low mem, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
 }
