@@ -121,6 +121,7 @@ public:
     void toggleTraceValues();
     void stopLogging();
     void startLogging();
+    void testMeasurementCycle();
 
     const char * getUUIDString();
 
@@ -158,6 +159,7 @@ private:
     void storeConfiguration();
     void initializeBurst();
     bool shouldContinueBursting();
+    bool processReadingsCycle();
 
     // CLI
     CommandInterface * cli;
@@ -168,6 +170,7 @@ private:
     void writeStatusFieldsToLogFile(const char * type);
     void writeUserFieldsToLogFile();
     void initializeMeasurementCycle();
+    void outputLastMeasurement();
 
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(SensorDriver * driver);

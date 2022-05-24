@@ -126,7 +126,7 @@ void enableI2C1()
   i2c_master_enable(I2C1, 0, 0);
   debug(F("Enabled I2C1"));
 
-  delay(500);
+  // delay(500);
   // i2c_bus_reset(I2C1); // hangs here if this is called
   // debug(F("Reset I2C1"));
 

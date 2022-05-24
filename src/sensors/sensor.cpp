@@ -84,9 +84,9 @@ void SensorDriver::incrementBurst()
 
 bool SensorDriver::burstCompleted()
 {
-  notify(burstCount);
-  notify(commonConfigurations.burst_size);
-  return burstCount == commonConfigurations.burst_size;
+  // notify(burstCount);
+  // notify(commonConfigurations.burst_size);
+  return burstCount >= commonConfigurations.burst_size;
 }
 
 void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
@@ -111,11 +111,11 @@ void SensorDriver::configureCSVColumns()
   char csvColumnHeaders[100] = "\0";
   char buffer[100];
   strcpy(buffer, this->getBaseColumnHeaders());
-  debug(buffer);
+  // debug(buffer);
   char * token = strtok(buffer, ",");
   while(token != NULL)
   {
-    debug(token);
+    // debug(token);
     strcat(csvColumnHeaders, this->commonConfigurations.tag);
     strcat(csvColumnHeaders, "_");
     strcat(csvColumnHeaders, token);
@@ -131,7 +131,6 @@ void SensorDriver::configureCSVColumns()
 
 char *SensorDriver::getCSVColumnHeaders()
 {
-  debug(csvColumnHeaders);
   return csvColumnHeaders;
 }
 

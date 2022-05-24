@@ -64,9 +64,9 @@ void AtlasECDriver::setup()
     //         oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
     // debug(message);
 
-    oem_ec->singleReading();
-    struct param_OEM_EC parameter;
-    parameter = oem_ec->getAllParam();
+    // oem_ec->singleReading();
+    // struct param_OEM_EC parameter;
+    // parameter = oem_ec->getAllParam();
 
     // sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
     //         parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
@@ -115,13 +115,14 @@ bool AtlasECDriver::takeMeasurement()
     bool newDataAvailable = oem_ec->singleReading();
     if(newDataAvailable)
     {
-      value = oem_ec->getConductivity();
-      oem_ec->clearNewDataRegister();
+      value = oem_ec->getConductivity(true);
+      addValueToBurstSummaryMean("ec", value);
       lastSuccessfulReadingMillis = millis();
       return true;
     }
     else
     {
+      value = -1;
       return false;
     }
 
@@ -140,14 +141,13 @@ const char * AtlasECDriver::getRawDataString()
 
 const char * AtlasECDriver::getSummaryDataString()
 {
-  // TODO: just echoing out values.  Use mean of burst.
-  sprintf(dataString, "%d", value);
+  sprintf(dataString, "%0.2f", getBurstSummaryMean("ec"));
   return dataString;
 }
 
 void AtlasECDriver::initCalibration()
 {
-  notify("init calibration");
+  notify("init cal");
   oem_ec->clearCalibrationData();
 }
 
@@ -172,7 +172,7 @@ void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
   }
   else
   {
-    notify("Invalid calibration step");
+    notify("Invalid cal step");
   }
 }
 

@@ -32,7 +32,11 @@
 
 void Datalogger::sleepMCU(int milliseconds)
 {
-  
+  if(milliseconds < 5)
+  {
+    delay(milliseconds);
+    return;
+  }
   // if(milliseconds >= 1000)
   // {
     // if we are delaying for a long time, sleep the processor
@@ -118,17 +122,16 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   }
 
   settings->debug_values = true;
+  settings->log_raw_data = true;
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
 {
   powerCycle = true;
-  debug("creating datalogger");
 
   // defaults
   if (settings->interval < 1)
   {
-    debug("Setting interval to 1 by default");
     settings->interval = 1;
   }
 
@@ -172,10 +175,8 @@ void Datalogger::setup()
 
   unsigned char uuid[UUID_LENGTH];
   readUniqueId(uuid);
-  debug("read uuid");
 
   decodeUniqueId(uuid, uuidString, UUID_LENGTH);
-  debug("decoded uuid");
 
   checkMemory();
   buildDriverSensorMap();
@@ -184,6 +185,69 @@ void Datalogger::setup()
   debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
+}
+
+/*
+*
+* return: continue processing readings cycle bool
+*/
+bool Datalogger::processReadingsCycle()
+{
+  measureSensorValues();
+  if (settings.log_raw_data) // we are really talking about a burst summary
+  {
+    writeRawMeasurementToLogFile();
+  }
+
+  if (shouldContinueBursting())
+  {
+    // sleep for maximum time before next reading
+    // ask all drivers for maximum time until next burst reading
+    // ask all drivers for maximum time until next available reading
+    // sleep for whichever is less
+    notify(minMillisecondsUntilNextReading());
+    sleepMCU(minMillisecondsUntilNextReading());
+    return true;
+  }
+
+  // otherwise burse cycle completed,
+  completedBursts++;
+
+  // so output burst summary
+  writeSummaryMeasurementToLogFile();
+
+  if (completedBursts < settings.burstNumber)
+  {
+    // debug(F("do another burst"));
+
+    if (settings.interBurstDelay > 0)
+    {
+      notify(F("burst delay"));
+      int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
+      // todo: we should sleep any sensors that can be slept without re-warming
+      // this could be called 'standby' mode
+      // placeSensorsInStandbyMode();
+      sleepMCU(interBurstDelay * 1000); // convert minutes to milliseconds
+      // wakeSensorsFromStandbyMode();
+    }
+
+    initializeBurst();
+    return true;
+  }
+
+  return false;
+}
+
+void Datalogger::testMeasurementCycle()
+{
+  initializeMeasurementCycle();
+  fileSystemWriteCache->setOutputToSerial(true); // another way to do this would be to set a special write cache
+  while(processReadingsCycle()){
+    fileSystemWriteCache->flushCache();
+    outputLastMeasurement();
+  }      
+  fileSystemWriteCache->flushCache();            // instead of using a boolean in this particular write cache
+  fileSystemWriteCache->setOutputToSerial(false);// and then set it back to the original writecache here
 }
 
 void Datalogger::loop()
@@ -222,55 +286,16 @@ void Datalogger::loop()
       return;
     }
 
-    if (shouldContinueBursting())
+    if(processReadingsCycle())
     {
-      measureSensorValues();
-      if(settings.log_raw_data) // we are really talking about a burst summary
-      {
-        writeRawMeasurementToLogFile();
-      }
-
-      if(shouldContinueBursting())
-      {
-        // sleep for maximum time before next reading
-        // ask all drivers for maximum time until next burst reading
-        // ask all drivers for maximum time until next available reading
-        // sleep for whichever is less
-        sleepMCU(minMillisecondsUntilNextReading());
-      }
-    }
-    else
-    {
-      // output burst summary
-      writeSummaryMeasurementToLogFile();
-
-      completedBursts++;
-      if (completedBursts < settings.burstNumber)
-      {
-        // debug(F("do another burst"));
-        
-        if (settings.interBurstDelay > 0)
-        {
-          notify(F("Wait for burst delay"));
-          int interBurstDelay = settings.interBurstDelay*60; //convert to seconds to print
-          // todo: we should sleep any sensors that can be slept without re-warming
-          // this could be called 'standby' mode
-          // placeSensorsInStandbyMode();
-          sleepMCU(interBurstDelay*1000); // convert minutes to milliseconds
-          // wakeSensorsFromStandbyMode();
-        }
-
-        initializeBurst();
-        return;
-      }
-
-      // go to sleep
-      fileSystemWriteCache->flushCache();
-    SLEEP:
-      stopAndAwaitTrigger();
-      initializeMeasurementCycle();
       return;
     }
+
+    // otherwise go to sleep
+    fileSystemWriteCache->flushCache();
+  SLEEP:
+    stopAndAwaitTrigger();
+    initializeMeasurementCycle();
     return;
   }
 
@@ -293,38 +318,14 @@ void Datalogger::loop()
         measureSensorValues(false);
         if(interactiveModeLogging)
         {
-          Serial2.print("\n");
-          for (unsigned short i = 0; i < sensorCount; i++)
-          {
-            Serial2.print(drivers[i]->getCSVColumnHeaders());
-            if (i < sensorCount - 1)
-            {
-              Serial2.print(F(","));
-            }
-            else
-            {
-              Serial2.println("");
-            }
-          }
-
-          for (unsigned short i = 0; i < sensorCount; i++)
-          {
-            Serial2.print(drivers[i]->getRawDataString());
-            if (i < sensorCount - 1)
-            {
-              Serial2.print(F(","));
-            }
-            else
-            {
-              Serial2.println("");
-            }
-          }
+          outputLastMeasurement();
           Serial2.print(F("CMD >> "));
         }
         writeRawMeasurementToLogFile();
         lastInteractiveLogTime = timestamp();
       }
     }
+    
   }
   else if (inMode(debugging))
   {
@@ -490,7 +491,7 @@ void Datalogger::initializeBurst()
 
 void Datalogger::initializeMeasurementCycle()
 {
-  notify(F("setting base time"));
+  // notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
 
@@ -633,6 +634,7 @@ bool Datalogger::writeRawMeasurementToLogFile()
   }
 
   writeUserFieldsToLogFile();
+  fileSystemWriteCache->endOfLine();
   return true;
 }
 
@@ -641,7 +643,6 @@ bool Datalogger::writeSummaryMeasurementToLogFile()
   writeStatusFieldsToLogFile("summary");
 
   // and write out the sensor data
-  debug(F("Write out sensor data"));
   for (unsigned short i = 0; i < sensorCount; i++)
   {
     // get values from the sensors
@@ -1186,13 +1187,13 @@ const char *Datalogger::getUUIDString()
 int Datalogger::minMillisecondsUntilNextReading()
 {
   unsigned int minimumNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
-  for(int i=0; i<sensorCount+1; i++)
+  for(int i=0; i<sensorCount; i++)
   {
     minimumNextRequestedReading = min(minimumNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
   }
 
   unsigned int maxDelayUntilNextAvailableReading = 0; 
-  for(int i=0; i<sensorCount+1; i++)
+  for(int i=0; i<sensorCount; i++)
   {
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
   }
@@ -1209,5 +1210,21 @@ void Datalogger::setSensorDebugModes(bool debug)
   for(unsigned short i=0; i<sensorCount; i++)
   {
     drivers[i]->setDebugMode(debug);
+  }
+}
+
+void Datalogger::outputLastMeasurement()
+{
+  Serial2.print("\n");
+  for (unsigned short i = 0; i < sensorCount; i++)
+  {
+    Serial2.print(drivers[i]->getCSVColumnHeaders());
+    Serial2.print(i < sensorCount - 1 ? "," : "\n");
+  }
+
+  for (unsigned short i = 0; i < sensorCount; i++)
+  {
+    Serial2.print(drivers[i]->getRawDataString());
+    Serial2.print(i < sensorCount - 1 ? "," : "\n");
   }
 }

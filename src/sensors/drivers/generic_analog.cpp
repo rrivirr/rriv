@@ -253,17 +253,24 @@ void GenericAnalogDriver::printCalibrationStatus()
   notify(buffer);
 }
 
+void missingArg()
+{
+  notify("Missing arg");
+}
+
 void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
 {
+  short testCalValues[3] = {1100, 2000, 3000};
+
   if (strcmp(step, "high") == 0)
   {    
     if(arg_cnt == 0)
     {
-      notify("Missing argument");
+      missingArg();
       return;
     }
-    notify(args[0]);
-    notify(atof(args[0]));
+    // notify(args[0]);
+    // notify(atof(args[0]));
     takeCalibrationBurstMeasurement();
     calibrate_high_reading = this->value;
     calibrate_high_value = atof(args[0]);
@@ -274,7 +281,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
   {
     if(arg_cnt == 0)
     {
-      notify("Missing argument");
+      missingArg();
       return;
     }
     takeCalibrationBurstMeasurement();
@@ -291,7 +298,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
     if (
         calibrate_high_reading == 0 || calibrate_high_value == 0 || calibrate_low_reading == 0 || calibrate_low_value == 0)
     {
-      notify("Incomplete calibration");
+      notify("Incomplete cal");
       return;
     }
 
@@ -303,7 +310,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
     char *string = cJSON_Print(json);
     if (string == NULL)
     {
-      notify("Failed to print json.");
+      notify("Print json fail");
     }
     notify(string);
     free(json);
@@ -314,23 +321,22 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
   }
   else if(strcmp(step, "test-cal") == 0)
   {
-      calibrate_high_reading = 3000;
-      calibrate_high_value = .305;
-      calibrate_low_reading = 1100;
-      calibrate_low_value = .201;
+    calibrate_high_reading = testCalValues[2];
+    calibrate_high_value = .305;
+    calibrate_low_reading = testCalValues[0];
+    calibrate_low_value = .201;
   }
   else if(strcmp(step, "test-curve") == 0)
   {
-      value = 1100;
+    for(short i=0; i<3; i++)
+    {
+      value = testCalValues[i];
       notify(getRawDataString());
-      value = 3000;
-      notify(getRawDataString());
-      value = 2000;
-      notify(getRawDataString());
+    }
   }
   else
   {
-    notify("Invalid calibration step");
+    notify("Invalid cal step");
   }
 }
 
@@ -385,7 +391,7 @@ void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
   }
   else
   {
-    cJSON_AddStringToObject(json, "calibration", "not initialized");
+    cJSON_AddStringToObject(json, "calibration", "not init");
   }
 }
 

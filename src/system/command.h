@@ -80,8 +80,6 @@ class CommandInterface
     // int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
     // int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
 
-    void * getLastPayload();
-
     bool ready(Stream * myStream);
     bool ready(HardwareSerial &port);
     // bool ready(Adafruit_BluefruitLE_UART &ble);
@@ -120,6 +118,7 @@ class CommandInterface
     void _toggleDebug();
     void _startLogging();
     void _stopLogging();
+    void _testMeasurementCycle();
     void _go();
     void _reloadSensorConfigurations();
     void _enterStop();

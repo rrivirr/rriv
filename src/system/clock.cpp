@@ -126,7 +126,7 @@ void setNextAlarmInternalRTCMilliseconds(int milliseconds)
   clock->createAlarm(handleInterrupt, milliseconds);
   delete clock;
 
-  sprintf(message, "set alarm seconds until wake: %i", milliseconds);
+  sprintf(message, "set alarm milliseconds until wake: %i", milliseconds);
   notify(message);
 
 }
