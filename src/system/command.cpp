@@ -532,6 +532,17 @@ void CommandInterface::_switchToInteractiveMode()
   this->datalogger->storeMode(interactive);
 }
 
+void pullData(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_pullData();
+}
+
+void CommandInterface::_pullData()
+{
+  this->datalogger->pullData();
+}
+
+
 
 void calibrate(int arg_cnt, char **args)
 {
@@ -722,6 +733,7 @@ void CommandInterface::setup(){
   cmdAdd("set-user-note", setUserNote);
   cmdAdd("set-user-value", setUserValue);
 
+
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
   cmdAdd("stop-logging", stopLogging);
@@ -730,6 +742,7 @@ void CommandInterface::setup(){
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);
   cmdAdd("i", switchToInteractiveMode);
+  cmdAdd("pull-data", pullData);
 
   // qos commands / debug commands
   cmdAdd("restart", restart);

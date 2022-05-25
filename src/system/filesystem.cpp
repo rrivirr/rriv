@@ -19,6 +19,7 @@
 #include "filesystem.h"
 #include "clock.h"
 #include "monitor.h"
+#include "system/watchdog.h"
 #include "system/logs.h"
 
 char dataDirectory[6] = "/Data";
@@ -93,13 +94,12 @@ void WaterBear_FileSystem::writeDebugMessage(const char* message)
 
 void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * lastFileNameSent)
 {
-  /*
     // Debug
     // printCurrentDirListing();
 
     if (!sd.chdir(dataDirectory)) {
       notify(F("fail: Data."));
-      state = 0;
+      // state = 0;
       return;
     }
 
@@ -115,54 +115,68 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     while (dirFile.openNext(sd.vwd(), O_READ)) {
       dir_t d;
       if (!dirFile.dirEntry(&d)) {
-        //notify(F("dirEntry failed"));
-        state = 0;
+        notify(F("dirEntry failed"));
+        // state = 0;
         return;
       }
+      // Only consider directories
       if(!dirFile.isDir()){
-        // Descend into all the deployment directories
         continue;
       }
+
+      // Descend into all the deployment directories
       dirFile.getName(sdDirName, 30);
-      //Serial2.write("Dir: ");
       //notify(sdDirName);
 
-      if(! sd.chdir(sdDirName) ){
-        Serial2.write("fail:");
+      if(!sd.chdir(sdDirName) ){
+        notify(F("fail:"));
         notify(sdDirName);
-        state = 0;
+        // state = 0;
         return;
       }
       dirFile.close();
 
       sd.vwd()->rewind();
       SdFile deploymentFile;
-      while (deploymentFile.openNext(sd.vwd(), O_READ)) {
+      while (deploymentFile.openNext(sd.vwd(), O_READ))
+      {
         dir_t d;
-        if (!deploymentFile.dirEntry(&d)) {
-          // notify(F("depl file fail"));
-          state = 0;
+        if (!deploymentFile.dirEntry(&d))
+        {
+          notify(F("depl file fail"));
+          // state = 0;
           return;
         }
         deploymentFile.getName(sdFileName, 24);
 
+        // if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
+        // notify(sdFilename);
 
-        if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
-            //notify(sdFilename);
-
-            File datafile = sd.open(sdFileName);
-            // send size of transmission ?
-            // notify(datafile.fileSize());
-            while (datafile.available()) {
-                Serial2.write(datafile.read());
-            }
-            datafile.close();
-         }
-         deploymentFile.close();
+        File datafile = sd.open(sdFileName);
+        if(datafile.fileSize() == 0)
+        {
+          continue;
+        }
+        // send size of transmission ?
+        // notify(datafile.fileSize());
+        myStream->write(sdDirName);
+        myStream->write("/");
+        myStream->write(sdFileName);
+        myStream->write(":");
+        char buffer[400];
+        while (datafile.available())
+        {
+          memset(buffer, 0, 400);
+          datafile.readBytesUntil('\n', buffer, 400);
+          myStream->write(buffer);
+          myStream->write('\n');
+          reloadCustomWatchdog();
+        }
+        datafile.close();
+        myStream->write(";\n"); // file boundary delimeter
+        // }
+        deploymentFile.close();
       }
-
-      //char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
-      //Serial2.write(deploymentCompleteMessage);
 
       sd.chdir(dataDirectory);
 
@@ -179,12 +193,15 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       }
     }
 
+    myStream->write("`\n"); // pull complete
+    myStream->flush();
+
+
     if (!sd.chdir("/")) {
       notify(F("fail /"));
-      state = 0;
+      // state = 0;
       return;
     }
-*/
 }
 
 void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
