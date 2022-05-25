@@ -1,5 +1,5 @@
 #include "sensors/drivers/adafruit_dht22.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 
 AdaDHT22::AdaDHT22()
 {
@@ -40,15 +40,9 @@ void AdaDHT22::setup()
   // debug("setup AdaDHT22");
   dht = new DHT_Unified(DHTPIN, DHTTYPE);
   dht->begin();
-  notify("AdaDHT22 Initialized, test reading:");
-  takeMeasurement();
+  notify("AdaDHT22 Initialized");
 }
 
-void AdaDHT22::stop()
-{
-  // debug("stop/delete AdaDHT22");
-  delete dht;
-}
 
 bool AdaDHT22::takeMeasurement()
 {
@@ -64,9 +58,6 @@ bool AdaDHT22::takeMeasurement()
   }
   else
   {
-    notify("Temperature: ");
-    Serial2.print(temperature);
-    notify("°C");
     measurementTaken = true;
   }
 
@@ -78,19 +69,31 @@ bool AdaDHT22::takeMeasurement()
   }
   else
   {
-    notify("Humidity: ");
-    Serial2.print(humidity);
-    notify("%");
     measurementTaken = true;
+  }
+
+  if(measurementTaken)
+  {
+    addValueToBurstSummaryMean("temperature", temperature);
+    addValueToBurstSummaryMean("humidity", humidity);
   }
 
   return measurementTaken;
 }
 
-const char *AdaDHT22::getDataString()
+const char *AdaDHT22::getRawDataString()
 {
   // debug("configuring AdaDHT22 dataString");
   // process data string for .csv
+  sprintf(dataString, "%.2f,%.2f", temperature, humidity);
+  return dataString;
+}
+
+const char *AdaDHT22::getSummaryDataString()
+{
+  // debug("configuring AdaDHT22 dataString");
+  // process data string for .csv
+  // TODO: just reporting the last value, not a true summary
   sprintf(dataString, "%.2f,%.2f", temperature, humidity);
   return dataString;
 }
@@ -117,7 +120,7 @@ void AdaDHT22::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add AdaDHT22 calibration parameters to json");
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
 void AdaDHT22::configureDriverFromJSON(cJSON *json)

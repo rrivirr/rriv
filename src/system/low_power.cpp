@@ -28,7 +28,7 @@
 #include <libmaple/adc.h>
 #include <libmaple/dac.h>
 #include <libmaple/usart.h>
-
+#include "logs.h"
 
 void enterStopMode()
 {

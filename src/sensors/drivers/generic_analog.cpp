@@ -17,7 +17,7 @@
  */
 
 #include "generic_analog.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
@@ -33,10 +33,10 @@ int ADC_PINS[5] = {
     ANALOG_INPUT_5_PIN
 };
 
+#define GENERIC_ANALOG_VALUE_TAG "value"
+
 GenericAnalogDriver::GenericAnalogDriver()
 {
-  debug("allocation GenericAnalog");
-
 }
 
 GenericAnalogDriver::~GenericAnalogDriver() {}
@@ -50,6 +50,8 @@ void GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
 {
 
   const cJSON *adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
+  const char * errorMessage = reinterpret_cast<const char *>(F("Invalid adc select"));
+  bool error = false;
   if (adcSelectJSON != NULL && cJSON_IsString(adcSelectJSON))
   {
     if (strcmp(adcSelectJSON->valuestring, "internal") == 0)
@@ -62,16 +64,19 @@ void GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
     }
     else
     {
-      notify(F("Invalid adc select"));
-      return;
+      error = true;
     }
   }
   else
   {
-    notify(F("Invalid adc select"));
+    error = true;
+  }
+
+  if(error)
+  {
+    notify(errorMessage);
     return;
   }
-  notify("done");
 
   const cJSON *sensorPortJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_port");
   if (sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint < 5)
@@ -83,28 +88,15 @@ void GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
     notify(F("Invalid sensor port"));
     return;
   }
-  notify("done");
 }
 
 void GenericAnalogDriver::setDriverDefaults()
 {
+  memset(&configurations, 0, sizeof(configurations));
   if (configurations.adc_select != ADC_SELECT_EXTERNAL && configurations.adc_select != ADC_SELECT_INTERNAL)
   {
     configurations.adc_select = ADC_SELECT_INTERNAL;
   }
-
-  if (configurations.sensor_port > 5)
-  {
-    configurations.sensor_port = 0;
-  }
-
-  configurations.m = 0;
-  configurations.b = 0;
-  configurations.x1 = 0;
-  configurations.x2 = 0;
-  configurations.y1 = 0;
-  configurations.y2 = 0;
-  configurations.cal_timestamp = 0;
 }
 
 configuration_bytes_partition GenericAnalogDriver::getDriverSpecificConfigurationBytes()
@@ -158,7 +150,7 @@ bool GenericAnalogDriver::takeMeasurement()
 
   case ADC_SELECT_EXTERNAL:
   {
-    debug("getting external ADC measurement");
+    debug("get extADC value");
     this->value = externalADC->getChannelValue(configurations.sensor_port - 1);
   }
   break;
@@ -168,6 +160,10 @@ bool GenericAnalogDriver::takeMeasurement()
   } // bad configuration
   break;
   }
+
+  // validate the value
+  // store this->value for summary calculation
+  addValueToBurstSummaryMean(GENERIC_ANALOG_VALUE_TAG, this->value);
 
   return true;
 }
@@ -183,7 +179,7 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
   int x[MAX_CALIBRATION_BURST_LENGTH];
   int sum = 0;
   double sum1 = 0;
-  notify("Calibration measurments:");
+  notify("Calibration measurements:");
   for (int i = 0; i < configurations.calibrationBurstCount; i++)
   {
     if (configurations.adc_select == ADC_SELECT_EXTERNAL)
@@ -196,7 +192,7 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
     x[i] = this->value;
     delay(100);
   }
-  int average = sum / configurations.calibrationBurstCount;
+  double average = (double) sum / configurations.calibrationBurstCount;
   this->value = average;
 
   /*  Compute  variance */
@@ -206,16 +202,27 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
   }
   calibrationVariance = sum1 / (float)(configurations.calibrationBurstCount);
   char buffer[50];
-  sprintf(buffer, "variance of measurements = %.2f\n", calibrationVariance);
+  sprintf(buffer, "variance = %.2f\n", calibrationVariance);
   notify(buffer);
 }
 
-const char *GenericAnalogDriver::getDataString()
+double GenericAnalogDriver::getCalibratedValue(double value)
 {
-  int exponent = -(3 - configurations.order_of_magnitude);
-  double calibratedValue = (configurations.m * value + configurations.b) * rrivmath::power(10, exponent);
-  sprintf(dataString, "%d,%0.3f", value, calibratedValue);
+  double calibratedValue = (configurations.m * value + configurations.b) * rrivmath::power(10, -getOrderOfMagnitudeToScale());
+  return calibratedValue;
+}
+
+const char *GenericAnalogDriver::getRawDataString() //TODO: getRawDataString() ??
+{
+  sprintf(dataString, "%d,%0.3f", value, getCalibratedValue(value));
   return dataString;
+}
+
+const char *GenericAnalogDriver::getSummaryDataString()
+{
+  double burstSummaryMean = getBurstSummaryMean(GENERIC_ANALOG_VALUE_TAG);
+  sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, getCalibratedValue(burstSummaryMean));
+  return dataString;  
 }
 
 
@@ -232,31 +239,38 @@ void GenericAnalogDriver::printCalibrationStatus()
 {
   notify(F("Calibration status:"));
   char buffer[50];
-  sprintf(buffer, "calibrate_high_reading: %d", calibrate_high_reading);
+  sprintf(buffer, "high_reading: %d", calibrate_high_reading);
   notify(buffer);
-  sprintf(buffer, "calibrate_high_variance: %f", calibrate_high_variance);
+  sprintf(buffer, "high_variance: %f", calibrate_high_variance);
   notify(buffer);
-  sprintf(buffer, "calibrate_high_value: %f", calibrate_high_value);
+  sprintf(buffer, "high_value: %f", calibrate_high_value);
   notify(buffer);
-  sprintf(buffer, "calibrate_low_reading: %d", calibrate_low_reading);
+  sprintf(buffer, "low_reading: %d", calibrate_low_reading);
   notify(buffer);
-  sprintf(buffer, "calibrate_low_variance: %f", calibrate_low_variance);
+  sprintf(buffer, "low_variance: %f", calibrate_low_variance);
   notify(buffer);
-  sprintf(buffer, "calibrate_low_value: %f", calibrate_low_value);
+  sprintf(buffer, "low_value: %f", calibrate_low_value);
   notify(buffer);
+}
+
+void missingArg()
+{
+  notify("Missing arg");
 }
 
 void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
 {
+  short testCalValues[3] = {1100, 2000, 3000};
+
   if (strcmp(step, "high") == 0)
   {    
     if(arg_cnt == 0)
     {
-      notify("Missing argument");
+      missingArg();
       return;
     }
-    notify(args[0]);
-    notify(atof(args[0]));
+    // notify(args[0]);
+    // notify(atof(args[0]));
     takeCalibrationBurstMeasurement();
     calibrate_high_reading = this->value;
     calibrate_high_value = atof(args[0]);
@@ -267,7 +281,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
   {
     if(arg_cnt == 0)
     {
-      notify("Missing argument");
+      missingArg();
       return;
     }
     takeCalibrationBurstMeasurement();
@@ -284,7 +298,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
     if (
         calibrate_high_reading == 0 || calibrate_high_value == 0 || calibrate_low_reading == 0 || calibrate_low_value == 0)
     {
-      notify("Incomplete calibration");
+      notify("Incomplete cal");
       return;
     }
 
@@ -296,7 +310,7 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
     char *string = cJSON_Print(json);
     if (string == NULL)
     {
-      notify("Failed to print json.");
+      notify("Print json fail");
     }
     notify(string);
     free(json);
@@ -307,23 +321,22 @@ void GenericAnalogDriver::calibrationStep(char *step, int arg_cnt, char ** args)
   }
   else if(strcmp(step, "test-cal") == 0)
   {
-      calibrate_high_reading = 3000;
-      calibrate_high_value = .305;
-      calibrate_low_reading = 1100;
-      calibrate_low_value = .201;
+    calibrate_high_reading = testCalValues[2];
+    calibrate_high_value = .305;
+    calibrate_low_reading = testCalValues[0];
+    calibrate_low_value = .201;
   }
   else if(strcmp(step, "test-curve") == 0)
   {
-      value = 1100;
-      notify(getDataString());
-      value = 3000;
-      notify(getDataString());
-      value = 2000;
-      notify(getDataString());
+    for(short i=0; i<3; i++)
+    {
+      value = testCalValues[i];
+      notify(getRawDataString());
+    }
   }
   else
   {
-    notify("Invalid calibration step");
+    notify("Invalid cal step");
   }
 }
 
@@ -335,7 +348,7 @@ void GenericAnalogDriver::computeCalibratedCurve() // calibrate using linear slo
   // figure out orders of magnitude
   int orderOfMagnitude = rrivmath::floor(rrivmath::log10(calibrate_low_value)); // TODO this isn't enough to know OoM !
   // notify(orderOfMagnitude);
-  int exponent = 3 - orderOfMagnitude;
+  int exponent = getOrderOfMagnitudeToScale();
   double scaledCalibrateHighValue = calibrate_high_value * rrivmath::power(10, exponent);
   double scaledCalibrateLowValue = calibrate_low_value * rrivmath::power(10, exponent);
   // notify(scaledCalibrateHighValue);
@@ -354,6 +367,12 @@ void GenericAnalogDriver::computeCalibratedCurve() // calibrate using linear slo
   configurations.cal_timestamp = timestamp();
 }
 
+short GenericAnalogDriver::getOrderOfMagnitudeToScale()
+{
+  short exponent = (3 - configurations.order_of_magnitude);
+  return exponent;
+}
+
 void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
 {
   if(configurations.order_of_magnitude > -6 && configurations.order_of_magnitude < 6)
@@ -366,20 +385,18 @@ void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
     cJSON_AddNumberToObject(json, "x2", configurations.x2);
     cJSON_AddNumberToObject(json, "x2 var", configurations.x2Var);
     cJSON_AddNumberToObject(json, "cal burst length", configurations.calibrationBurstCount);
-    int exponent = -(3 - configurations.order_of_magnitude);
-    cJSON_AddNumberToObject(json, "y1", configurations.y1 * rrivmath::power(10, exponent));
-    cJSON_AddNumberToObject(json, "y2", configurations.y2 * rrivmath::power(10, exponent));
-    cJSON_AddNumberToObject(json, "calibration_time", configurations.cal_timestamp);
+    cJSON_AddNumberToObject(json, "y1", configurations.y1 * rrivmath::power(10, -getOrderOfMagnitudeToScale()));
+    cJSON_AddNumberToObject(json, "y2", configurations.y2 * rrivmath::power(10, -getOrderOfMagnitudeToScale()));
+    cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configurations.cal_timestamp);
   }
   else
   {
-    cJSON_AddNumberToObject(json, "m", 0);
-    cJSON_AddNumberToObject(json, "b", 0);
-    cJSON_AddNumberToObject(json, "order_of_magnitude", 0);
-    cJSON_AddNumberToObject(json, "x1", 0);
-    cJSON_AddNumberToObject(json, "x2", 0);
-    cJSON_AddNumberToObject(json, "y1", 0);
-    cJSON_AddNumberToObject(json, "y2", 0);
-    cJSON_AddNumberToObject(json, "calibration_time", 0);
+    cJSON_AddStringToObject(json, "calibration", "not init");
   }
+}
+
+
+unsigned int GenericAnalogDriver::millisecondsUntilNextRequestedReading()
+{
+  return 100;
 }

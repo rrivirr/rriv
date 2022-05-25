@@ -19,7 +19,6 @@
 #ifndef WATERBEAR_FILESYSTEM
 #define WATERBEAR_FILESYSTEM
 
-// #include "Arduino.h"
 #include "SdFat.h"
 #include "DS3231.h"
 #include "write_cache.h"
@@ -51,9 +50,6 @@ public:
   void reopenFileSystem(); // reopen filesystem after wakeup
   void writeString(const char * string);
   void endOfLine();
-
-  // deprecated
-  void writeLog(char** values, short fieldCount);
 
 };
 

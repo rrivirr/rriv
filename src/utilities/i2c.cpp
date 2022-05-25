@@ -18,7 +18,7 @@
 
 #include "i2c.h"
 #include "system/hardware.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "utilities/i2c.h"
 
 void i2cError(int transmissionCode)
@@ -32,10 +32,10 @@ void i2cError(int transmissionCode)
       debug(F("i2c data error"));
       break;
     case ENACKADDR:
-      debug(F("i2c address not acknowledged"));
+      debug(F("i2c address not ack'd"));
       break;
     case ENACKTRNS:
-      debug(F("i2c transmission not acknowledged"));
+      debug(F("i2c transmission not ack;d"));
       break;
     case EOTHER:
       debug(F("i2c error: other"));
@@ -81,7 +81,7 @@ void scanIC2(TwoWire *wire)
 
 bool scanIC2(TwoWire *wire, int searchAddress)
 {
-  Serial.println("Scanning...");
+  Serial.println("Scanning");
   byte error, address;
   int nDevices;
   nDevices = 0;
@@ -95,7 +95,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.print(F("I2C device found at address 0x"));
+      Serial.print(F("I2C dev at addr 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
@@ -107,7 +107,7 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     }
     else if (error == 4)
     {
-      Serial.print(F("Unknown error at address 0x"));
+      Serial.print(F("Unknown error at addr 0x"));
       if (address < 16)
         Serial.println(F("0"));
       Serial.println(address, HEX);
@@ -124,18 +124,18 @@ void enableI2C1()
   
   i2c_disable(I2C1);
   i2c_master_enable(I2C1, 0, 0);
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C1"));
+  debug(F("Enabled I2C1"));
 
-  delay(500);
+  // delay(500);
   // i2c_bus_reset(I2C1); // hangs here if this is called
-  // Monitor::instance()->writeDebugMessage(F("Reset I2C1"));
+  // debug(F("Reset I2C1"));
 
   WireOne.begin();
   delay(250);
 
-  Monitor::instance()->writeDebugMessage(F("Began TwoWire 1"));
+  debug(F("Began TwoWire 1"));
   
-  Monitor::instance()->writeDebugMessage(F("Scanning 1"));
+  debug(F("Scanning 1"));
 
   scanIC2(&Wire);
 }
@@ -144,15 +144,15 @@ void enableI2C2()
 {
   i2c_disable(I2C2);
   i2c_master_enable(I2C2, 0, 0);
-  Monitor::instance()->writeDebugMessage(F("Enabled I2C2"));
+  debug(F("Enabled I2C2"));
 
   //i2c_bus_reset(I2C2); // hang if this is called
   WireTwo.begin();
   delay(250);
 
-  Monitor::instance()->writeDebugMessage(F("Began TwoWire 2"));
+  debug(F("Began TwoWire 2"));
 
-  Monitor::instance()->writeDebugMessage(F("Scanning 2"));
+  debug(F("Scanning 2"));
 
   scanIC2(&WireTwo);
 }

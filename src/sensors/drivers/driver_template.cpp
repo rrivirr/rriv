@@ -1,5 +1,5 @@
 #include "sensors/drivers/driver_template.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 
 DriverTemplate::DriverTemplate()
@@ -21,7 +21,7 @@ configuration_bytes_partition DriverTemplate::getDriverSpecificConfigurationByte
   return partition;
 }
 
-void configureDriverFromJSON(cJSON *json)
+void DriverTemplate::configureDriverFromJSON(cJSON *json)
 {
 }
 
@@ -59,15 +59,23 @@ bool DriverTemplate::takeMeasurement()
     value = 42;
     measurementTaken = true;
   }
+  addValueToBurstSummaryMean("var", value); // use the default option for computing the burst summary value
   return measurementTaken;
 }
 
-const char *DriverTemplate::getDataString()
+const char *DriverTemplate::getRawDataString()
 {
   // debug("configuring driver template dataString");
   // process data string for .csv
-  sprintf(dataString, "%d,%d",value,int(value*31.83));
+  sprintf(dataString, "%d,%0.3f",value,value*31.83);
   return dataString;
+}
+
+const char *DriverTemplate::getSummaryDataString()
+{
+  double burstSummaryMean = getBurstSummaryMean("var");
+  sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, burstSummaryMean*31.83);
+  return dataString;  
 }
 
 const char *DriverTemplate::getBaseColumnHeaders()
@@ -92,7 +100,7 @@ void DriverTemplate::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
 void DriverTemplate::setDriverDefaults()

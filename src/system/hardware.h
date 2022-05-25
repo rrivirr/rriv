@@ -70,5 +70,6 @@ void gpioPinOn(uint8 pin);
 void startSerial2();
 void setupInternalRTC();
 void setupHardwarePins();
+int getBatteryValue();
 
 #endif

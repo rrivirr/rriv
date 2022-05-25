@@ -17,7 +17,7 @@
  */
 
 #include "sensor.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "sensors/sensor_map.h"
 
 SensorDriver::SensorDriver(){}
@@ -43,25 +43,66 @@ const configuration_bytes SensorDriver::getConfigurationBytes()
   return configurationBytes;
 }
 
-
-
 const common_sensor_driver_config * SensorDriver::getCommonConfigurations()
 {
   return &commonConfigurations;
 }
 
-void SensorDriver::initializeBurst(){
-  burstCount = 0;
+
+void SensorDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations)
+{
+  // override to load driver specific configurations
+} 
+
+configuration_bytes_partition SensorDriver::getDriverSpecificConfigurationBytes()
+{
+  configuration_bytes_partition emptyPartition;
+  return emptyPartition;
 }
 
-void SensorDriver::incrementBurst(){
+void SensorDriver::configureDriverFromJSON(cJSON *json)
+{
+  // override to load driver specific configurations
+}
+  
+void SensorDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
+{
+  // override to return driver specific configurations
+}
+
+void SensorDriver::initializeBurst()
+{
+  burstCount = 0;
+  // burstSummarySumCounts.clear();
+  // burstSummarySums.clear();
+}
+
+void SensorDriver::incrementBurst()
+{
   burstCount++;
 }
 
-bool SensorDriver::burstCompleted(){
-  notify(burstCount);
-  notify(commonConfigurations.burst_size);
-  return burstCount == commonConfigurations.burst_size;
+bool SensorDriver::burstCompleted()
+{
+  // notify(burstCount);
+  // notify(commonConfigurations.burst_size);
+  return burstCount >= commonConfigurations.burst_size;
+}
+
+void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
+{
+  if(burstSummarySums.count(tag) == 0)
+  {
+    burstSummarySums[tag] = 0;
+    burstSummarySumCounts[tag] = 0;
+  }
+  burstSummarySums[tag] += value;
+  burstSummarySumCounts[tag] += 1;
+}
+
+double SensorDriver::getBurstSummaryMean(std::string tag)
+{
+  return burstSummarySums[tag] / burstSummarySumCounts[tag];
 }
 
 void SensorDriver::configureCSVColumns()
@@ -70,11 +111,11 @@ void SensorDriver::configureCSVColumns()
   char csvColumnHeaders[100] = "\0";
   char buffer[100];
   strcpy(buffer, this->getBaseColumnHeaders());
-  debug(buffer);
+  // debug(buffer);
   char * token = strtok(buffer, ",");
   while(token != NULL)
   {
-    debug(token);
+    // debug(token);
     strcat(csvColumnHeaders, this->commonConfigurations.tag);
     strcat(csvColumnHeaders, "_");
     strcat(csvColumnHeaders, token);
@@ -90,7 +131,6 @@ void SensorDriver::configureCSVColumns()
 
 char *SensorDriver::getCSVColumnHeaders()
 {
-  debug(csvColumnHeaders);
   return csvColumnHeaders;
 }
 
@@ -112,6 +152,7 @@ void SensorDriver::configureFromJSON(cJSON * json)
   { 
     // TODO: improve these messages to indicate how much overflow there is
     // TODO: tell which driver is causing the issue, along the lines of this->getType()
+    // TODO: this is to help during driver dev, not production firmware
     notify("Invalid memory size for driver common configuration");
     exit(1);
   }
@@ -145,11 +186,8 @@ void SensorDriver::configureFromJSON(cJSON * json)
     notify("Invalid burst size");
   }
 
-  notify("set defaults");
   this->setDefaults();
-  notify("configure driver from JSON");
   this->configureDriverFromJSON(json);
-  notify("conf csv cols");
   this->configureCSVColumns();
 
 }
@@ -170,12 +208,20 @@ void SensorDriver::setup()
   return;
 }
 
-void SensorDriver::stop()
+void SensorDriver::hibernate()
 {
-  // by default no stop
-  return;
+
 }
 
+void SensorDriver::wake()
+{
+
+}
+
+void SensorDriver::setDebugMode(bool debug) // for setting internal debug parameters, such as LED on
+{
+
+}
 
 bool SensorDriver::isWarmedUp()
 {
@@ -204,12 +250,21 @@ bool SensorDriver::getNeedsSave()
   return this->configurationNeedsSave;
 }
 
+unsigned int SensorDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 0; // return min by default, a larger number in driver implementation causes correct delay
+}
+
+unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+{
+  return MAX_REQUESTED_READING_DELAY; // as slow as possible by default, a smaller number in driver implementation forces faster read
+}
+
 
 AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver(){}
 
 protocol_type AnalogProtocolSensorDriver::getProtocol()
 {
-  notify(F("getting protocol"));
   return analog;
 }
 

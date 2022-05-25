@@ -38,7 +38,12 @@ extern DS3231 Clock;
 
 void setNextAlarmInternalRTC(short interval);
 void setNextAlarmInternalRTCSeconds(short seconds);
+void setNextAlarmInternalRTCMilliseconds(int milliseconds);
+
+#ifdef USES_DS3231_ALARM
 void setNextAlarm(short interval);
+#endif
+
 void dateTime(uint16_t* date, uint16_t* time);
 void clearAllAlarms();
 time_t timestamp();

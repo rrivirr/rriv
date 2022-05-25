@@ -27,6 +27,7 @@
 #include "scratch/dbgmcu.h"
 #include "version.h"
 #include "system/eeprom.h"
+#include "system/logs.h"
 
 // Setup and Loop
 Datalogger *datalogger;
@@ -107,24 +108,24 @@ void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
 {
   // Welcome message
 
-  const __FlashStringHelper *welcomeMessage = F(R"RRIV(
-____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
- __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
-  _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
-   _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
-    _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
-     _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
-      _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
-       _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
-        _\///________\///__\///________\///__\///////////________\///________
+   const __FlashStringHelper *welcomeMessage = F("Welcome"); //F(R"RRIV(
+// ____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
+//  __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
+//   _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
+//    _\/\\\\\\\\\\\/____\/\\\\\\\\\\\/________\/\\\______\//\\\____/\\\___     
+//     _\/\\\//////\\\____\/\\\//////\\\________\/\\\_______\//\\\__/\\\____    
+//      _\/\\\____\//\\\___\/\\\____\//\\\_______\/\\\________\//\\\/\\\_____   
+//       _\/\\\_____\//\\\__\/\\\_____\//\\\______\/\\\_________\//\\\\\______  
+//        _\/\\\______\//\\\_\/\\\______\//\\\__/\\\\\\\\\\\______\//\\\_______ 
+//         _\///________\///__\///________\///__\///////////________\///________
 
 
-River Restoration Intelligence and Verification  https://rriv.org
-Copyright (C) 2020  Zaven Arra  zaven.arra@gmail.com
-This program comes with ABSOLUTELY NO WARRANTY; for details type `show-warranty'.
-This is free software, and you are welcome to redistribute it
-under certain conditions; type `show-conditions' for details.
-)RRIV");
+// River Restoration Intelligence and Verification  https://rriv.org
+// Copyright (C) 2020  Zaven Arra  zaven.arra@gmail.com
+// This program comes with ABSOLUTELY NO WARRANTY; for details type `show-warranty'.
+// This is free software, and you are welcome to redistribute it
+// under certain conditions; type `show-conditions' for details.
+// )RRIV");
 
   // You are connected to Little Peep
   // Site name: TRAY

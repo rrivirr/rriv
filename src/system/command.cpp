@@ -23,6 +23,7 @@
 #include "system/clock.h"
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
+#include "system/logs.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -115,9 +116,9 @@ int CommandInterface::processControlCommands(HardwareSerial &port, Datalogger * 
 //   return CommandInterface::processControlCommands(myStream, datalogger);
 // }
 
-void * CommandInterface::getLastPayload()
-{
-  return lastCommandPayload;
+
+void ok(){
+  notify("ok");
 }
 
 void toggleTrace(int arg_cnt, char **args)
@@ -134,7 +135,7 @@ void CommandInterface::_startLogging()
 {
   this->datalogger->settings.debug_values = true;
   this->datalogger->startLogging();
-  notify("OK");
+  ok();
 }
 
 void stopLogging(int arg_cnt, char **args)
@@ -146,13 +147,26 @@ void CommandInterface::_stopLogging()
 {
   this->datalogger->settings.debug_values = false;
   this->datalogger->stopLogging();
-  notify("OK");
+  ok();
+}
+
+void testMeasurementCycle(int arg_cnt, char **args)
+{
+  CommandInterface::instance()->_testMeasurementCycle();
+}
+
+
+
+void CommandInterface::_testMeasurementCycle()
+{
+  this->datalogger->testMeasurementCycle();
+  ok();
 }
 
 void CommandInterface::_toggleDebug()
 {
   this->datalogger->changeMode(debugging);
-  notify("OK");
+  ok();
 }
 
 void printVersion(int arg_cnt, char **args)
@@ -164,7 +178,7 @@ void printVersion(int arg_cnt, char **args)
 
 void invalidArgumentsMessage(const __FlashStringHelper * message)
 {
-  notify(F("Invalid arguments"));
+  notify(F("Invalid args"));
   notify(message);
   return;
 }
@@ -189,7 +203,7 @@ void setSiteName(int arg_cnt, char **args)
 void CommandInterface::_setSiteName(char * siteName)
 {
   this->datalogger->setSiteName(siteName);
-  notify("OK");
+  ok();
 }
 
 void setDeploymentIdentifier(int arg_cnt, char **args)
@@ -212,7 +226,7 @@ void setDeploymentIdentifier(int arg_cnt, char **args)
 void CommandInterface::_setDeploymentIdentifier(char * deploymentIdentifier)
 {
   this->datalogger->setDeploymentIdentifier(deploymentIdentifier);
-  notify("OK");
+  ok();
 }
 
 void setInterval(int arg_cnt, char **args)
@@ -230,7 +244,7 @@ void setInterval(int arg_cnt, char **args)
 void CommandInterface::_setInterval(int size)
 {
   this->datalogger->setInterval(size);
-  notify("OK");
+  ok();
 }
 
 void setBurstSize(int arg_cnt, char **args)
@@ -248,7 +262,7 @@ void setBurstSize(int arg_cnt, char **args)
 void CommandInterface::_setBurstSize(int size)
 {
   this->datalogger->setBurstSize(size);
-  notify("OK");
+  ok();
 }
 
 void setBurstNumber(int arg_cnt, char **args)
@@ -266,7 +280,7 @@ void setBurstNumber(int arg_cnt, char **args)
 void CommandInterface::_setBurstNumber(int number)
 {
   this->datalogger->setBurstNumber(number);
-  notify("OK");
+  ok();
 }
 
 
@@ -285,7 +299,7 @@ void setStartUpDelay(int arg_cnt, char **args)
 void CommandInterface::_setStartUpDelay(int number)
 {
   this->datalogger->setStartUpDelay(number);
-  notify("OK");
+  ok();
 }
 
 void setBurstDelay(int arg_cnt, char **args)
@@ -410,14 +424,13 @@ void setSlotConfig(int arg_cnt, char **args)
 
 void CommandInterface::_setSlotConfig(char * config)
 {
-  debug(F("set slot config check JSON"));
+  // debug(F("set slot config check JSON"));
 
   cJSON *json = cJSON_Parse(config);
   if(json == NULL){
     notify(F("Invalid JSON"));
     return;
   }
-  debug(F("printing json"));
 
   const char * printString = cJSON_Print(json);
   notify(printString);
@@ -467,7 +480,7 @@ void clearSlot(int arg_cnt, char **args)
 void CommandInterface::_clearSlot(int number)
 {
   this->datalogger->clearSlot(number);
-  notify("OK");
+  ok();
 }
 
 void setRTC(int arg_cnt, char **args)
@@ -479,7 +492,7 @@ void setRTC(int arg_cnt, char **args)
 
   int timestamp = atoi(args[1]);
   setTime(timestamp);
-  notify("OK");
+  ok();
 }
 
 void getRTC(int arg_cnt, char **args)
@@ -554,7 +567,7 @@ void setUserNote(int arg_cnt, char **args)
 void CommandInterface::_setUserNote(char * note)
 {
   this->datalogger->setUserNote(note);
-  notify("OK");
+  ok();
 }
 
 void setUserValue(int arg_cnt, char **args)
@@ -571,7 +584,7 @@ void setUserValue(int arg_cnt, char **args)
 void CommandInterface::_setUserValue(int value)
 {
   this->datalogger->setUserValue(value);
-  notify("OK");
+  ok();
 }
 
 void checkMemory(int arg_cnt, char **args)
@@ -598,7 +611,7 @@ void enterStop(int arg_cnt, char**args)
 void CommandInterface::_enterStop()
 {
   this->datalogger->stopAndAwaitTrigger();
-  notify("OK");
+  ok();
 }
 
 void mcuDebugStatus(int arg_cnt, char**args)
@@ -712,6 +725,7 @@ void CommandInterface::setup(){
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
   cmdAdd("stop-logging", stopLogging);
+  cmdAdd("measurement-cycle", testMeasurementCycle);
 
   cmdAdd("deploy-now", deployNow);
   cmdAdd("interactive", switchToInteractiveMode);

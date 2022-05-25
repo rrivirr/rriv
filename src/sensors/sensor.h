@@ -22,6 +22,10 @@
 #include <Arduino.h>
 #include <Wire_slave.h>
 #include <cJSON.h>
+#include <map>
+#include <string>
+
+#define CALIBRATION_TIME_STRING reinterpret_cast<const char*>(F("calibration_time"))
 
 typedef enum protocol
 {
@@ -60,6 +64,9 @@ typedef struct
 
 } common_sensor_driver_config;
 
+
+#define MAX_REQUESTED_READING_DELAY 3600000;
+
 class SensorDriver
 {
 
@@ -77,6 +84,10 @@ public:
   void incrementBurst();
   bool burstCompleted();
 
+  // utility function for providing mean for burst summary value
+  void addValueToBurstSummaryMean(std::string tag, double value);
+  double getBurstSummaryMean(std::string tag);
+
   char *getCSVColumnHeaders();
   cJSON *getConfigurationJSON(); // returns unprotected pointer
 
@@ -84,6 +95,7 @@ public:
   void setConfigurationNeedsSave();
   void clearConfigurationNeedsSave();
   bool getNeedsSave();
+
 
 protected:
   common_sensor_driver_config commonConfigurations;
@@ -93,6 +105,10 @@ private:
   char csvColumnHeaders[200] = "column_header";
   short burstCount = 0;
   bool configurationNeedsSave = false;
+
+  // Variables for computing burst summary values
+  std::map<std::string, double> burstSummarySums;
+  std::map<std::string, int> burstSummarySumCounts;
 
   //
   // Subclass Implementation Interface
@@ -120,8 +136,9 @@ public:
    *  This method is optional.
    */
   virtual void setup();
-
-  virtual void stop();
+  virtual void hibernate();
+  virtual void wake();
+  virtual void setDebugMode(bool debug);
 
   /*
    *  Retrieve a measurement from the sensor
@@ -135,6 +152,9 @@ public:
    */
   virtual bool takeMeasurement() = 0;
 
+
+
+
   /*
    * Returns a comma separated string that contains one or more
    * measurement values from the last reading the driver successfully
@@ -142,12 +162,15 @@ public:
    * 
    * @return comma separate string of measurement values
    */
-  virtual const char *getDataString() = 0;
+  virtual const char *getRawDataString() = 0;
+
+
+  virtual const char *getSummaryDataString() = 0;
 
   /*
    * Returns a comma separated string that contains header values
    * for columns of data corresponding to the values retured by
-   * getDataString().
+   * getRawDataString().
    * 
    * @return comma separated string of columen headers
    */
@@ -161,17 +184,24 @@ public:
   ;
   virtual void calibrationStep(char *step, int arg_cnt, char **args) = 0;
 
+  // Timing
+  virtual unsigned int millisecondsUntilNextReadingAvailable();
+
+  virtual unsigned int millisecondsUntilNextRequestedReading();
+
 protected:
 
-  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations) = 0; 
+  virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
   
   virtual configuration_bytes_partition getDriverSpecificConfigurationBytes() = 0;
 
-  virtual void configureDriverFromJSON(cJSON *json) = 0;
+  virtual void configureDriverFromJSON(cJSON *json);
   
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
+
+
 };
 
 #include "base/analog_protocol_driver.h"
