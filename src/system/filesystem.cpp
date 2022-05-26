@@ -165,7 +165,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
         datafile.setTimeout(1000);
         while (count < size)
         {
-          int bytesRead = datafile.readBytes(buffer, 2000);
+          int bytesRead = datafile.readBytes(buffer, 1999);
           buffer[bytesRead] = '\0';
           myStream->write(buffer);
           count += bytesRead;
