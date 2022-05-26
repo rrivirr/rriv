@@ -149,33 +149,51 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
         }
         deploymentFile.getName(sdFileName, 24);
 
-        // if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
-        // notify(sdFilename);
-
         File datafile = sd.open(sdFileName);
         if(datafile.fileSize() == 0)
         {
           continue;
         }
-        // send size of transmission ?
-        // notify(datafile.fileSize());
+
         myStream->write(sdDirName);
         myStream->write("/");
         myStream->write(sdFileName);
         myStream->write(":");
-        char buffer[400];
-        while (datafile.available())
+        char buffer[2000];
+        int size = datafile.size();
+        long count = 0;
+        datafile.setTimeout(1000);
+        while (count < size)
         {
-          memset(buffer, 0, 400);
-          datafile.readBytesUntil('\n', buffer, 400);
+          int bytesRead = datafile.readBytes(buffer, 2000);
+          buffer[bytesRead] = '\0';
           myStream->write(buffer);
-          myStream->write('\n');
+          count += bytesRead;
+          myStream->write(count);
           reloadCustomWatchdog();
         }
         datafile.close();
-        myStream->write(";\n"); // file boundary delimeter
-        // }
+        char pulledFileDir[50];
+        char pulledFilePath[80];
+        sprintf(pulledFilePath, "PulledData/%s", sdFileName);
+
+        if(!this->sd.exists("PulledData"))
+        {
+          notify("mkdir");
+          notify(this->sd.mkdir("PulledData"));
+          delay(10);
+        }
+        if(!sd.rename(sdFileName, pulledFilePath))
+        {
+          notify(sdFileName);
+          notify(pulledFilePath);
+          notify("rename failed");
+        }
+        
+        myStream->write(";\n"); // file boundary delimiter
+
         deploymentFile.close();
+        sd.vwd()->rewind();
       }
 
       sd.chdir(dataDirectory);
@@ -186,6 +204,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       // printCurrentDirListing();
       // Advance to the last directoy we were at
       sd.vwd()->rewind();
+      
 
       for(short i = 0; i < rootDirIndex; i = i + 1){
         dirFile.openNext(sd.vwd(), O_READ);
