@@ -874,6 +874,13 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
   }
 }
 
+void Datalogger::pullData()
+{
+  char empty[10] = ""; // temporary
+  this->fileSystem->dumpLoggedDataToStream(&Serial2, empty);
+}
+
+
 void Datalogger::storeMode(mode_type mode)
 {
   char modeStorage = 'i';

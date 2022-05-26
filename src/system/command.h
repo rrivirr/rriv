@@ -112,6 +112,7 @@ class CommandInterface
     void _clearSlot(int slot);
     void _deployNow();
     void _switchToInteractiveMode();
+    void _pullData();
 
     void _calibrate(int slot, char * subcommand, int arg_cnt, char ** args);
 

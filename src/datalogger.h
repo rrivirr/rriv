@@ -115,6 +115,8 @@ public:
     void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
     void setExternalADCEnabled(bool enabled);
 
+    void pullData();
+
     void setUserNote(char * note);
     void setUserValue(int value);
 
@@ -180,7 +182,6 @@ private:
  
     // run loop
     void initializeFilesystem();
-    // void stopAndAwaitTrigger();
     void writeStatusFields(const char * type);
     void prepareForUserInteraction();
     void powerUpSwitchableComponents();
