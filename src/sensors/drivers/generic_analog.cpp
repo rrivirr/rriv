@@ -220,6 +220,7 @@ const char *GenericAnalogDriver::getRawDataString() //TODO: getRawDataString() ?
 
 const char *GenericAnalogDriver::getSummaryDataString()
 {
+  // double burstSummaryMean = this->summarizer->getSummaryValue();
   double burstSummaryMean = getBurstSummaryMean(GENERIC_ANALOG_VALUE_TAG);
   sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, getCalibratedValue(burstSummaryMean));
   return dataString;  

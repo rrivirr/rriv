@@ -35,7 +35,7 @@ void gpioPinOn(uint8 pin)
 void startSerial2()
 {
   // Start up Serial2
-  // TODO: Need to do an if(Serial2) after an amount of time, just disable it
+  // TODO: Need to do an if(Serial2) after an amount of time, just disable it so we don't hang in the field
   Serial2.begin(SERIAL_BAUD);
   while (!Serial2)
   {
