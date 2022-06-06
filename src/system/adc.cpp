@@ -18,7 +18,7 @@
 
 #include "adc.h"
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/watchdog.h"
 #include "utilities/i2c.h"
 
@@ -151,7 +151,7 @@ void AD7091R::convertEnabledChannels()
 
 configuration_register AD7091R::readConfigurationRegister()
 {
-  debug(F("reading configuration register"));
+  // debug(F("reading configuration register"));
   struct configuration_register configurationRegister; // 2 bytes
   this->sendTransmission(ADC_CONFIGURATION_REGISTER_ADDRESS);
   this->requestBytes((byte *)&configurationRegister, 2);
@@ -160,7 +160,7 @@ configuration_register AD7091R::readConfigurationRegister()
 
 void AD7091R::writeConfigurationRegister(configuration_register configurationRegister)
 {
-  debug(F("writing configuration register"));
+  // debug(F("writing configuration register"));
   printConfigurationRegister(configurationRegister);
   Serial2.println(  *((byte *) &configurationRegister+1), BIN);
   Serial2.println(  *((byte *) &configurationRegister), BIN);
@@ -169,7 +169,7 @@ void AD7091R::writeConfigurationRegister(configuration_register configurationReg
 
 channel_register AD7091R::readChannelRegister()
 {
-  debug(F("reading channel register"));
+  // debug(F("reading channel register"));
   struct channel_register channelRegister;
   this->sendTransmission(ADC_CHANNEL_REGISTER_ADDRESS);
   this->requestBytes((byte *)&channelRegister, 1);
@@ -178,7 +178,7 @@ channel_register AD7091R::readChannelRegister()
 
 void AD7091R::writeChannelRegister(channel_register channelConfiguration)
 {
-  debug(F("writing channel register"));
+  // debug(F("writing channel register"));
   // debug( *(byte*) &channelConfiguration);
   // Serial2.println(*(byte*) &channelConfiguration );
   this->sendTransmission(ADC_CHANNEL_REGISTER_ADDRESS, (byte *)&channelConfiguration, 1);
@@ -186,7 +186,7 @@ void AD7091R::writeChannelRegister(channel_register channelConfiguration)
 
 conversion_result_register AD7091R::readConversionResultRegister()
 {
-  debug(F("reading conversion result register"));
+  // debug(F("reading conversion result register"));
   struct conversion_result_register conversionResult;
   this->sendTransmission(ADC_CONVERSION_RESULT_REGISTER_ADDRESS);
   this->requestBytes((byte *)&conversionResult, 2);
@@ -213,9 +213,9 @@ void AD7091R::sendTransmission(byte registerAddress, const void * data, int numB
 
 void AD7091R::requestBytes(byte *buffer, int length)
 {
-  char debugMessage[50];
-  sprintf(debugMessage, "reading bytes %i", length);
-  debug(debugMessage);
+  // char debugMessage[50];
+  // sprintf(debugMessage, "reading bytes %i", length);
+  // debug(debugMessage);
 
   short numBytes = Wire.requestFrom(ADC_I2C_ADDRESS, length);
   if(numBytes != length){
@@ -223,8 +223,8 @@ void AD7091R::requestBytes(byte *buffer, int length)
     // or just rely on the watchdog
     // return false; /// add return value to requestBytes and rerun the transmission
   }
-  sprintf(debugMessage, "got %i bytes", numBytes);
-  debug(debugMessage);
+  // sprintf(debugMessage, "got %i bytes", numBytes);
+  // debug(debugMessage);
 
   short lsb = 0xFF;
   short msb = 0xFF;
@@ -234,16 +234,16 @@ void AD7091R::requestBytes(byte *buffer, int length)
   {
     delay(100);
   }
-  debug("avail 1");
+  // debug("avail 1");
   msb = (short)Wire.read();
   if (length == 2)
   {
-    debug("get 2nd byte");
+    // debug("get 2nd byte");
     while (!Wire.available())
     {
       delay(100);
     }
-    debug("avail 2");
+    // debug("avail 2");
     lsb = (short)Wire.read();
   }
 
@@ -310,7 +310,7 @@ short AD7091R::channel3Value()
 
 void AD7091R::printConfigurationRegister(configuration_register configurationRegister)
 {
-  debug(F("Printing configuration register"));
+  debug(F("AD7091 conf reg"));
   char buffer[100];
   sprintf(buffer,
           "%d %d %d %d %d %d %d %d %d %d %d %d %d",

@@ -17,24 +17,92 @@
  */
 
 #include "sensor.h"
-#include "system/monitor.h"
+#include "system/logs.h"
+#include "sensors/sensor_map.h"
 
 SensorDriver::SensorDriver(){}
 SensorDriver::~SensorDriver(){}
 
-
-void SensorDriver::initializeBurst(){
-  burstCount = 0;
+cJSON *SensorDriver::getConfigurationJSON() // returns unprotected pointer
+{
+  cJSON *json = cJSON_CreateObject();
+  cJSON_AddNumberToObject(json, "slot", commonConfigurations.slot);
+  cJSON_AddStringToObject(json, "type", getSensorTypeString());
+  cJSON_AddStringToObject(json, "tag", commonConfigurations.tag);
+  cJSON_AddNumberToObject(json, "burst_size", commonConfigurations.burst_size);
+  this->appendDriverSpecificConfigurationJSON(json);
+  return json;
 }
 
-void SensorDriver::incrementBurst(){
+const configuration_bytes SensorDriver::getConfigurationBytes()
+{
+  configuration_bytes configurationBytes;
+  memcpy(&configurationBytes.common, &commonConfigurations, sizeof(configuration_bytes_partition));
+  configuration_bytes_partition driverSpecificPartition = getDriverSpecificConfigurationBytes();
+  memcpy(&configurationBytes.specific, &driverSpecificPartition, sizeof(configuration_bytes_partition));
+  return configurationBytes;
+}
+
+const common_sensor_driver_config * SensorDriver::getCommonConfigurations()
+{
+  return &commonConfigurations;
+}
+
+
+void SensorDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations)
+{
+  // override to load driver specific configurations
+} 
+
+configuration_bytes_partition SensorDriver::getDriverSpecificConfigurationBytes()
+{
+  configuration_bytes_partition emptyPartition;
+  return emptyPartition;
+}
+
+void SensorDriver::configureDriverFromJSON(cJSON *json)
+{
+  // override to load driver specific configurations
+}
+  
+void SensorDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
+{
+  // override to return driver specific configurations
+}
+
+void SensorDriver::initializeBurst()
+{
+  burstCount = 0;
+  // burstSummarySumCounts.clear();
+  // burstSummarySums.clear();
+}
+
+void SensorDriver::incrementBurst()
+{
   burstCount++;
 }
 
-bool SensorDriver::burstCompleted(){
-  notify(burstCount);
-  notify(getConfiguration().common.burst_size);
-  return burstCount == getConfiguration().common.burst_size;
+bool SensorDriver::burstCompleted()
+{
+  // notify(burstCount);
+  // notify(commonConfigurations.burst_size);
+  return burstCount >= commonConfigurations.burst_size;
+}
+
+void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
+{
+  if(burstSummarySums.count(tag) == 0)
+  {
+    burstSummarySums[tag] = 0;
+    burstSummarySumCounts[tag] = 0;
+  }
+  burstSummarySums[tag] += value;
+  burstSummarySumCounts[tag] += 1;
+}
+
+double SensorDriver::getBurstSummaryMean(std::string tag)
+{
+  return burstSummarySums[tag] / burstSummarySumCounts[tag];
 }
 
 void SensorDriver::configureCSVColumns()
@@ -43,12 +111,12 @@ void SensorDriver::configureCSVColumns()
   char csvColumnHeaders[100] = "\0";
   char buffer[100];
   strcpy(buffer, this->getBaseColumnHeaders());
-  debug(buffer);
+  // debug(buffer);
   char * token = strtok(buffer, ",");
   while(token != NULL)
   {
-    debug(token);
-    strcat(csvColumnHeaders, this->getConfiguration().common.tag);
+    // debug(token);
+    strcat(csvColumnHeaders, this->commonConfigurations.tag);
     strcat(csvColumnHeaders, "_");
     strcat(csvColumnHeaders, token);
     token = strtok(NULL, ",");
@@ -61,28 +129,43 @@ void SensorDriver::configureCSVColumns()
   notify("done");
 }
 
+char *SensorDriver::getCSVColumnHeaders()
+{
+  return csvColumnHeaders;
+}
+
 void SensorDriver::setDefaults()
 {
-  generic_config configuration = this->getConfiguration();
-
-  if(configuration.common.burst_size <= 0 || configuration.common.burst_size > 100)
+  if(commonConfigurations.burst_size <= 0 || commonConfigurations.burst_size > 100)
   {
-    configuration.common.burst_size = 10;
+    commonConfigurations.burst_size = 10;
   }
-  this->setConfiguration(configuration);
   this->setDriverDefaults();
 }
 
 
 void SensorDriver::configureFromJSON(cJSON * json)
 {
-  generic_config configuration = this->getConfiguration();
-  memset(&configuration, SENSOR_CONFIGURATION_SIZE, 0);
+  
+#ifndef PRODUCTION_FIRMWARE_BUILD
+  if( sizeof(commonConfigurations) > sizeof(configuration_bytes_partition) )
+  { 
+    // TODO: improve these messages to indicate how much overflow there is
+    // TODO: tell which driver is causing the issue, along the lines of this->getType()
+    // TODO: this is to help during driver dev, not production firmware
+    notify("Invalid memory size for driver common configuration");
+    exit(1);
+  }
+#endif
+
+  memset(&commonConfigurations, 0, SENSOR_CONFIGURATION_SIZE);
+
+  commonConfigurations.sensor_type = typeCodeForSensorTypeString(getSensorTypeString());
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON))
   {
-    configuration.common.slot = slotJSON->valueint;
+    commonConfigurations.slot = slotJSON->valueint;
   } else {
     notify("Invalid slot");
   }
@@ -90,7 +173,7 @@ void SensorDriver::configureFromJSON(cJSON * json)
   const cJSON * tagJSON = cJSON_GetObjectItemCaseSensitive(json, "tag");
   if(tagJSON != NULL && cJSON_IsString(tagJSON) && strlen(tagJSON->valuestring) <= 5)
   {
-    strcpy(configuration.common.tag, tagJSON->valuestring);
+    strcpy(commonConfigurations.tag, tagJSON->valuestring);
   } else {
     notify("Invalid tag");
   }
@@ -98,28 +181,46 @@ void SensorDriver::configureFromJSON(cJSON * json)
   const cJSON * burstSizeJson = cJSON_GetObjectItemCaseSensitive(json, "burst_size");
   if(burstSizeJson != NULL && cJSON_IsNumber(burstSizeJson) && burstSizeJson->valueint > 0)
   {
-    configuration.common.burst_size = (byte) burstSizeJson->valueint;
+    commonConfigurations.burst_size = (byte) burstSizeJson->valueint;
   } else {
     notify("Invalid burst size");
   }
 
-  notify("set configuration");
-  this->setConfiguration(configuration);
-  notify("set defaults");
   this->setDefaults();
-  notify("configure driver from JSON");
   this->configureDriverFromJSON(json);
-  notify("conf csv cols");
   this->configureCSVColumns();
 
 }
 
 
-void SensorDriver::configure(generic_config configuration)
+void SensorDriver::configureFromBytes(configuration_bytes configurationBytes)
 {
-  this->setConfiguration(configuration);
-  // this->setDefaults();
+  configuration_bytes_partition partitions[2];
+  memcpy(&partitions, &configurationBytes, sizeof(configuration_bytes));
+  memcpy(&commonConfigurations, &partitions[0], sizeof(configuration_bytes_partition));
+  this->configureSpecificConfigurationsFromBytes(partitions[1]);
   this->configureCSVColumns();
+}
+
+void SensorDriver::setup()
+{
+  // by default no setup
+  return;
+}
+
+void SensorDriver::hibernate()
+{
+
+}
+
+void SensorDriver::wake()
+{
+
+}
+
+void SensorDriver::setDebugMode(bool debug) // for setting internal debug parameters, such as LED on
+{
+
 }
 
 bool SensorDriver::isWarmedUp()
@@ -128,13 +229,72 @@ bool SensorDriver::isWarmedUp()
 }
 
 
-void I2CSensorDriver::setWire(TwoWire * wire)
+short SensorDriver::getSlot()
+{
+  return commonConfigurations.slot;
+}
+
+
+void SensorDriver::setConfigurationNeedsSave()
+{
+  configurationNeedsSave = true;
+}
+
+void SensorDriver::clearConfigurationNeedsSave()
+{
+  configurationNeedsSave = false;
+}
+
+bool SensorDriver::getNeedsSave()
+{
+  return this->configurationNeedsSave;
+}
+
+unsigned int SensorDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 0; // return min by default, a larger number in driver implementation causes correct delay
+}
+
+unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+{
+  return MAX_REQUESTED_READING_DELAY; // as slow as possible by default, a smaller number in driver implementation forces faster read
+}
+
+
+AnalogProtocolSensorDriver::~AnalogProtocolSensorDriver(){}
+
+protocol_type AnalogProtocolSensorDriver::getProtocol()
+{
+  return analog;
+}
+
+
+I2CProtocolSensorDriver::~I2CProtocolSensorDriver(){}
+
+protocol_type I2CProtocolSensorDriver::getProtocol()
+{
+  return i2c;
+}
+
+void I2CProtocolSensorDriver::setWire(TwoWire * wire)
 {
   this->wire = wire;
 }
 
-// placeholder for required virtual destructors
-AnalogSensorDriver::~AnalogSensorDriver(){}
-I2CSensorDriver::~I2CSensorDriver(){}
-DriverTemplateSensorDriver::~DriverTemplateSensorDriver(){}
-GPIOSensorDriver::~GPIOSensorDriver(){}
+
+GPIOProtocolSensorDriver::~GPIOProtocolSensorDriver(){}
+
+protocol_type GPIOProtocolSensorDriver::getProtocol()
+{
+  // debug("getting gpio protocol");
+  return gpio;
+}
+
+
+DriverTemplateProtocolSensorDriver::~DriverTemplateProtocolSensorDriver(){}
+
+protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
+{
+  // debug("getting driver template protocol");
+  return drivertemplate;
+}

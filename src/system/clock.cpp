@@ -18,8 +18,9 @@
 
 #include "clock.h"
 #include "configuration.h"
-#include "monitor.h"
 #include <RTClock.h>
+#include "filesystem.h"
+#include "logs.h"
 
 
 DS3231 Clock;
@@ -82,7 +83,8 @@ void setNextAlarmInternalRTC(short interval){
 }
 
 
-void setNextAlarmInternalRTCSeconds(short seconds){
+void setNextAlarmInternalRTCSeconds(short seconds)
+{
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
   Serial2.println("made clock");  Serial2.flush();
@@ -96,7 +98,6 @@ void setNextAlarmInternalRTCSeconds(short seconds){
   debug(message);
 
   clock->removeAlarm();
-  // secondsUntilWake = 10;
   clock->setAlarmTime(seconds);
   clock->createAlarm(handleInterrupt, seconds);
   delete clock;
@@ -106,7 +107,31 @@ void setNextAlarmInternalRTCSeconds(short seconds){
 
 }
 
+void setNextAlarmInternalRTCMilliseconds(int milliseconds)
+{
 
+  RTClock * clock = new RTClock(RTCSEL_LSE, 32); //according to sheet clock/(prescaler + 1) = Hz
+  Serial2.println("made clock");  Serial2.flush();
+
+  char message[100];
+  sprintf(message, "Got clock value (current): %lli", clock->getTime());
+  debug(message);
+    
+  clock->setTime(0);
+  sprintf(message, "Got clock value (reset): %lli", clock->getTime());
+  debug(message);
+
+  clock->removeAlarm();
+  clock->setAlarmTime(milliseconds);
+  clock->createAlarm(handleInterrupt, milliseconds);
+  delete clock;
+
+  sprintf(message, "set alarm milliseconds until wake: %i", milliseconds);
+  notify(message);
+
+}
+
+#ifdef USES_DS3231_ALARM
 void setNextAlarm(short interval)
 {
   Clock.turnOffAlarm(1); // Clear the Control Register
@@ -154,6 +179,7 @@ void setNextAlarm(short interval)
 
   Clock.turnOnAlarm(1);
 }
+#endif
 
 void dateTime(uint16_t* date, uint16_t* time)
 {

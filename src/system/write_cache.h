@@ -24,7 +24,7 @@
 class OutputDevice
 {
   public:
-    virtual void writeString(char * string);
+    virtual void writeString(const char * string);
 
 
 };
@@ -35,9 +35,10 @@ class WriteCache
   public:
   // methods
   WriteCache(OutputDevice * outputDevice);
-  void writeString(char * string);
+  void writeString(const char * string);
   void endOfLine();
   void flushCache();
+  void setOutputToSerial(bool);
 
   // variables
   unsigned int cacheSize = MAX_CACHE_SIZE; // must be MAX_CACHE_SIZE or less
@@ -50,6 +51,8 @@ class WriteCache
   OutputDevice * outputDevice;
   char cache[MAX_CACHE_SIZE];
   unsigned int nextPosition = 0;
+
+  bool outputToSerial = false;
 
 };
 

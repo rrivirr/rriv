@@ -19,7 +19,7 @@
 #include "qos.h"
 #include <Arduino.h>
 #include <libmaple/libmaple.h>
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "utilities/utilities.h"
 
 extern "C" char* _sbrk(int incr);
@@ -49,7 +49,7 @@ void checkMemory()
   sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
   debug(freeMemoryMessage);
   if(freeMemoryAmount < 500){
-    debug(F("Low memory, resetting!"));
+    debug(F("Low mem, resetting!"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
 }

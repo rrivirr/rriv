@@ -18,7 +18,7 @@
 
 #include "switched_power.h"
 #include "hardware.h"
-#include "monitor.h"
+#include "logs.h"
 
 void setupSwitchedPower()
 {

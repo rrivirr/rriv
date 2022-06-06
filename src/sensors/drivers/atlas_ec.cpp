@@ -17,33 +17,41 @@
  */
 
 #include "atlas_ec.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "system/measurement_components.h"
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
-#include "sensors/sensor_types.h"
 
-AtlasEC::AtlasEC()
+AtlasECDriver::AtlasECDriver()
 {
-  debug("allocation GenericAtlas");
+  // debug("allocation AtlasECDriver");
 }
 
-AtlasEC::~AtlasEC(){}
+AtlasECDriver::~AtlasECDriver(){}
 
-void AtlasEC::configureDriverFromJSON(cJSON * json)
+const char * AtlasECDriver::getSensorTypeString()
 {
-  configuration.common.sensor_type = GENERIC_ATLAS_SENSOR;
+  return sensorTypeString;
 }
 
 
-protocol_type AtlasEC::getProtocol()
+
+configuration_bytes_partition AtlasECDriver::getDriverSpecificConfigurationBytes()
 {
-  return i2c;
+  configuration_bytes_partition partition;
+  memcpy(&partition, &configuration, sizeof(driver_configuration));
+  return partition;
 }
 
-void AtlasEC::setup()
+void AtlasECDriver::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  notify("setup GenericAtlas");
+  memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
+}
+
+
+void AtlasECDriver::setup()
+{
+  // notify("setup AtlasECDriver");
   oem_ec = new EC_OEM(wire, NONE_INT, ec_i2c_id);
 
   if (true)
@@ -51,145 +59,127 @@ void AtlasEC::setup()
     bool awoke = oem_ec->wakeUp();
     notify(awoke);
 
-    char message[300];
-    sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
-            oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
-    debug(message);
+    // char message[300];
+    // sprintf(message, "Device addr EC: %x\nDevice type EC: %x\nFirmware EC: %x\nAwoke: %i\nHibernating: %i",
+    //         oem_ec->getStoredAddr(), oem_ec->getDeviceType(), oem_ec->getFirmwareVersion(), awoke, oem_ec->isHibernate());
+    // debug(message);
 
-    oem_ec->singleReading();
-    struct param_OEM_EC parameter;
-    parameter = oem_ec->getAllParam();
+    // oem_ec->singleReading();
+    // struct param_OEM_EC parameter;
+    // parameter = oem_ec->getAllParam();
 
-    debug(F("test:"));
-    sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
-            parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
-    debug(message);
+    // sprintf(message, "salinity= %f\nconductivity= %f\ntds= %f\nSalinity stable = %s",
+    //         parameter.salinity, parameter.conductivity, parameter.tds, (oem_ec->isSalinityStable() ? "yes" : "no"));
+    // debug(message);
   }
   // notify("led and probe type");
   oem_ec->setLedOn(true);
   oem_ec->setProbeType(1.0);
 }
 
-
-void AtlasEC::stop()
+void AtlasECDriver::hibernate()
 {
   oem_ec->setHibernate();
-  delete  oem_ec;
 }
 
+void AtlasECDriver::wake()
+{
+  oem_ec->wakeUp();
+}
 
-void AtlasEC::setDriverDefaults()
+void AtlasECDriver::setDebugMode(bool debug) // for setting internal debug parameters, such as LED on
+{
+  oem_ec->setLedOn(debug);
+}
+
+void AtlasECDriver::setDriverDefaults()
 {
   configuration.cal_timestamp = 0;
 }
 
 
-// base class
-generic_config AtlasEC::getConfiguration()
+void AtlasECDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
-  generic_config configuration;
-  memcpy(&configuration, &this->configuration, sizeof(generic_atlas_sensor));
-  return configuration;
-}
-
-
-void AtlasEC::setConfiguration(generic_config configuration)
-{
-  memcpy(&this->configuration, &configuration, sizeof(generic_config));
-}
-
-
-// split between base class and this class
-// getConfigurationJSON: base class
-// getDriverSpecificConfigurationJSON: this class
-cJSON * AtlasEC::getConfigurationJSON() // returns unprotected pointer
-{
-  notify("getting");
-  cJSON* json = cJSON_CreateObject();
-  cJSON_AddNumberToObject(json, "slot", configuration.common.slot);
-  cJSON_AddStringToObject(json, "type", "atlas_ec");
-  cJSON_AddStringToObject(json, "tag", configuration.common.tag);
-  cJSON_AddNumberToObject(json, "burst_size", configuration.common.burst_size);
   addCalibrationParametersToJSON(json);
-  return json;
 }
 
 
-const char * AtlasEC::getBaseColumnHeaders()
+const char * AtlasECDriver::getBaseColumnHeaders()
 {
   return baseColumnHeaders;
 }
 
 
-bool AtlasEC::takeMeasurement()
+bool AtlasECDriver::takeMeasurement()
 {
-  bool waitForMeasurement = true;
-  bool newDataAvailable = false;
-  while(!newDataAvailable)
-  {
-    newDataAvailable = oem_ec->singleReading();
+    bool newDataAvailable = oem_ec->singleReading();
     if(newDataAvailable)
     {
-      value = oem_ec->getConductivity();
-      oem_ec->clearNewDataRegister();
+      value = oem_ec->getConductivity(true);
+      addValueToBurstSummaryMean("ec", value);
+      lastSuccessfulReadingMillis = millis();
+      return true;
     }
-    else if (!waitForMeasurement)
+    else
     {
+      value = -1;
       return false;
     }
-  }
 
-  return true;
 }
 
-char * AtlasEC::getDataString()
+unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 640 - (millis() - lastSuccessfulReadingMillis);
+}
+
+const char * AtlasECDriver::getRawDataString()
 {
   sprintf(dataString, "%d", value);
   return dataString;
 }
 
-char * AtlasEC::getCSVColumnNames()
+const char * AtlasECDriver::getSummaryDataString()
 {
-   debug(csvColumnHeaders);
-   return csvColumnHeaders;
+  sprintf(dataString, "%0.2f", getBurstSummaryMean("ec"));
+  return dataString;
 }
 
-
-void AtlasEC::initCalibration()
+void AtlasECDriver::initCalibration()
 {
-  notify("init calibration");
+  notify("init cal");
   oem_ec->clearCalibrationData();
 }
 
-void AtlasEC::calibrationStep(char * step, int arg_cnt, char ** args)
+void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
 {
   takeMeasurement();
   if(strcmp(step, "dry") == 0)
   {
-    notify("Dry point calibration");
+    notify("Dry point cal");
     oem_ec->setCalibration(DRY_CALIBRATION);
   }
   else if (strcmp(step, "low") == 0)
   {
-    notify("Low point calibration");
+    notify("Low point cal");
     oem_ec->setCalibration(LOW_POINT_CALIBRATION, atof(args[0]));
   }
   else if (strcmp(step, "high") == 0)
   {
-    notify("High point calibration");
+    notify("High point cal");
     oem_ec->setCalibration(HIGH_POINT_CALIBRATION, atof(args[0]));
     configuration.cal_timestamp = timestamp();
   }
   else
   {
-    notify("Invalid calibration step");
+    notify("Invalid cal step");
   }
 }
 
 
 
-void AtlasEC::addCalibrationParametersToJSON(cJSON * json)
+void AtlasECDriver::addCalibrationParametersToJSON(cJSON * json)
 {
-  cJSON_AddNumberToObject(json, "calibration_time", configuration.cal_timestamp);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 

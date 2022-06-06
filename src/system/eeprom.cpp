@@ -20,6 +20,7 @@
 #include "monitor.h"
 #include "utilities/STM32-UID.h"
 #include "utilities/i2c.h"
+#include "system/logs.h"
 
 void writeEEPROM(TwoWire * wire, int deviceaddress, short eeaddress, byte data )
 {
@@ -98,7 +99,7 @@ void writeDataloggerSettingsToEEPROM(void * dataloggerSettings)
   writeObjectToEEPROM(EEPROM_DATALOGGER_CONFIGURATION_START, dataloggerSettings, EEPROM_DATALOGGER_CONFIGURATION_SIZE);
 }
 
-void writeSensorConfigurationToEEPROM(short slot, void * configuration)
+void writeSensorConfigurationToEEPROM(short slot, const void * configuration)
 {
   int block = slot / 4 + 1;
   int offset = slot % 4;
@@ -106,21 +107,15 @@ void writeSensorConfigurationToEEPROM(short slot, void * configuration)
   int memoryAddress = offset * EEPROM_DATALOGGER_SENSOR_SIZE;
   // notify(deviceAddress);
   // notify(memoryAddress);
-  writeObjectToEEPROM(deviceAddress, memoryAddress, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
+  writeObjectToEEPROM(deviceAddress, memoryAddress, (void *) configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 }
 
 void readSensorConfigurationFromEEPROM(short slot, void * configuration)
 {
-  // notify("read sensor config");
-  // notify(slot);
-
   int block = slot / 4 + 1;
   int offset = slot % 4;
-  // notify(block);
   int deviceAddress = EEPROM_I2C_ADDRESS + block;
   int memoryAddress = offset * EEPROM_DATALOGGER_SENSOR_SIZE;
-  // notify(deviceAddress);
-  // notify(memoryAddress);
   readObjectFromEEPROM(deviceAddress, memoryAddress, configuration, EEPROM_DATALOGGER_SENSOR_SIZE);
 
 }
@@ -133,7 +128,7 @@ void readUniqueId(unsigned char * uuid)
     uuid[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address);
   }
 
-  debug(F("OK.. UUID in EEPROM:")); // TODO: need to create another function and read from flash  
+  debug(F("UUID in EEPROM:")); // TODO: need to create another function and read from flash  
 
   unsigned char uninitializedEEPROM[16] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
   char uuidString[2 * UUID_LENGTH + 1];
@@ -196,40 +191,38 @@ void readEEPROMBytes(short address, unsigned char * data, uint8_t size) // Littl
 }
 
 
-void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
-{
-  debug(F("readEEPROMBytesMem"));
-  char buffer[size];
-  for (uint8_t i = 0; i < size; i++)
-  {
-    // read everything from address into buffer
-    // Serial2.print(address+i);
-    // Serial2.print(",");
-    // Serial2.flush(); 
-    buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
-  }
-  memcpy(destination, &buffer, size); // copy buffer to destination
-}
+// void readEEPROMBytesMem(short address, void * destination, uint8_t size) // Little Endian
+// {
+//   debug(F("readEEPROMBytesMem"));
+//   char buffer[size];
+//   for (uint8_t i = 0; i < size; i++)
+//   {
+//     // read everything from address into buffer
+//     // Serial2.print(address+i);
+//     // Serial2.print(",");
+//     // Serial2.flush(); 
+//     buffer[i] = readEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i);
+//   }
+//   memcpy(destination, &buffer, size); // copy buffer to destination
+// }
 
-void writeEEPROMBytesMem(short address, void * source, uint8_t size)
-{
-  debug(F("writeEEPROMBytesMem"));
-  char buffer[size];
-  //read everything from source into buffer
-  memcpy(&buffer, source, size);
-  for (uint8_t i = 0; i < size; i++)
-  {
-    // write everything from buffer to address
-    // note: output will look weird because 
-    // serial print doesn't distinguish between char and ints
-    // Serial2.print(buffer[i]);
-    // Serial2.print(address+i);
-    // Serial2.print(",");
-    // Serial2.flush();
-    writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
-  }
-  debug(F("\nfinish writeEEPROMBytesMem"));
-}
+// void writeEEPROMBytesMem(short address, void * source, uint8_t size)
+// {
+//   char buffer[size];
+//   //read everything from source into buffer
+//   memcpy(&buffer, source, size);
+//   for (uint8_t i = 0; i < size; i++)
+//   {
+//     // write everything from buffer to address
+//     // note: output will look weird because 
+//     // serial print doesn't distinguish between char and ints
+//     // Serial2.print(buffer[i]);
+//     // Serial2.print(address+i);
+//     // Serial2.print(",");
+//     // Serial2.flush();
+//     writeEEPROM(&Wire, EEPROM_I2C_ADDRESS, address+i, buffer[i]);
+//   }
+// }
 
 void clearEEPROMAddress(short address, uint8_t length)
 {

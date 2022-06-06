@@ -17,7 +17,7 @@
  */
 
 #include "Arduino.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 #include "dbgmcu.h" 
 
 bool checkDebugSystemDisabled()
@@ -25,34 +25,31 @@ bool checkDebugSystemDisabled()
   return DBGMCU_BASE->CR == 0;
 }
 
+const char * warningMessage = "**** WARNING *****";
+const char * lowPowerMessage = "**** LOW POWER MODE REQUIRES POWER CYCLE *****";
+
 void notifyDebugStatus()
 {
   if(DBGMCU_BASE->CR != 0){
-    notify("**** WARNING *****");
+    // notify(warningMessage);
     notify("**** A MANUAL POWER CYCLE IS REQUIRED TO ENABLE LOW POWER MODES *****");
   }
 }
 
 void printMCUDebugStatus()
 {
-  notify("Setup:DBGMCU_BASE->CR=");
+  notify("DBGMCU_BASE->CR=");
   notify(DBGMCU_BASE->CR);
 
   if(DBGMCU_BASE->CR != 0){
-      notify("**** WARNING *****");
-      notify("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      notify("**** WARNING *****");
-      notify("**** WARNING *****");
-      notify("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      notify("**** WARNING *****");
-      notify("**** WARNING *****");
-      notify("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      notify("**** WARNING *****");
-      notify("**** WARNING *****");
-      notify("**** LOW POWER MODE REQUIRES POWER CYCLE *****");
-      notify("**** WARNING *****");
-      delay(2000);
+    for(short i=0; i<3; i++)
+    {
+      notify(warningMessage);
+      notify(lowPowerMessage);
+      // notify(warningMessage);
+    }
+    delay(2000);
   } else {
-    notify("DEBUG MODE OFF - OK!");
+    // notify("DEBUG MODE OFF - OK!");
   }
 }

@@ -28,7 +28,7 @@ WriteCache::WriteCache(OutputDevice * outputDevice)
 }
 
 
-void WriteCache::writeString(char * string)
+void WriteCache::writeString(const char * string)
 {
   if(nextPosition + strlen(string) > cacheSize - 1)
   {
@@ -55,6 +55,10 @@ void WriteCache::flushCache()
   char hello[100] = "\0";
   outputDevice->writeString(hello); // why is this required??
   outputDevice->writeString(cache);
+  if(outputToSerial)
+  {
+    Serial2.print(cache);
+  }
   initCache();
 }
 
@@ -62,4 +66,9 @@ void WriteCache::initCache()
 {
   memset( cache, 0, MAX_CACHE_SIZE );
   nextPosition = 0;
+}
+
+void WriteCache::setOutputToSerial(bool value)
+{
+  outputToSerial = value;
 }

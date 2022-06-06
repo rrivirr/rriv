@@ -21,53 +21,59 @@
 #include "sensors/sensor.h"
 #include "EC_OEM.h"
 
+#define ATLAS_EC_OEM_TYPE_STRING "atlas_ec"
 
-typedef struct generic_atlas_type // 64 bytes
+class AtlasECDriver : public I2CProtocolSensorDriver
 {
-    common_config_sensor common; // 32 bytes
-    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration
-    char padding[24];
-} generic_atlas_sensor;
 
-
-class AtlasEC : public I2CSensorDriver
-{
+  typedef struct // 32 bytes max
+  {
+    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
+  } driver_configuration;
 
   public: 
-    // Constructor
-    AtlasEC();
-    ~AtlasEC();
+    AtlasECDriver();
+    ~AtlasECDriver();
+  
+  private:
+    const char *sensorTypeString = ATLAS_EC_OEM_TYPE_STRING;
+    driver_configuration configuration;
+    EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
+    
+    int value;
+    const char * baseColumnHeaders = "ec.mS";
+    char dataString[20]; // local storage for data string
 
-    // Interface
+    unsigned long long lastSuccessfulReadingMillis = 0;
+
+  //
+  // Interface Implementation
+  //
+  public:
+    const char * getSensorTypeString();
     void setup();
-    void configure(generic_config * configuration);
-    generic_config getConfiguration();
-    void setConfiguration(generic_config configuration);
-    cJSON * getConfigurationJSON(); // returns unprotected pointer
-    void stop();
+
+    void wake();
+    void hibernate();
+    void setDebugMode(bool debug); // for setting internal debug parameters, such as LED on 
+
     bool takeMeasurement();
-    char * getDataString();
-    char * getCSVColumnNames();
-    protocol_type getProtocol();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
 
     void initCalibration();
     void calibrationStep(char * step, int arg_cnt, char ** args);
     void addCalibrationParametersToJSON(cJSON * json);
 
+    unsigned int millisecondsUntilNextReadingAvailable();
+
   protected:
-    // Implementatino interface
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    // void configureDriverFromJSON(cJSON *json);
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
-    void configureDriverFromJSON(cJSON * json);
-
-  private:
-    generic_atlas_sensor configuration;
-    EC_OEM *oem_ec;
-
-    int value;
-    const char * baseColumnHeaders = "ec.mS";
-    char dataString[16];
-
 };
 
 #endif

@@ -43,7 +43,9 @@
 
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
-typedef struct datalogger_settings { // 64 bytes
+// 64 bytes max, one configuration_partition_bytes
+// Currently there are 20 bytes unused
+typedef struct datalogger_settings { 
     char deploymentIdentifier[16]; // 16 bytes
     char siteName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
@@ -56,10 +58,10 @@ typedef struct datalogger_settings { // 64 bytes
     byte externalADCEnabled : 1;
     byte debug_values : 1;
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
-    byte reserved2 : 5;
-    char unused2[20];        // padding 64-44 bytes
+    byte log_raw_data : 1;
+    byte reserved2 : 4;
 } datalogger_settings_type;
-
+ 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
 
 // Forward declaration of class
@@ -71,7 +73,7 @@ class Datalogger
 public:
 
     // sensors
-    unsigned int sensorCount = 0;
+    unsigned short sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
     short * sensorTypes = NULL;
     void ** sensorConfigurations = NULL;
@@ -108,6 +110,8 @@ public:
 
     void setSensorConfiguration(char * type, cJSON * json);
     void clearSlot(unsigned short slot);
+    void storeSensorConfigurationIfNeedsSave();
+
     void calibrate(unsigned short slot, char * subcommand, int arg_cnt, char ** args);
     void setExternalADCEnabled(bool enabled);
 
@@ -117,6 +121,7 @@ public:
     void toggleTraceValues();
     void stopLogging();
     void startLogging();
+    void testMeasurementCycle();
 
     const char * getUUIDString();
 
@@ -147,12 +152,14 @@ private:
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();
     void measureSensorValues(bool performingBurst = true);
-    bool writeMeasurementToLogFile();
+    bool writeRawMeasurementToLogFile();
+    bool writeSummaryMeasurementToLogFile();
     void writeDebugFieldsToLogFile();
     bool configurationIsDirty();
     void storeConfiguration();
     void initializeBurst();
     bool shouldContinueBursting();
+    bool processReadingsCycle();
 
     // CLI
     CommandInterface * cli;
@@ -160,18 +167,21 @@ private:
     void setUpCLI();
 
     // utility
-    void writeStatusFieldsToLogFile();
+    void writeStatusFieldsToLogFile(const char * type);
+    void writeUserFieldsToLogFile();
     void initializeMeasurementCycle();
+    void outputLastMeasurement();
 
     void storeDataloggerConfiguration();
-    void storeSensorConfiguration(generic_config * configuration);
+    void storeSensorConfiguration(SensorDriver * driver);
 
-    void sleep(int milliseconds);
+    void sleepMCU(int milliseconds);
+    int minMillisecondsUntilNextReading();
  
     // run loop
     void initializeFilesystem();
     // void stopAndAwaitTrigger();
-    void writeStatusFields();
+    void writeStatusFields(const char * type);
     void prepareForUserInteraction();
     void powerUpSwitchableComponents();
     void powerDownSwitchableComponents();
@@ -181,6 +191,7 @@ private:
 
     // debugging
     void debugValues(char * buffer);
+    void setSensorDebugModes(bool debug);
 
 
 };

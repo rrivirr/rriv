@@ -19,7 +19,6 @@
 #define WATERBEAR_ADAFRUIT_DHT22
 
 #include "sensors/sensor.h"
-#include "sensors/sensor_types.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
@@ -27,43 +26,44 @@
 #define DHTPIN PC11     // Digital pin connected to the DHT sensor 
 #define DHTTYPE DHT22   // DHT 22 (AM2302)
 
-typedef struct adafruit_dht22_type // 64 bytes
+#define ADAFRUIT_DHT22_TYPE_STRING "adafruit_dht22"
+
+class AdaDHT22 : public GPIOProtocolSensorDriver
 {
-  common_config_sensor common;      // 32 bytes
-  unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
 
-  char padding[24]; // space to be used for any sensor specific variables
+  typedef struct 
+  {
+    unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
+  } driver_configuration;
 
-} adafruit_dht22_sensor;
-
-
-class AdaDHT22 : public GPIOSensorDriver
-{
   public:
     // Constructor
     AdaDHT22();
     ~AdaDHT22();
 
-    // Interface
-    generic_config getConfiguration();
-    void setConfiguration(generic_config configuration);
-    cJSON * getConfigurationJSON();
+    //
+    // Interface Implementation
+    //
+    const char * getSensorTypeString();
     void setup();
     void stop();
     bool takeMeasurement();
-    char * getDataString();
-    char * getCSVColumnNames();
-    protocol_type getProtocol();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     void configureDriverFromJSON(cJSON *json);
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 
   private:
-    adafruit_dht22_sensor configuration;
+    const char *sensorTypeString = "adafruit_dht22";
+    driver_configuration configuration;
     DHT_Unified *dht;
 
     float temperature;

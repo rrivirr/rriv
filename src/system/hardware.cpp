@@ -20,7 +20,7 @@
 #include <libmaple/libmaple.h>
 #include <libmaple/pwr.h>
 #include "configuration.h"
-#include "system/monitor.h"
+#include "system/logs.h"
 
 void gpioPinOff(uint8 pin)
 {
@@ -54,7 +54,7 @@ void setupInternalRTC()
 
 void setupHardwarePins()
 {
-  debug(F("setup pins"));
+  // debug(F("setup pins"));
   //pinMode(BLE_COMMAND_MODE_PIN, OUTPUT); // Command Mode pin for BLE
   
   pinMode(INTERRUPT_LINE_7_PIN, INPUT_PULLUP); // This the interrupt line 7
@@ -76,4 +76,9 @@ void setupHardwarePins()
 
   pinMode(PC5, OUTPUT); // external ADC reset
   digitalWrite(PC5, HIGH);
+}
+
+int getBatteryValue()
+{
+  return analogRead(PB0);
 }
