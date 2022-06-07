@@ -192,9 +192,9 @@ void setSiteName(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   char * siteName = args[1];
-  if(strlen(siteName) > 8)
+  if(strlen(siteName) > 7)
   {
-    invalidArgumentsMessage(F("Site name must be 8 characters or less"));
+    invalidArgumentsMessage(F("Site name must be 7 characters or less"));
     return;
   }
   CommandInterface::instance()->_setSiteName(siteName);
@@ -355,7 +355,7 @@ void CommandInterface::_getConfig()
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
   // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_name")), dataloggerSettings.deploymentIdentifier);
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
@@ -373,7 +373,7 @@ void CommandInterface::_getConfig()
   cJSON_Delete(json);
   debug("sensorCount is:");
   debug(short(this->datalogger->sensorCount));
-  for(uint i=0; i<this->datalogger->sensorCount; i++)
+  for(unsigned short i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
     cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);

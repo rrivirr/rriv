@@ -59,7 +59,8 @@ void Datalogger::sleepMCU(int milliseconds)
 
     reenableAllInterrupts(iser1, iser2, iser3);
 
-    offsetMillis += milliseconds; // systick was stopped, add slept milliseconds
+    //offsetMillis += milliseconds; // systick was stopped, add slept milliseconds
+   
     currentEpoch = timestamp();
 
     enableSerialLog();
@@ -227,7 +228,7 @@ bool Datalogger::processReadingsCycle()
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
-      sleepMCU(interBurstDelay * 1000); // convert minutes to milliseconds
+      sleepMCU(interBurstDelay * 1000); // convert seconds to milliseconds
       // wakeSensorsFromStandbyMode();
     }
 
@@ -510,7 +511,7 @@ void Datalogger::initializeMeasurementCycle()
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
     notify(startUpDelay);
-    sleepMCU(startUpDelay * 1000); // convert minutes to milliseconds
+    sleepMCU(startUpDelay * 1000); // convert seconds to milliseconds
     notify("sleep done");
   }
 
@@ -563,6 +564,7 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
+
   double currentTime = (double) currentEpoch + ( (double) ( currentMillis - offsetMillis) ) / 1000;
 
   char currentTimeString[20];
@@ -578,7 +580,7 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
   {
     sprintf(buffer, "%s-%lu", uuidString, settings.deploymentTimestamp);
   }
-  else 
+  else
   {
     char deploymentIdentifier[16] = {0};
     strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
@@ -1161,13 +1163,13 @@ void Datalogger::storeSensorConfiguration(SensorDriver * driver)
 
 void Datalogger::setSiteName(char *siteName)
 {
-  strncpy(this->settings.siteName, siteName, 7);
+  strncpy(this->settings.siteName, siteName, 8);
   storeDataloggerConfiguration();
 }
 
 void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
 {
-  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 15);
+  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 16);
   storeDataloggerConfiguration();
 }
 

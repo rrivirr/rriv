@@ -34,8 +34,6 @@ const char * AtlasECDriver::getSensorTypeString()
   return sensorTypeString;
 }
 
-
-
 configuration_bytes_partition AtlasECDriver::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
@@ -47,7 +45,6 @@ void AtlasECDriver::configureSpecificConfigurationsFromBytes(configuration_bytes
 {
   memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
-
 
 void AtlasECDriver::setup()
 {
@@ -97,18 +94,15 @@ void AtlasECDriver::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-
 void AtlasECDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
   addCalibrationParametersToJSON(json);
 }
 
-
 const char * AtlasECDriver::getBaseColumnHeaders()
 {
   return baseColumnHeaders;
 }
-
 
 bool AtlasECDriver::takeMeasurement()
 {
@@ -125,7 +119,6 @@ bool AtlasECDriver::takeMeasurement()
       value = -1;
       return false;
     }
-
 }
 
 unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
@@ -172,11 +165,9 @@ void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
   }
   else
   {
-    notify("Invalid cal step");
+    notify("Invalid step");
   }
 }
-
-
 
 void AtlasECDriver::addCalibrationParametersToJSON(cJSON * json)
 {

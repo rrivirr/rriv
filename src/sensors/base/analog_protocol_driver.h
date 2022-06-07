@@ -2,6 +2,9 @@
 *  Base class for sensor drivers using the Analog protocol
 */
 
+#ifndef WATERBEAR_ANALOG_PROTOCOL_DRIVER
+#define WATERBEAR_ANALOG_PROTOCOL_DRIVER
+
 #define ADC_SELECT_INTERNAL 0b00
 #define ADC_SELECT_EXTERNAL 0b01
 
@@ -13,3 +16,5 @@ public:
   ~AnalogProtocolSensorDriver();
   protocol_type getProtocol();
 };
+
+#endif

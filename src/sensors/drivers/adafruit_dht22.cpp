@@ -58,12 +58,6 @@ bool AdaDHT22::takeMeasurement()
   }
   else
   {
-<<<<<<< HEAD
-    // notify("Temperature: ");
-    // Serial2.print(temperature);
-    // notify("°C");
-=======
->>>>>>> main
     measurementTaken = true;
   }
 
@@ -75,12 +69,6 @@ bool AdaDHT22::takeMeasurement()
   }
   else
   {
-<<<<<<< HEAD
-    // notify("Humidity: ");
-    // Serial2.print(humidity);
-    // notify("%");
-=======
->>>>>>> main
     measurementTaken = true;
   }
 
