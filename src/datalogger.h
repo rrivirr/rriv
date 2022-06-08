@@ -44,13 +44,13 @@
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 // 64 bytes max, one configuration_partition_bytes
-// Currently there are 20 bytes unused
+// Currently there are 14 bytes unused
 typedef struct datalogger_settings { 
     char deploymentIdentifier[16]; // 16 bytes
     char siteName[8]; // 8 bytes
+    char loggerName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
     unsigned short interval;  // 2 bytes minutes
-    unsigned short reserved; // 2 bytes, unused
     unsigned short burstNumber; // 2 bytes
     unsigned short startUpDelay; // 2 bytes minutes
     unsigned short interBurstDelay; // 2 bytes minutes
@@ -97,6 +97,7 @@ public:
     // settings
     void setSiteName(char * siteName);
     void setDeploymentIdentifier(char * deploymentIdentifier);
+    void setLoggerName(char * loggerName);
     void setDeploymentTimestamp(int timestamp);
 
     void setInterval(int interval);

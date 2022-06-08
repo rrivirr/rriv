@@ -574,6 +574,8 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
 
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(settings.loggerName);
+  fileSystemWriteCache->writeString((char *)",");
 
   char buffer[100];
   if(settings.deploymentIdentifier[0] == 0xFF)
@@ -949,7 +951,7 @@ void Datalogger::initializeFilesystem()
   notify(setupTS);
 
   char header[200];
-  const char *statusFields = "type,site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
+  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
   debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
@@ -1173,7 +1175,11 @@ void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
   storeDataloggerConfiguration();
 }
 
-
+void Datalogger::setLoggerName(char *loggerName)
+{
+  strncpy(this->settings.loggerName, loggerName, 8);
+  storeDataloggerConfiguration();
+}
 
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {
