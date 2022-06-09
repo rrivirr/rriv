@@ -425,8 +425,16 @@ void setConfig(int arg_cnt, char **args)
 void CommandInterface::_setConfig(char * config)
 {
   cJSON *json = cJSON_Parse(config);
+  if(json == NULL){
+    notify(F("Invalid JSON"));
+    return;
+  }
+
   char * printString = cJSON_Print(json);
   notify(printString);
+  delete(printString);
+
+  this->datalogger->setConfiguration(json);
 
   cJSON_Delete(json);
 }

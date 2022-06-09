@@ -106,6 +106,7 @@ public:
     void setStartUpDelay(int delay);
     void setIntraBurstDelay(int delay);
 
+    void setConfiguration(cJSON * config);
     void getConfiguration(datalogger_settings_type * dataloggerSettings);
     cJSON * getSensorConfiguration(short index);
 

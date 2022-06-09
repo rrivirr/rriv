@@ -688,6 +688,67 @@ void Datalogger::storeSensorConfigurationIfNeedsSave()
   }
 }
 
+void Datalogger::setConfiguration(cJSON *config)
+{
+  const cJSON* siteNameJSON = cJSON_GetObjectItemCaseSensitive(config, "siteName");
+  if(siteNameJSON != NULL && cJSON_IsString(siteNameJSON) && strlen(siteNameJSON->valuestring) <= 7)
+  {
+    strcpy(settings.siteName, siteNameJSON->valuestring);
+  } else {
+    notify("Invalid site name");
+  }
+
+  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
+  if(loggerNameJSON != NULL && cJSON_IsString(loggerNameJSON) && strlen(loggerNameJSON->valuestring) <= 7)
+  {
+    strcpy(settings.loggerName, loggerNameJSON->valuestring);
+  } else {
+    notify("Invalid logger name");
+  }
+  
+  const cJSON* deploymentIdentifierJSON = cJSON_GetObjectItemCaseSensitive(config, "deploymentIdentifier");
+  if(deploymentIdentifierJSON != NULL && cJSON_IsString(deploymentIdentifierJSON) && strlen(deploymentIdentifierJSON->valuestring) <= 15)
+  {
+    strcpy(settings.deploymentIdentifier, deploymentIdentifierJSON->valuestring);
+  } else {
+    notify("Invalid deployment identifier");
+  }
+
+  const cJSON * intervalJson = cJSON_GetObjectItemCaseSensitive(config, "interval");
+  if(intervalJson != NULL && cJSON_IsNumber(intervalJson) && intervalJson->valueint > 0)
+  {
+    settings.interval = (byte) intervalJson->valueint;
+  } else {
+    notify("Invalid interval");
+  }
+
+  const cJSON * burstNumberJson = cJSON_GetObjectItemCaseSensitive(config, "burstNumber");
+  if(burstNumberJson != NULL && cJSON_IsNumber(burstNumberJson) && burstNumberJson->valueint > 0)
+  {
+    settings.burstNumber = (byte) burstNumberJson->valueint;
+  } else {
+    notify("Invalid burst number");
+  }
+
+  const cJSON * startUpDelayJson = cJSON_GetObjectItemCaseSensitive(config, "startUpDelay");
+  if(startUpDelayJson != NULL && cJSON_IsNumber(startUpDelayJson) && startUpDelayJson->valueint >= 0)
+  {
+    settings.startUpDelay = (byte) startUpDelayJson->valueint;
+  } else {
+    notify("Invalid start up delay");
+  }
+
+  const cJSON * interBurstDelayJson = cJSON_GetObjectItemCaseSensitive(config, "interBurstDelay");
+  if(interBurstDelayJson != NULL && cJSON_IsNumber(interBurstDelayJson) && interBurstDelayJson->valueint >= 0)
+  {
+    settings.interBurstDelay = (byte) interBurstDelayJson->valueint;
+  } else {
+    notify("Invalid inter burst delay");
+  }
+
+  storeDataloggerConfiguration();
+}
+
 void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
 {
   memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
