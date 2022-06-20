@@ -271,6 +271,8 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
     while(1);
   }
 
+  // TODO: add datalogger/slot settings as formatted header, prefaced with #
+
   this->logfile.println(header); // write the headers to the new logfile
   // this->logfile.flush();
   //Serial2.print("wrote:");

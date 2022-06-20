@@ -95,6 +95,7 @@ class CommandInterface
 
     // cli functions
     void _setSiteName(char * siteName);
+    void _setLoggerName(char * loggerName);
     void _setDeploymentIdentifier(char * deploymentIdentifier);
     void _setInterval(int size);
     void _setBurstSize(int size);

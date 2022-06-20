@@ -187,6 +187,8 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
       externalADC->convertEnabledChannels();
     }
     takeMeasurement();
+    // TODO: check for 0 values, report them, and either skip them for calibration, or halt calibration and notify that board may have electrical issues?
+    // Thoughts: reasons for 0 values? electrical issue, power failure, or are there scenarios where 0's are acceptable but still need to be skipped?
     notify(this->value);
     sum += this->value;
     x[i] = this->value;

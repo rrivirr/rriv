@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef ATLAS_CO2_DRIVER
-#define ATLAS_CO2_DRIVER
+#ifndef WATERBEAR_ATLAS_CO2_DRIVER
+#define WATERBEAR_ATLAS_CO2_DRIVER
 
 #include "sensors/sensor.h"
 #include <sensors/AtlasScientificCO2.h>

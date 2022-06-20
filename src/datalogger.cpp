@@ -37,65 +37,34 @@ void Datalogger::sleepMCU(int milliseconds)
     delay(milliseconds);
     return;
   }
-  // if(milliseconds >= 1000)
-  // {
-    // if we are delaying for a long time, sleep the processor
-    setNextAlarmInternalRTCMilliseconds(milliseconds);
 
-    int iser1, iser2, iser3;
-    storeAllInterrupts(iser1, iser2, iser3);
+  setNextAlarmInternalRTCMilliseconds(milliseconds);
 
-    disableCustomWatchDog();
-    disableSerialLog();
+  int iser1, iser2, iser3;
+  storeAllInterrupts(iser1, iser2, iser3);
 
-    clearAllInterrupts();
-    clearAllPendingInterrupts();
+  disableCustomWatchDog();
+  disableSerialLog();
 
-    nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
 
-    enterSleepMode();
+  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
-    nvic_irq_disable(NVIC_RTCALARM);
+  enterSleepMode();
 
-    reenableAllInterrupts(iser1, iser2, iser3);
+  nvic_irq_disable(NVIC_RTCALARM);
 
-    offsetMillis += milliseconds; // systick was stopped, add slept milliseconds
-    currentEpoch = timestamp();
+  reenableAllInterrupts(iser1, iser2, iser3);
 
-    enableSerialLog();
-    startCustomWatchDog();
+  offsetMillis -= milliseconds; // account for millisecond count while systick was off
 
-    // sleepMCU(milliseconds - 1000 * seconds); // finish up
-    // currentEpoch += seconds;
+  currentEpoch = timestamp();
 
-  
-
-  // } 
-  // else
-  // {   
-
-  //   reloadCustomWatchdog();
-  //   delay(milliseconds);
-  // }
+  enableSerialLog();
+  startCustomWatchDog();
 
   reloadCustomWatchdog();
-
-
-  // int remainingMilliseconds = delayMilliseconds;
-  // if(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  // {
-  //   startCustomWatchDog(MAX_WATCHDOG_TIMEOUT_SECONDS + 1000);
-  //   while(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  //   {
-  //     delay(MAX_WATCHDOG_TIMEOUT_SECONDS);
-  //     milliseconds -= MAX_WATCHDOG_TIMEOUT_SECONDS;
-  //     reloadCustomWatchdog();
-  //   }
-  //   startCustomWatchDog();
-  // } else {
-  //   reloadCustomWatchdog();
-  //   delay(delayMilliseconds);
-  // }
 }
 
 
@@ -227,7 +196,7 @@ bool Datalogger::processReadingsCycle()
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
-      sleepMCU(interBurstDelay * 1000); // convert minutes to milliseconds
+      sleepMCU(interBurstDelay * 1000); // convert seconds to milliseconds
       // wakeSensorsFromStandbyMode();
     }
 
@@ -510,7 +479,7 @@ void Datalogger::initializeMeasurementCycle()
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
     notify(startUpDelay);
-    sleepMCU(startUpDelay * 1000); // convert minutes to milliseconds
+    sleepMCU(startUpDelay * 1000); // convert seconds to milliseconds
     notify("sleep done");
   }
 
@@ -563,6 +532,7 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
 
   // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
+
   double currentTime = (double) currentEpoch + ( (double) ( currentMillis - offsetMillis) ) / 1000;
 
   char currentTimeString[20];
@@ -572,13 +542,15 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
 
   fileSystemWriteCache->writeString(settings.siteName);
   fileSystemWriteCache->writeString((char *)",");
+  fileSystemWriteCache->writeString(settings.loggerName);
+  fileSystemWriteCache->writeString((char *)",");
 
   char buffer[100];
   if(settings.deploymentIdentifier[0] == 0xFF)
   {
     sprintf(buffer, "%s-%lu", uuidString, settings.deploymentTimestamp);
   }
-  else 
+  else
   {
     char deploymentIdentifier[16] = {0};
     strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
@@ -682,6 +654,67 @@ void Datalogger::storeSensorConfigurationIfNeedsSave()
     }
 
   }
+}
+
+void Datalogger::setConfiguration(cJSON *config)
+{
+  const cJSON* siteNameJSON = cJSON_GetObjectItemCaseSensitive(config, "siteName");
+  if(siteNameJSON != NULL && cJSON_IsString(siteNameJSON) && strlen(siteNameJSON->valuestring) <= 7)
+  {
+    strcpy(settings.siteName, siteNameJSON->valuestring);
+  } else {
+    notify("Invalid site name");
+  }
+
+  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
+  if(loggerNameJSON != NULL && cJSON_IsString(loggerNameJSON) && strlen(loggerNameJSON->valuestring) <= 7)
+  {
+    strcpy(settings.loggerName, loggerNameJSON->valuestring);
+  } else {
+    notify("Invalid logger name");
+  }
+  
+  const cJSON* deploymentIdentifierJSON = cJSON_GetObjectItemCaseSensitive(config, "deploymentIdentifier");
+  if(deploymentIdentifierJSON != NULL && cJSON_IsString(deploymentIdentifierJSON) && strlen(deploymentIdentifierJSON->valuestring) <= 15)
+  {
+    strcpy(settings.deploymentIdentifier, deploymentIdentifierJSON->valuestring);
+  } else {
+    notify("Invalid deployment identifier");
+  }
+
+  const cJSON * intervalJson = cJSON_GetObjectItemCaseSensitive(config, "interval");
+  if(intervalJson != NULL && cJSON_IsNumber(intervalJson) && intervalJson->valueint > 0)
+  {
+    settings.interval = (byte) intervalJson->valueint;
+  } else {
+    notify("Invalid interval");
+  }
+
+  const cJSON * burstNumberJson = cJSON_GetObjectItemCaseSensitive(config, "burstNumber");
+  if(burstNumberJson != NULL && cJSON_IsNumber(burstNumberJson) && burstNumberJson->valueint > 0)
+  {
+    settings.burstNumber = (byte) burstNumberJson->valueint;
+  } else {
+    notify("Invalid burst number");
+  }
+
+  const cJSON * startUpDelayJson = cJSON_GetObjectItemCaseSensitive(config, "startUpDelay");
+  if(startUpDelayJson != NULL && cJSON_IsNumber(startUpDelayJson) && startUpDelayJson->valueint >= 0)
+  {
+    settings.startUpDelay = (byte) startUpDelayJson->valueint;
+  } else {
+    notify("Invalid start up delay");
+  }
+
+  const cJSON * interBurstDelayJson = cJSON_GetObjectItemCaseSensitive(config, "interBurstDelay");
+  if(interBurstDelayJson != NULL && cJSON_IsNumber(interBurstDelayJson) && interBurstDelayJson->valueint >= 0)
+  {
+    settings.interBurstDelay = (byte) interBurstDelayJson->valueint;
+  } else {
+    notify("Invalid inter burst delay");
+  }
+
+  storeDataloggerConfiguration();
 }
 
 void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
@@ -947,7 +980,7 @@ void Datalogger::initializeFilesystem()
   notify(setupTS);
 
   char header[200];
-  const char *statusFields = "type,site,deployment,deployed_at,uuid,time.s,time.h,battery.V";
+  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
   debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
@@ -1161,17 +1194,21 @@ void Datalogger::storeSensorConfiguration(SensorDriver * driver)
 
 void Datalogger::setSiteName(char *siteName)
 {
-  strncpy(this->settings.siteName, siteName, 7);
+  strncpy(this->settings.siteName, siteName, 8);
   storeDataloggerConfiguration();
 }
 
 void Datalogger::setDeploymentIdentifier(char *deploymentIdentifier)
 {
-  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 15);
+  strncpy(this->settings.deploymentIdentifier, deploymentIdentifier, 16);
   storeDataloggerConfiguration();
 }
 
-
+void Datalogger::setLoggerName(char *loggerName)
+{
+  strncpy(this->settings.loggerName, loggerName, 8);
+  storeDataloggerConfiguration();
+}
 
 void Datalogger::setDeploymentTimestamp(int timestamp)
 {
@@ -1200,7 +1237,14 @@ int Datalogger::minMillisecondsUntilNextReading()
   
   // we want to read as fast the speed requested by the fastest sensor
   // or as slow as the slowest sensor has a new reading available
-  return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
+  if(maxDelayUntilNextAvailableReading == 0)
+  {
+    return minimumNextRequestedReading;
+  }
+  else 
+  {
+    return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
+  }
 
 }
 

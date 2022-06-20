@@ -192,9 +192,9 @@ void setSiteName(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   char * siteName = args[1];
-  if(strlen(siteName) > 8)
+  if(strlen(siteName) > 7)
   {
-    invalidArgumentsMessage(F("Site name must be 8 characters or less"));
+    invalidArgumentsMessage(F("Site name must be 7 characters or less"));
     return;
   }
   CommandInterface::instance()->_setSiteName(siteName);
@@ -203,6 +203,29 @@ void setSiteName(int arg_cnt, char **args)
 void CommandInterface::_setSiteName(char * siteName)
 {
   this->datalogger->setSiteName(siteName);
+  ok();
+}
+
+void setLoggerName(int arg_cnt, char **args)
+{
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("set-logger-name LOGGER_NAME"));
+    return;
+  }
+
+  // use singleton to get back into OOP context
+  char * loggerName = args[1];
+  if(strlen(loggerName) > 7)
+  {
+    invalidArgumentsMessage(F("Logger name must be 7 characters or less"));
+    return;
+  }
+  CommandInterface::instance()->_setLoggerName(loggerName);
+}
+
+void CommandInterface::_setLoggerName(char * loggerName)
+{
+  this->datalogger->setLoggerName(loggerName);
   ok();
 }
 
@@ -283,7 +306,6 @@ void CommandInterface::_setBurstNumber(int number)
   ok();
 }
 
-
 void setStartUpDelay(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
@@ -355,7 +377,8 @@ void CommandInterface::_getConfig()
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
   // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
   cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_name")), dataloggerSettings.deploymentIdentifier);
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
+  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
   cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
@@ -373,7 +396,7 @@ void CommandInterface::_getConfig()
   cJSON_Delete(json);
   debug("sensorCount is:");
   debug(short(this->datalogger->sensorCount));
-  for(uint i=0; i<this->datalogger->sensorCount; i++)
+  for(unsigned short i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
     cJSON_PrintPreallocated(sensorConfiguration, string, BUFFER_SIZE, true);
@@ -395,7 +418,6 @@ void setConfig(int arg_cnt, char **args)
     return;
   }
 
-
   char * config = args[1];
   CommandInterface::instance()->_setConfig(config);
 }
@@ -403,8 +425,16 @@ void setConfig(int arg_cnt, char **args)
 void CommandInterface::_setConfig(char * config)
 {
   cJSON *json = cJSON_Parse(config);
+  if(json == NULL){
+    notify(F("Invalid JSON"));
+    return;
+  }
+
   char * printString = cJSON_Print(json);
   notify(printString);
+  delete(printString);
+
+  this->datalogger->setConfiguration(json);
 
   cJSON_Delete(json);
 }
@@ -416,7 +446,6 @@ void setSlotConfig(int arg_cnt, char **args)
     invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON"));
     return;
   }
-
 
   char * config = args[1];
   CommandInterface::instance()->_setSlotConfig(config);
@@ -649,6 +678,7 @@ void CommandInterface::_help()
   "restart\n"
   "set-site-name\n"
   "set-deployment-identifier\n"
+  "set-logger-name\n"
   "set-interval\n"
   "set-burst-number\n"
   "set-start-up-delay\n"
@@ -712,6 +742,7 @@ void CommandInterface::setup(){
 
   cmdAdd("set-site-name", setSiteName);
   cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
+  cmdAdd("set-logger-name", setLoggerName);
   cmdAdd("set-interval", setInterval);
   cmdAdd("set-burst-number", setBurstNumber);
   cmdAdd("set-start-up-delay", setStartUpDelay);
