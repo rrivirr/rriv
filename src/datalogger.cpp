@@ -37,66 +37,34 @@ void Datalogger::sleepMCU(int milliseconds)
     delay(milliseconds);
     return;
   }
-  // if(milliseconds >= 1000)
-  // {
-    // if we are delaying for a long time, sleep the processor
-    setNextAlarmInternalRTCMilliseconds(milliseconds);
 
-    int iser1, iser2, iser3;
-    storeAllInterrupts(iser1, iser2, iser3);
+  setNextAlarmInternalRTCMilliseconds(milliseconds);
 
-    disableCustomWatchDog();
-    disableSerialLog();
+  int iser1, iser2, iser3;
+  storeAllInterrupts(iser1, iser2, iser3);
 
-    clearAllInterrupts();
-    clearAllPendingInterrupts();
+  disableCustomWatchDog();
+  disableSerialLog();
 
-    nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
+  clearAllInterrupts();
+  clearAllPendingInterrupts();
 
-    enterSleepMode();
+  nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
-    nvic_irq_disable(NVIC_RTCALARM);
+  enterSleepMode();
 
-    reenableAllInterrupts(iser1, iser2, iser3);
+  nvic_irq_disable(NVIC_RTCALARM);
 
-    //offsetMillis += milliseconds; // systick was stopped, add slept milliseconds
-   
-    currentEpoch = timestamp();
+  reenableAllInterrupts(iser1, iser2, iser3);
 
-    enableSerialLog();
-    startCustomWatchDog();
+  offsetMillis -= milliseconds; // account for millisecond count while systick was off
 
-    // sleepMCU(milliseconds - 1000 * seconds); // finish up
-    // currentEpoch += seconds;
+  currentEpoch = timestamp();
 
-  
-
-  // } 
-  // else
-  // {   
-
-  //   reloadCustomWatchdog();
-  //   delay(milliseconds);
-  // }
+  enableSerialLog();
+  startCustomWatchDog();
 
   reloadCustomWatchdog();
-
-
-  // int remainingMilliseconds = delayMilliseconds;
-  // if(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  // {
-  //   startCustomWatchDog(MAX_WATCHDOG_TIMEOUT_SECONDS + 1000);
-  //   while(remainingMilliseconds > DEFAULT_WATCHDOG_TIMEOUT_SECONDS)
-  //   {
-  //     delay(MAX_WATCHDOG_TIMEOUT_SECONDS);
-  //     milliseconds -= MAX_WATCHDOG_TIMEOUT_SECONDS;
-  //     reloadCustomWatchdog();
-  //   }
-  //   startCustomWatchDog();
-  // } else {
-  //   reloadCustomWatchdog();
-  //   delay(delayMilliseconds);
-  // }
 }
 
 
@@ -1269,7 +1237,14 @@ int Datalogger::minMillisecondsUntilNextReading()
   
   // we want to read as fast the speed requested by the fastest sensor
   // or as slow as the slowest sensor has a new reading available
-  return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
+  if(maxDelayUntilNextAvailableReading == 0)
+  {
+    return minimumNextRequestedReading;
+  }
+  else 
+  {
+    return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
+  }
 
 }
 
