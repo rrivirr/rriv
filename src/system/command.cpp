@@ -373,19 +373,19 @@ void CommandInterface::_getConfig()
   datalogger_settings_type dataloggerSettings = this->datalogger->settings;
   this->datalogger->getConfiguration(&dataloggerSettings);
  
-  cJSON* json = cJSON_CreateObject();
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
+  cJSON* dataloggerConfiguration = cJSON_CreateObject();
+  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
   // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
-  cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
+  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
+  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
+  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
+  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
+  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
+  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
+  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
 
   char string[BUFFER_SIZE];
-  cJSON_PrintPreallocated(json, string, BUFFER_SIZE, true);
+  cJSON_PrintPreallocated(dataloggerConfiguration, string, BUFFER_SIZE, true);
   if (string == NULL)
   {
     fprintf(stderr, reinterpretCharPtr(F("Failed to print json.\n")));
@@ -393,7 +393,8 @@ void CommandInterface::_getConfig()
   }
   notify(string);
   
-  cJSON_Delete(json);
+  cJSON_Delete(dataloggerConfiguration);
+
   debug("sensorCount is:");
   debug(short(this->datalogger->sensorCount));
   for(unsigned short i=0; i<this->datalogger->sensorCount; i++)
@@ -472,11 +473,14 @@ void CommandInterface::_setSlotConfig(char * config)
 
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON)){
     short slot = slotJSON->valueint;
-    if(slot > EEPROM_TOTAL_SENSOR_SLOTS)
+    if(slot >= EEPROM_TOTAL_SENSOR_SLOTS || slot == 0)
     {
       notify(F("Invalid slot"));
+      return;
     }
-  } else {
+  }
+  else
+  {
     notify(F("Invalid slot"));
     return;
   }
@@ -484,7 +488,9 @@ void CommandInterface::_setSlotConfig(char * config)
   if (cJSON_IsString(typeJSON) && (typeJSON->valuestring != NULL))
   {
     strcpy(type, typeJSON->valuestring);
-  } else {
+  }
+  else
+  {
     notify(F("Invalid type"));
     return;
   }
@@ -503,7 +509,12 @@ void clearSlot(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   int number = atoi(args[1]);
-  CommandInterface::instance()->_clearSlot(number);
+  if (number > 0 && number <= EEPROM_TOTAL_SENSOR_SLOTS)
+  {
+    CommandInterface::instance()->_clearSlot(number - 1);
+  }
+  else
+    invalidArgumentsMessage(F("Slot #"));
 }
 
 void CommandInterface::_clearSlot(int number)
@@ -529,7 +540,8 @@ void getRTC(int arg_cnt, char **args)
   int time = timestamp();
   char message[100];
   char humanTimeString[25];
-  t_t2ts(time, millis(), humanTimeString);
+  // t_t2ts(time, millis(), humanTimeString); // throws off the seconds
+  t_t2ts(time, 0, humanTimeString); // don't have an offset to count millis correctly
   sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
   notify(message);
 }
@@ -709,10 +721,11 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
-  if (digitalRead(GPIO_PIN_3) == HIGH)
-    digitalWrite(GPIO_PIN_3, LOW);
+  // TODO: currently hardcoded pin test, change to allow user input with command
+  if (digitalRead(GPIO_PIN_6) == HIGH)
+    digitalWrite(GPIO_PIN_6, LOW);
   else
-    digitalWrite(GPIO_PIN_3, HIGH);
+    digitalWrite(GPIO_PIN_6, HIGH);
 }
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
@@ -725,7 +738,6 @@ void CommandInterface::_reloadSensorConfigurations()
 {
   this->datalogger->reloadSensorConfigurations();
 }
-
 
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);

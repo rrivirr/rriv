@@ -36,8 +36,8 @@ void setNextAlarmInternalRTC(short interval){
   //Serial2.println(Clock.getMinute(), DEC);
   //Serial2.println(minutes);
   short seconds = Clock.getSecond();
-  Serial2.println("seconds");
-  Serial2.println(seconds);
+  // Serial2.println("seconds");
+  // Serial2.println(seconds);
   // an example of the math
   // time = 10:48:12 (current time)
   // minutes = 48 ( current minutes)
@@ -47,18 +47,18 @@ void setNextAlarmInternalRTC(short interval){
   // minutesDiff = 60 - 48 = 12
   // minutesDiffSeconds = 12 * 60 = 720
   // secondsUntilWake = 720 - 12 = 708
-  Serial2.println("interval");
-  Serial2.println(interval);
-  Serial2.println("minutes");
-  Serial2.println(minutes);
+  // Serial2.println("interval");
+  // Serial2.println(interval);
+  // Serial2.println("minutes");
+  // Serial2.println(minutes);
   short nextMinutes = (minutes + interval - (minutes % interval));
   Serial2.println("next minutes");
   Serial2.println(nextMinutes);
   short minutesDiff = nextMinutes - minutes;
   short minutesDiffSeconds = minutesDiff * 60;
   short secondsUntilWake = minutesDiffSeconds - seconds; // -offset.  Offset would allow for some startup time.
-  Serial2.println("seconds until wake");
-  Serial2.println(secondsUntilWake);
+  // Serial2.println("seconds until wake");
+  // Serial2.println(secondsUntilWake);
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
   Serial2.println("made clock");  Serial2.flush();

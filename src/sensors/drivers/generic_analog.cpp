@@ -35,9 +35,7 @@ int ADC_PINS[5] = {
 
 #define GENERIC_ANALOG_VALUE_TAG "value"
 
-GenericAnalogDriver::GenericAnalogDriver()
-{
-}
+GenericAnalogDriver::GenericAnalogDriver() {}
 
 GenericAnalogDriver::~GenericAnalogDriver() {}
 
@@ -46,9 +44,8 @@ const char * GenericAnalogDriver::getSensorTypeString()
   return sensorTypeString;
 }
 
-void GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
+bool GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
 {
-
   const cJSON *adcSelectJSON = cJSON_GetObjectItemCaseSensitive(json, "adc_select");
   const char * errorMessage = reinterpret_cast<const char *>(F("Invalid adc select"));
   bool error = false;
@@ -71,23 +68,33 @@ void GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
   {
     error = true;
   }
-
   if(error)
   {
     notify(errorMessage);
-    return;
+    return false;
   }
 
   const cJSON *sensorPortJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_port");
-  if (sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint < 5)
+  int maxSensorPorts = 4; // External has 4 channels
+  if (configurations.adc_select == ADC_SELECT_INTERNAL)
   {
-    configurations.sensor_port = (byte)sensorPortJSON->valueint;
+    maxSensorPorts++;
+  }
+  if (sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint > 0 && sensorPortJSON->valueint <= maxSensorPorts)
+  {
+    configurations.sensor_port = (byte)sensorPortJSON->valueint - 1;
   }
   else
   {
-    notify(F("Invalid sensor port"));
-    return;
+    errorMessage = reinterpret_cast<const char *>(F("Invalid sensor port"));
+    error = true;
   }
+  if(error)
+  {
+    notify(errorMessage);
+    return false;
+  }
+  return true;
 }
 
 void GenericAnalogDriver::setDriverDefaults()
@@ -114,7 +121,7 @@ void GenericAnalogDriver::configureSpecificConfigurationsFromBytes(configuration
 
 void GenericAnalogDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
-  cJSON_AddNumberToObject(json, "sensor_port", configurations.sensor_port);
+  cJSON_AddNumberToObject(json, "sensor_port", configurations.sensor_port + 1);
   switch (configurations.adc_select)
   {
   case ADC_SELECT_INTERNAL:
@@ -134,7 +141,21 @@ const char *GenericAnalogDriver::getBaseColumnHeaders()
   return baseColumnHeaders;
 }
 
-void GenericAnalogDriver::stop() {}
+void GenericAnalogDriver::setup()
+{
+  if (configurations.adc_select == ADC_SELECT_INTERNAL)
+  {
+    pinMode(ADC_PINS[configurations.sensor_port], INPUT_ANALOG);
+    // notify("Internal ADC Pin setup");
+  }
+}
+
+void GenericAnalogDriver::stop()
+{
+  pinMode(ADC_PINS[configurations.sensor_port], INPUT);
+  digitalWrite(ADC_PINS[configurations.sensor_port], LOW);
+  // notify("ADC port stopped");
+}
 
 bool GenericAnalogDriver::takeMeasurement()
 {
@@ -151,7 +172,7 @@ bool GenericAnalogDriver::takeMeasurement()
   case ADC_SELECT_EXTERNAL:
   {
     debug("get extADC value");
-    this->value = externalADC->getChannelValue(configurations.sensor_port - 1);
+    this->value = externalADC->getChannelValue(configurations.sensor_port);
   }
   break;
 
@@ -226,7 +247,6 @@ const char *GenericAnalogDriver::getSummaryDataString()
   sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, getCalibratedValue(burstSummaryMean));
   return dataString;  
 }
-
 
 void GenericAnalogDriver::initCalibration()
 {
@@ -396,7 +416,6 @@ void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
     cJSON_AddStringToObject(json, "calibration", "not init");
   }
 }
-
 
 unsigned int GenericAnalogDriver::millisecondsUntilNextRequestedReading()
 {

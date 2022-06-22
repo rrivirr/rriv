@@ -715,9 +715,21 @@ void Datalogger::setConfiguration(cJSON *config)
   storeDataloggerConfiguration();
 }
 
+// TODO: can I modify this to return a JSON instead? It can then be used when writing the comments before the header in the csv
 void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
 {
   memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
+
+  // cJSON* json = cJSON_CreateObject();
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
+  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
+  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
+  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
+  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
+  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
+  // return(json)
 }
 
 void Datalogger::setSensorConfiguration(char *type, cJSON *json)
@@ -729,7 +741,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
 
   if (driver != NULL)
   {
-    driver->configureFromJSON(json);
+    if (driver->configureFromJSON(json) == false)
+    {
+      return;
+    }
     if (driver->getProtocol() == i2c)
     {
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
@@ -1005,7 +1020,7 @@ void Datalogger::powerUpSwitchableComponents()
 
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
-  gpioPinOn(GPIO_PIN_4);
+  gpioPinOn(GPIO_PIN_3);
   
   delay(250);
   enableI2C1();
@@ -1036,13 +1051,14 @@ void Datalogger::powerUpSwitchableComponents()
   }
 
   debug(F("Switchable components powered up"));
-}
+};
 
 void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
 {
-  //TODO: hook for sensors that need to be powered down?
-  gpioPinOff(GPIO_PIN_3); //not in use currently
-  gpioPinOff(GPIO_PIN_4); //turn off 5v booster
+  //TODO: hook for sensors that need to be powered down? separate functions?
+  //TODO: hook for actuators that need to be powered down?
+  gpioPinOff(GPIO_PIN_3); //turn off 5v booster
+  gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
   debug(F("Switchable components powered down"));
@@ -1120,6 +1136,12 @@ void Datalogger::stopAndAwaitTrigger()
   clearManualWakeInterrupt();
   setNextAlarmInternalRTC(settings.interval);
 
+  // power down sensors -> function?
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    drivers[i]->stop();
+  }
+
   powerDownSwitchableComponents();
   fileSystem->closeFileSystem(); // close file, filesystem
   disableSwitchedPower();
@@ -1147,6 +1169,13 @@ void Datalogger::stopAndAwaitTrigger()
 
   enableSerialLog();
   enableSwitchedPower();
+
+  // power up sensors -> function?
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    drivers[i]->setup();
+  }
+
   setupHardwarePins(); // used from setup steps in datalogger
 
   debug(F("Awoke"));
