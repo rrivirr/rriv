@@ -87,23 +87,23 @@ void setNextAlarmInternalRTCSeconds(short seconds)
 {
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
-  Serial2.println("made clock");  Serial2.flush();
+  // Serial2.println("made clock");  Serial2.flush();
 
-  char message[100];
-  sprintf(message, "Got clock value (current): %lli", clock->getTime());
-  debug(message);
-    
+  // char message[100];
+  // sprintf(message, "Got clock value (current): %lli", clock->getTime());
+  // debug(message);
+  
   clock->setTime(0);
-  sprintf(message, "Got clock value (reset): %lli", clock->getTime());
-  debug(message);
+  // sprintf(message, "Got clock value (reset): %lli", clock->getTime());
+  // debug(message);
 
   clock->removeAlarm();
   clock->setAlarmTime(seconds);
   clock->createAlarm(handleInterrupt, seconds);
   delete clock;
 
-  sprintf(message, "set alarm seconds until wake: %i", seconds);
-  notify(message);
+  // sprintf(message, "set alarm seconds until wake: %i", seconds);
+  // notify(message);
 
 }
 
@@ -111,23 +111,23 @@ void setNextAlarmInternalRTCMilliseconds(int milliseconds)
 {
 
   RTClock * clock = new RTClock(RTCSEL_LSE, 32); //according to sheet clock/(prescaler + 1) = Hz
-  Serial2.println("made clock");  Serial2.flush();
+  // Serial2.println("made clock");  Serial2.flush();
 
-  char message[100];
-  sprintf(message, "Got clock value (current): %lli", clock->getTime());
-  debug(message);
+  // char message[100];
+  // sprintf(message, "Got clock value (current): %lli", clock->getTime());
+  // debug(message);
     
   clock->setTime(0);
-  sprintf(message, "Got clock value (reset): %lli", clock->getTime());
-  debug(message);
+  // sprintf(message, "Got clock value (reset): %lli", clock->getTime());
+  // debug(message);
 
   clock->removeAlarm();
   clock->setAlarmTime(milliseconds);
   clock->createAlarm(handleInterrupt, milliseconds);
   delete clock;
 
-  sprintf(message, "set alarm milliseconds until wake: %i", milliseconds);
-  notify(message);
+  // sprintf(message, "set alarm milliseconds until wake: %i", milliseconds);
+  // notify(message);
 
 }
 

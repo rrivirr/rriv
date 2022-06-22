@@ -30,7 +30,7 @@
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
 
-void Datalogger::sleepMCU(int milliseconds)
+void Datalogger::sleepMCU(uint32 milliseconds)
 {
   if(milliseconds < 5)
   {
@@ -58,8 +58,6 @@ void Datalogger::sleepMCU(int milliseconds)
   reenableAllInterrupts(iser1, iser2, iser3);
 
   offsetMillis -= milliseconds; // account for millisecond count while systick was off
-
-  currentEpoch = timestamp();
 
   enableSerialLog();
   startCustomWatchDog();

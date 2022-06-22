@@ -177,7 +177,7 @@ private:
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(SensorDriver * driver);
 
-    void sleepMCU(int milliseconds);
+    void sleepMCU(uint32 milliseconds);
     int minMillisecondsUntilNextReading();
  
     // run loop
