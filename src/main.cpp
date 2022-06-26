@@ -29,6 +29,9 @@
 #include "system/eeprom.h"
 #include "system/logs.h"
 
+#include <USBComposite.h>
+USBCompositeSerial USBSerial;
+
 // Setup and Loop
 Datalogger *datalogger;
 void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
@@ -38,6 +41,28 @@ void setup(void)
 {
   startSerial2();
   Monitor::instance()->debugToSerial = true;
+
+  rcc_turn_on_clk(RCC_CLK_PLL);
+  while(!rcc_is_clk_ready(RCC_CLK_PLL));
+
+  //Finally, switch to the now-ready PLL as the main clock source.
+  rcc_switch_sysclk(RCC_CLKSRC_PLL);
+
+  USBComposite.clear(); // clear any plugins previously registered
+  USBSerial.registerComponent(); 
+  USBComposite.begin();
+  while(!USBComposite)
+  {
+    Serial2.println("waiting");
+    delay(1000);
+  }
+  Serial2.println("Begin USBSerial");
+  
+  while(1)
+  {
+    USBSerial.write("hello");
+    delay(1000);
+  }
 
   workspace();
 
