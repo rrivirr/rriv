@@ -55,7 +55,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
   protected:
-    void configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json);
     void setDriverDefaults();
 
   private:

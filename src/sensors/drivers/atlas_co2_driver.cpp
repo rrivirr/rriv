@@ -104,9 +104,10 @@ void AtlasCO2Driver::addCalibrationParametersToJSON(cJSON *json)
   cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
-void AtlasCO2Driver::configureDriverFromJSON(cJSON *json)
+bool AtlasCO2Driver::configureDriverFromJSON(cJSON *json)
 {
   // debug("configuring driver template driver from json");
+  return true;
 }
 
 void AtlasCO2Driver::setDriverDefaults()

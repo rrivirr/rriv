@@ -1,5 +1,16 @@
 #include "sensors/drivers/adafruit_dht22.h"
 #include "system/logs.h" // for debug() and notify()
+#include "system/hardware.h" // for pin names
+
+short GPIO_PINS[7] = {
+    GPIO_PIN_1,
+    GPIO_PIN_2,
+    GPIO_PIN_3,
+    GPIO_PIN_4,
+    GPIO_PIN_5,
+    GPIO_PIN_6,
+    GPIO_PIN_7
+};
 
 AdaDHT22::AdaDHT22()
 {
@@ -30,7 +41,8 @@ void AdaDHT22::configureSpecificConfigurationsFromBytes(configuration_bytes_part
 void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
   // debug("getting AdaDHT22 json");
-  
+  cJSON_AddNumberToObject(json, "sensor_pin", configuration.sensor_pin + 1);
+
   //driver specific config, customize
   addCalibrationParametersToJSON(json);
 }
@@ -38,11 +50,19 @@ void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 void AdaDHT22::setup()
 {
   // debug("setup AdaDHT22");
-  dht = new DHT_Unified(DHTPIN, DHTTYPE);
+  short gpioPin = GPIO_PINS[configuration.sensor_pin];
+  dht = new DHT_Unified(gpioPin, DHTTYPE);
   dht->begin();
-  notify("AdaDHT22 Initialized");
+  // notify("AdaDHT22 Initialized");
 }
 
+void AdaDHT22::stop()
+{
+  free(dht);
+  pinMode(GPIO_PINS[configuration.sensor_pin], INPUT);
+  digitalWrite(GPIO_PINS[configuration.sensor_pin], LOW);
+  // notify("AdaDHT22 stopped");
+}
 
 bool AdaDHT22::takeMeasurement()
 {
@@ -123,9 +143,20 @@ void AdaDHT22::addCalibrationParametersToJSON(cJSON *json)
   cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
-void AdaDHT22::configureDriverFromJSON(cJSON *json)
+bool AdaDHT22::configureDriverFromJSON(cJSON *json)
 {
-
+  const cJSON *sensorPinJSON = cJSON_GetObjectItemCaseSensitive(json, "sensor_pin");
+  int gpioPinCount = 7;  
+  if (sensorPinJSON->valueint > 0 && sensorPinJSON->valueint <= gpioPinCount)
+  {
+    configuration.sensor_pin = (byte)sensorPinJSON->valueint - 1;
+  }
+  else
+  {
+    notify("Invalid sensor pin");
+    return false;
+  }
+  return true;
 }
 
 void AdaDHT22::setDriverDefaults()

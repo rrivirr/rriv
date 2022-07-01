@@ -74,7 +74,7 @@ public:
   // Constructor
   SensorDriver();
   virtual ~SensorDriver();
-  void configureFromJSON(cJSON *json);
+  bool configureFromJSON(cJSON *json);
   void configureFromBytes(configuration_bytes configurationBytes); 
   const configuration_bytes getConfigurationBytes();
   const common_sensor_driver_config * getCommonConfigurations();
@@ -136,6 +136,7 @@ public:
    *  This method is optional.
    */
   virtual void setup();
+  virtual void stop();
   virtual void hibernate();
   virtual void wake();
   virtual void setDebugMode(bool debug);
@@ -195,7 +196,7 @@ protected:
   
   virtual configuration_bytes_partition getDriverSpecificConfigurationBytes() = 0;
 
-  virtual void configureDriverFromJSON(cJSON *json);
+  virtual bool configureDriverFromJSON(cJSON *json);
   
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   

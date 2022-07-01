@@ -23,7 +23,6 @@
 #include <DHT.h>
 #include <DHT_U.h>
 
-#define DHTPIN PC11     // Digital pin connected to the DHT sensor 
 #define DHTTYPE DHT22   // DHT 22 (AM2302)
 
 #define ADAFRUIT_DHT22_TYPE_STRING "adafruit_dht22"
@@ -34,6 +33,7 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
   typedef struct 
   {
     unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
+    short sensor_pin : 4; // 4 bits (16 states)
   } driver_configuration;
 
   public:
@@ -57,7 +57,7 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 

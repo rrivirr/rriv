@@ -77,6 +77,7 @@ private:
   //
 public:
   const char *getSensorTypeString();
+  void setup();
   void stop();
   bool takeMeasurement();
   const char *getRawDataString();
@@ -91,7 +92,7 @@ public:
 protected:
   void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
   configuration_bytes_partition getDriverSpecificConfigurationBytes();
-  void configureDriverFromJSON(cJSON *json);
+  bool configureDriverFromJSON(cJSON *json);
   void appendDriverSpecificConfigurationJSON(cJSON *json);
   void setDriverDefaults();
 

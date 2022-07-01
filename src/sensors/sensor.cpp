@@ -19,6 +19,7 @@
 #include "sensor.h"
 #include "system/logs.h"
 #include "sensors/sensor_map.h"
+#include "system/eeprom.h"
 
 SensorDriver::SensorDriver(){}
 SensorDriver::~SensorDriver(){}
@@ -26,7 +27,7 @@ SensorDriver::~SensorDriver(){}
 cJSON *SensorDriver::getConfigurationJSON() // returns unprotected pointer
 {
   cJSON *json = cJSON_CreateObject();
-  cJSON_AddNumberToObject(json, "slot", commonConfigurations.slot);
+  cJSON_AddNumberToObject(json, "slot", commonConfigurations.slot + 1);
   cJSON_AddStringToObject(json, "type", getSensorTypeString());
   cJSON_AddStringToObject(json, "tag", commonConfigurations.tag);
   cJSON_AddNumberToObject(json, "burst_size", commonConfigurations.burst_size);
@@ -60,9 +61,10 @@ configuration_bytes_partition SensorDriver::getDriverSpecificConfigurationBytes(
   return emptyPartition;
 }
 
-void SensorDriver::configureDriverFromJSON(cJSON *json)
+bool SensorDriver::configureDriverFromJSON(cJSON *json)
 {
   // override to load driver specific configurations
+  return true;
 }
   
 void SensorDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
@@ -107,7 +109,7 @@ double SensorDriver::getBurstSummaryMean(std::string tag)
 
 void SensorDriver::configureCSVColumns()
 {
-  notify("config csv columns");
+  // notify("config csv columns");
   char csvColumnHeaders[100] = "\0";
   char buffer[100];
   strcpy(buffer, this->getBaseColumnHeaders());
@@ -126,7 +128,7 @@ void SensorDriver::configureCSVColumns()
     }
   }
   strcpy(this->csvColumnHeaders, csvColumnHeaders);
-  notify("done");
+  // notify("done");
 }
 
 char *SensorDriver::getCSVColumnHeaders()
@@ -144,7 +146,7 @@ void SensorDriver::setDefaults()
 }
 
 
-void SensorDriver::configureFromJSON(cJSON * json)
+bool SensorDriver::configureFromJSON(cJSON * json)
 {
   
 #ifndef PRODUCTION_FIRMWARE_BUILD
@@ -163,33 +165,45 @@ void SensorDriver::configureFromJSON(cJSON * json)
   commonConfigurations.sensor_type = typeCodeForSensorTypeString(getSensorTypeString());
 
   const cJSON* slotJSON = cJSON_GetObjectItemCaseSensitive(json, "slot");
-  if(slotJSON != NULL && cJSON_IsNumber(slotJSON))
+  if(slotJSON != NULL && cJSON_IsNumber(slotJSON) && slotJSON->valueint > 0 && slotJSON->valueint <= EEPROM_TOTAL_SENSOR_SLOTS)
   {
-    commonConfigurations.slot = slotJSON->valueint;
-  } else {
+    commonConfigurations.slot = slotJSON->valueint - 1;
+  }
+  else
+  {
     notify("Invalid slot");
+    return false;
   }
 
   const cJSON * tagJSON = cJSON_GetObjectItemCaseSensitive(json, "tag");
   if(tagJSON != NULL && cJSON_IsString(tagJSON) && strlen(tagJSON->valuestring) <= 5)
   {
     strcpy(commonConfigurations.tag, tagJSON->valuestring);
-  } else {
+  }
+  else
+  {
     notify("Invalid tag");
+    return false;
   }
 
   const cJSON * burstSizeJson = cJSON_GetObjectItemCaseSensitive(json, "burst_size");
   if(burstSizeJson != NULL && cJSON_IsNumber(burstSizeJson) && burstSizeJson->valueint > 0)
   {
     commonConfigurations.burst_size = (byte) burstSizeJson->valueint;
-  } else {
+  }
+  else
+  {
     notify("Invalid burst size");
+    return false;
   }
 
   this->setDefaults();
-  this->configureDriverFromJSON(json);
+  if (this->configureDriverFromJSON(json) == false)
+  {
+    return false;
+  }
   this->configureCSVColumns();
-
+  return true;
 }
 
 
@@ -206,6 +220,11 @@ void SensorDriver::setup()
 {
   // by default no setup
   return;
+}
+
+void SensorDriver::stop()
+{
+
 }
 
 void SensorDriver::hibernate()
@@ -228,12 +247,10 @@ bool SensorDriver::isWarmedUp()
   return true;
 }
 
-
 short SensorDriver::getSlot()
 {
   return commonConfigurations.slot;
 }
-
 
 void SensorDriver::setConfigurationNeedsSave()
 {
