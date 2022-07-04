@@ -42,28 +42,7 @@ void setup(void)
   startSerial2();
   Monitor::instance()->debugToSerial = true;
 
-  rcc_turn_on_clk(RCC_CLK_PLL);
-  while(!rcc_is_clk_ready(RCC_CLK_PLL));
-
-  //Finally, switch to the now-ready PLL as the main clock source.
-  rcc_switch_sysclk(RCC_CLKSRC_PLL);
-
-  USBComposite.clear(); // clear any plugins previously registered
-  USBSerial.registerComponent(); 
-  USBComposite.begin();
-  while(!USBComposite)
-  {
-    Serial2.println("waiting");
-    delay(1000);
-  }
-  Serial2.println("Begin USBSerial");
-  
-  while(1)
-  {
-    USBSerial.write("hello");
-    delay(1000);
-  }
-
+ 
   workspace();
 
   startCustomWatchDog();
@@ -100,7 +79,7 @@ void setup(void)
 
   if (datalogger->inMode(logging))
   {
-    notify("Device will enter logging mode in 5 seconds");
+    // notify("Device will enter logging mode in 5 seconds");
     notify("Type 'i' to exit to interactive mode");
     Serial2.print("CMD >> ");
     int start = timestamp();
@@ -180,7 +159,53 @@ Type 'help' for command list.
 
 void workspace()
 {
-  // notify(sizeof(long long));
-  // notify(sizeof(sone));
-  // exit(0);
+  Serial2.println(RCC_BASE->CFGR, BIN);
+
+  Serial2.println("hello");
+
+  // USBComposite.clear(); // clear any plugins previously registered
+  // USBSerial.registerComponent(); 
+  // USBComposite.begin();
+  // while(!USBComposite)
+  // {
+  //   Serial2.println("waiting");
+  //   delay(1000);
+  // }
+
+  USBSerial.begin();
+  while(!USBSerial)
+  {
+    Serial2.println("waiting");
+    delay(1000);
+  }
+  Serial2.println("Begin USBSerial");
+  
+  while(1)
+  {
+    USBSerial.write("hello");
+    delay(1000);
+  }
+
+  exit(0);
+  //0000 0000 0011 1000 1000 0100 0000 1010
+  //
+  //0000 
+  //0000 
+  // 0 
+  // 0 - PLL divided by 1.5 for USB
+  // 1110 PLL x16
+  // 0 HSE not divided
+  // 0  HSI / 2 as PLL input
+  //1000 0100 0000 10
+  // 10 PLL is SYSCLK
+  RCC_BASE->CFGR &= 0x1F; // use HSE as PLLSRC
+  Serial2.println(RCC_BASE->CFGR, BIN);
+  RCC_BASE->CFGR &= 0b01001111111111; //0100 is input clock x6 PLLMUL
+  Serial2.println(RCC_BASE->CFGR, BIN);
+
+  while(!rcc_is_clk_ready(RCC_CLK_PLL));
+  rcc_switch_sysclk(RCC_CLKSRC_PLL);
+  Serial2.println("done");
+
+  exit(0);
 }
