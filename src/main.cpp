@@ -29,6 +29,7 @@
 #include "system/eeprom.h"
 #include "system/logs.h"
 
+#include "libmaple/usb.h"
 #include <USBComposite.h>
 USBCompositeSerial USBSerial;
 
@@ -160,6 +161,10 @@ Type 'help' for command list.
 void workspace()
 {
   Serial2.println(RCC_BASE->CFGR, BIN);
+  Serial2.println(RCC_BASE->APB1ENR, BIN);
+  // 1000 0010 0000 0000 0000 0111 //APB1ENR
+  //
+  // exit(0);
 
   Serial2.println("hello");
 
@@ -172,6 +177,7 @@ void workspace()
   //   delay(1000);
   // }
 
+  // usb_resume_init();
   USBSerial.begin();
   while(!USBSerial)
   {
@@ -187,6 +193,14 @@ void workspace()
   }
 
   exit(0);
+  //0000 0000 0001 1101 1000 0100 0000 1010
+  // PLL is divided by 1.5 for USBCLK
+  // PLLSRC is HSE
+  // PLLMUL is 9
+  // this gives a 48MHz USBCLK
+  // so long as USE_HSI and cpu speed is turned off in build params
+
+
   //0000 0000 0011 1000 1000 0100 0000 1010
   //
   //0000 
