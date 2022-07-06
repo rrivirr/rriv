@@ -73,7 +73,7 @@ bool AtlasCO2Driver::takeMeasurement()
   return measurementTaken;
 }
 
-const char * AtlasCO2Driver::getRawDataString()
+const char *AtlasCO2Driver::getRawDataString()
 {
   sprintf(dataString, "%d", value);
   return dataString;
@@ -82,6 +82,14 @@ const char * AtlasCO2Driver::getRawDataString()
 const char * AtlasCO2Driver::getSummaryDataString()
 {
   sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
+  return dataString;
+}
+const char *AtlasCO2Driver::getSummaryDataString()
+{
+  // debug("configuring driver template dataString");
+  // process data string for .csv
+  // TODO: just reporting the last value, not a true summary
+  sprintf(dataString, "%d,%d",value,0);
   return dataString;
 }
 
