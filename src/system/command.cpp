@@ -726,13 +726,6 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
-<<<<<<< HEAD
-  // TODO: currently hardcoded pin test, change to allow user input with command
-  if (digitalRead(GPIO_PIN_6) == HIGH)
-    digitalWrite(GPIO_PIN_6, LOW);
-  else
-    digitalWrite(GPIO_PIN_6, HIGH);
-=======
   if (digitalRead(GPIO_PIN_3) == HIGH ) {
     digitalWrite(GPIO_PIN_3, LOW);
     
@@ -764,7 +757,6 @@ void CommandInterface::_gpiotest()
   // digitalWrite(PB1, HIGH);
   // digitalWrite(PB8, HIGH);
   
->>>>>>> b7290a4 (feat: starting work on actuator class)
 }
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
@@ -778,8 +770,6 @@ void CommandInterface::_reloadSensorConfigurations()
   this->datalogger->reloadSensorConfigurations();
 }
 
-<<<<<<< HEAD
-=======
 
 void steptest (int arg_cnt, char**args)
 {
@@ -798,7 +788,6 @@ void CommandInterface::_steptest()
   
 }
 
->>>>>>> b7290a4 (feat: starting work on actuator class)
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
