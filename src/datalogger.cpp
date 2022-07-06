@@ -337,8 +337,6 @@ void Datalogger::loadSensorConfigurations()
   {
     notify("no sensor configurations found");
   }
-  notify("FREE MEM");
-  printFreeMemory();
 
   // construct the drivers
   notify("construct drivers");
@@ -346,8 +344,6 @@ void Datalogger::loadSensorConfigurations()
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("FREE MEM");
-    printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
     if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
@@ -367,9 +363,9 @@ void Datalogger::loadSensorConfigurations()
 
     if (driver->getProtocol() == i2c)
     {
-      debug("got i2c sensor");
+      // debug("got i2c sensor");
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
-      debug("set wire");
+      // debug("set wire");
     }
     debug("do setup");
     driver->setup();
@@ -385,16 +381,16 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
 {
   // calling this function does not deal with memory fragmentation
   // so it's not part of the main system, only for dev & debug
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   // free sensor configs
   for(unsigned short i=0; i<sensorCount; i++)
   {
     delete(drivers[i]);
   }
   free(drivers);
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   loadSensorConfigurations();
 }
 
@@ -504,9 +500,9 @@ void Datalogger::measureSensorValues(bool performingBurst)
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
-    debug("converting enabled channels call");
+    // debug("converting enabled channels call");
     externalADC->convertEnabledChannels();
-    debug("converted enabled channels");
+    // debug("converted enabled channels");
   }
 
   for (unsigned int i = 0; i < sensorCount; i++)
@@ -910,12 +906,11 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
 
   if (strcmp(subcommand, "init") == 0)
   {
-    notify("calling init");
+    // notify("calling init");
     driver->initCalibration();
   }
   else
   {
-
     driver->calibrationStep(subcommand, arg_cnt, args);
   }
 }
@@ -1026,7 +1021,7 @@ void Datalogger::powerUpSwitchableComponents()
   enableI2C1();
   enableI2C2();
 
-  debug("reset exADC");
+  // debug("reset exADC");
   // Reset external ADC (if it's installed)
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(EXADC_RESET,LOW); // reset is active low
@@ -1037,7 +1032,7 @@ void Datalogger::powerUpSwitchableComponents()
   bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
   if (externalADCInstalled)
   {
-    debug(F("Set up extADC"));
+    // debug(F("Set up extADC"));
     externalADC = new AD7091R();
     externalADC->configure();
     externalADC->enableChannel(0);
