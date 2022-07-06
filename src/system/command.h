@@ -27,6 +27,8 @@
 #include "datalogger.h"
 
 
+
+
 // Forward declaration of class
 class Datalogger;
 
@@ -127,6 +129,9 @@ class CommandInterface
     void _help();
 
     void _gpiotest(); // toggles gpio pin state (low/high)
+
+    void _steptest();
+
 
 
 

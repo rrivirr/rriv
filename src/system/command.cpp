@@ -24,6 +24,7 @@
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "actuator-tests/Stepper.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -687,6 +688,7 @@ void CommandInterface::_help()
   "clear-slot\n"
   "set-rtc\n"
   "get-rtc\n"
+  "gpio-test\n"
   "restart\n"
   "set-site-name\n"
   "set-deployment-identifier\n"
@@ -709,7 +711,10 @@ void CommandInterface::_help()
   "reload-sensors\n"
   "switched-power-off\n"
   "enter-stop\n"
+  "step-test\n"
+
   "mcu-debug-status\n";
+  
 
   notify(commands);
 }
@@ -721,11 +726,45 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
+<<<<<<< HEAD
   // TODO: currently hardcoded pin test, change to allow user input with command
   if (digitalRead(GPIO_PIN_6) == HIGH)
     digitalWrite(GPIO_PIN_6, LOW);
   else
     digitalWrite(GPIO_PIN_6, HIGH);
+=======
+  if (digitalRead(GPIO_PIN_3) == HIGH ) {
+    digitalWrite(GPIO_PIN_3, LOW);
+    
+  }
+  else {
+    digitalWrite(GPIO_PIN_3, HIGH);
+    
+  }
+  
+  // //testing pins if working
+  // digitalWrite(PC10, HIGH);
+  // digitalWrite(PC11, HIGH);
+  // digitalWrite(PC12, HIGH);
+  // //digitalWrite(PA13, HIGH);  pA13 labeled SWDIO in KiCad
+  // digitalWrite(PA15, HIGH);
+  // digitalWrite(PC13, HIGH);
+  // digitalWrite(PC14, HIGH);
+  // digitalWrite(PC15, HIGH);
+  // digitalWrite(PA1, HIGH);
+  // digitalWrite(PB4, HIGH);
+  // digitalWrite(PB3, HIGH);
+  // digitalWrite(PB12, HIGH);
+  // digitalWrite(PB2, HIGH);
+  // //used for sensors
+  // digitalWrite(PC0, HIGH);
+  // digitalWrite(PC1, HIGH);
+  // digitalWrite(PC2, HIGH);
+  // digitalWrite(PC3, HIGH);
+  // digitalWrite(PB1, HIGH);
+  // digitalWrite(PB8, HIGH);
+  
+>>>>>>> b7290a4 (feat: starting work on actuator class)
 }
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
@@ -739,6 +778,27 @@ void CommandInterface::_reloadSensorConfigurations()
   this->datalogger->reloadSensorConfigurations();
 }
 
+<<<<<<< HEAD
+=======
+
+void steptest (int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_steptest();
+}
+
+void CommandInterface::_steptest()
+{
+  
+  Stepper myStepper(200, GPIO_PIN_3, GPIO_PIN_23);
+  myStepper.setSpeed(60);
+  myStepper.step(200);
+  delay(1000);
+  myStepper.step(-200);
+  delay(1000);
+  
+}
+
+>>>>>>> b7290a4 (feat: starting work on actuator class)
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
@@ -788,8 +848,13 @@ void CommandInterface::setup(){
   cmdAdd("help", help);
 
   cmdAdd("gpio-test", gpiotest);
+  
+  cmdAdd("step-test", steptest);
+
+
 
 }
+
 
 
 

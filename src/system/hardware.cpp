@@ -67,12 +67,47 @@ void setupHardwarePins()
   pinMode(ANALOG_INPUT_3_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
+<<<<<<< HEAD
   */
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
   pinMode(GPIO_PIN_6, OUTPUT); // GPIO pin available
   pinMode(GPIO_PIN_3, OUTPUT); // in use for 5v booster
   // pinMode(GPIO_PIN_5, OUTPUT); // in use for DHT22 [INPUT_PULLUP]
+=======
+  // //testing as output
+  // pinMode(ANALOG_INPUT_1_PIN, OUTPUT);
+  // pinMode(ANALOG_INPUT_2_PIN, OUTPUT);
+  // pinMode(ANALOG_INPUT_3_PIN, OUTPUT);
+  // pinMode(ANALOG_INPUT_4_PIN, OUTPUT);
+  // pinMode(ANALOG_INPUT_5_PIN, OUTPUT);
+  pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
+
+  //pinMode(GPIO_PIN_3, OUTPUT); // GPIO pin available
+  pinMode(GPIO_PIN_4, OUTPUT); // in use for 5v booster
+>>>>>>> b7290a4 (feat: starting work on actuator class)
+
+  //testing all pins
+  pinMode(PC10, OUTPUT); //no
+  pinMode(PC11, OUTPUT);
+  pinMode(PC12, OUTPUT); // yes
+  //pinMode(PA13, OUTPUT); //no    Labeled SWDIO in KiCad
+  pinMode(GPIO_PIN_17, OUTPUT); // no 
+  pinMode(PC13, OUTPUT); //yes
+  pinMode(PC14, OUTPUT); //no
+  pinMode(PC15, OUTPUT); //no
+  pinMode(PA1, OUTPUT);
+
+
+  //pinMode(GPIO_PIN_29, OUTPUT);  //not in board.h
+  //pinMode(GPIO_PIN_31, OUTPUT); //not in board.h
+  pinMode(PB4, OUTPUT);
+  pinMode(PB4, OUTPUT); //no
+  pinMode(PB3, OUTPUT); //no
+  pinMode(PB12, OUTPUT); //yes
+  pinMode(PB2, OUTPUT);  //yes
+
+
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 
