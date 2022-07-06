@@ -97,11 +97,11 @@ class CommandInterface
     void _setSiteName(char * siteName);
     void _setLoggerName(char * loggerName);
     void _setDeploymentIdentifier(char * deploymentIdentifier);
-    void _setInterval(int size);
+    void _setWakeInterval(int size);
     void _setBurstSize(int size);
     void _setBurstNumber(int number);
     void _setStartUpDelay(int number);
-    void _setBurstDelay(int number);
+    void _setInterBurstDelay(int number);
     
     void _setUserNote(char * note);
     void _setUserValue(int value);
@@ -126,10 +126,7 @@ class CommandInterface
 
     void _help();
 
-    void _gpiotest(); // toggles gpio pin state (low/high)
-
-
-
+    void _gpiotest(int pin); // toggles gpio pin state (low/high)
 
   private:
     Datalogger * datalogger;

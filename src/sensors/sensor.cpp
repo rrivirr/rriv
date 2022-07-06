@@ -81,6 +81,11 @@ void SensorDriver::initializeBurst()
 
 void SensorDriver::incrementBurst()
 {
+  // reset burst summary sums and counts for next burst
+  // TODO: confirm this works, currently getting a cumulative average of readings
+  burstSummarySumCounts.clear();
+  burstSummarySums.clear();
+
   burstCount++;
 }
 

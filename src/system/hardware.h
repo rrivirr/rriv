@@ -46,10 +46,6 @@
 
 #define ONBOARD_LED_PIN PA5
 
-// #define GPIO_PIN_2 PC11 // using for DHT22
-// #define GPIO_PIN_3 PC12 // CN7 3
-// #define GPIO_PIN_4 PB8 // CN10 3, not using bluetooth currently
-
 #define GPIO_PIN_1 PA1
 #define GPIO_PIN_2 PB2
 #define GPIO_PIN_3 PB8 // 5v booster

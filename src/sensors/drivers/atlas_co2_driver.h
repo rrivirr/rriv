@@ -49,7 +49,8 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     void setup();
     void stop();
     bool takeMeasurement();
-    const char * getDataString();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
@@ -69,7 +70,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/
     int value; // sensor raw return(s) to be added to dataString
-    const char *baseColumnHeaders = "CO2_ppm,temperature_C"; // will be written to .csv
+    const char *baseColumnHeaders = "CO2_ppm,C"; // will be written to .csv
     char dataString[30]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);

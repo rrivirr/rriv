@@ -65,7 +65,6 @@ void Datalogger::sleepMCU(uint32 milliseconds)
   reloadCustomWatchdog();
 }
 
-
 // static method to read configuration from EEPROM
 void Datalogger::readConfiguration(datalogger_settings_type *settings)
 {
@@ -97,9 +96,9 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
   powerCycle = true;
 
   // defaults
-  if (settings->interval < 1)
+  if (settings->wakeInterval < 1)
   {
-    settings->interval = 1;
+    settings->wakeInterval = 1;
   }
 
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
@@ -194,6 +193,7 @@ bool Datalogger::processReadingsCycle()
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
+      notify(interBurstDelay);
       sleepMCU(interBurstDelay * 1000); // convert seconds to milliseconds
       // wakeSensorsFromStandbyMode();
     }
@@ -337,8 +337,8 @@ void Datalogger::loadSensorConfigurations()
   {
     notify("no sensor configurations found");
   }
-  notify("FREE MEM");
-  printFreeMemory();
+  // notify("FREE MEM");
+  // printFreeMemory();
 
   // construct the drivers
   notify("construct drivers");
@@ -346,8 +346,8 @@ void Datalogger::loadSensorConfigurations()
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("FREE MEM");
-    printFreeMemory();
+    // notify("FREE MEM");
+    // printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
     if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
@@ -359,7 +359,7 @@ void Datalogger::loadSensorConfigurations()
     debug("getting driver for sensor type");
     debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
-    debug("got sensor driver");
+    // debug("got sensor driver");
     checkMemory();
 
     drivers[j] = driver;
@@ -371,10 +371,10 @@ void Datalogger::loadSensorConfigurations()
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
       debug("set wire");
     }
-    debug("do setup");
+    // debug("do setup");
     driver->setup();
 
-    debug("configure sensor driver");
+    // debug("configure sensor driver");
     driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
     debug("configured sensor driver");
   }
@@ -385,16 +385,16 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
 {
   // calling this function does not deal with memory fragmentation
   // so it's not part of the main system, only for dev & debug
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   // free sensor configs
   for(unsigned short i=0; i<sensorCount; i++)
   {
     delete(drivers[i]);
   }
   free(drivers);
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   loadSensorConfigurations();
 }
 
@@ -478,7 +478,7 @@ void Datalogger::initializeMeasurementCycle()
     // startUpDelay = 2;
     notify(startUpDelay);
     sleepMCU(startUpDelay * 1000); // convert seconds to milliseconds
-    notify("sleep done");
+    // notify("sleep done");
   }
 
   bool sensorsWarmedUp = false;
@@ -487,7 +487,7 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      notify("check isWarmed");
+      // notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
@@ -496,7 +496,7 @@ void Datalogger::initializeMeasurementCycle()
       }
     }
   }
-
+  // notify("sensors warmed");
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
@@ -504,9 +504,9 @@ void Datalogger::measureSensorValues(bool performingBurst)
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
-    debug("converting enabled channels call");
+    // debug("converting enabled channels call");
     externalADC->convertEnabledChannels();
-    debug("converted enabled channels");
+    // debug("converted enabled channels");
   }
 
   for (unsigned int i = 0; i < sensorCount; i++)
@@ -641,7 +641,6 @@ void Datalogger::processCLI()
   cli->poll();
 }
 
-
 void Datalogger::storeSensorConfigurationIfNeedsSave()
 {
   for(unsigned short i=0; i<sensorCount; i++)
@@ -650,8 +649,11 @@ void Datalogger::storeSensorConfigurationIfNeedsSave()
     {
       storeSensorConfiguration(drivers[i]);
     }
-
   }
+}
+
+void Datalogger::notifyInvalid(){
+  notify("Invalid:");
 }
 
 void Datalogger::setConfiguration(cJSON *config)
@@ -661,7 +663,8 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     strcpy(settings.siteName, siteNameJSON->valuestring);
   } else {
-    notify("Invalid site name");
+    notifyInvalid();
+    notify("siteName");
   }
 
   const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
@@ -669,7 +672,8 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     strcpy(settings.loggerName, loggerNameJSON->valuestring);
   } else {
-    notify("Invalid logger name");
+    notifyInvalid();
+    notify("loggerName");
   }
   
   const cJSON* deploymentIdentifierJSON = cJSON_GetObjectItemCaseSensitive(config, "deploymentIdentifier");
@@ -677,15 +681,17 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     strcpy(settings.deploymentIdentifier, deploymentIdentifierJSON->valuestring);
   } else {
-    notify("Invalid deployment identifier");
+    notifyInvalid();
+    notify("deploymentIdentifier");
   }
 
-  const cJSON * intervalJson = cJSON_GetObjectItemCaseSensitive(config, "interval");
+  const cJSON * intervalJson = cJSON_GetObjectItemCaseSensitive(config, "wakeInterval");
   if(intervalJson != NULL && cJSON_IsNumber(intervalJson) && intervalJson->valueint > 0)
   {
-    settings.interval = (byte) intervalJson->valueint;
+    settings.wakeInterval = (byte) intervalJson->valueint;
   } else {
-    notify("Invalid interval");
+    notifyInvalid();
+    notify("wakeInterval");
   }
 
   const cJSON * burstNumberJson = cJSON_GetObjectItemCaseSensitive(config, "burstNumber");
@@ -693,7 +699,8 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     settings.burstNumber = (byte) burstNumberJson->valueint;
   } else {
-    notify("Invalid burst number");
+    notifyInvalid();
+    notify("burstNumber");
   }
 
   const cJSON * startUpDelayJson = cJSON_GetObjectItemCaseSensitive(config, "startUpDelay");
@@ -701,7 +708,8 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     settings.startUpDelay = (byte) startUpDelayJson->valueint;
   } else {
-    notify("Invalid start up delay");
+    notifyInvalid();
+    notify("startUpDelay");
   }
 
   const cJSON * interBurstDelayJson = cJSON_GetObjectItemCaseSensitive(config, "interBurstDelay");
@@ -709,27 +717,25 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     settings.interBurstDelay = (byte) interBurstDelayJson->valueint;
   } else {
-    notify("Invalid inter burst delay");
+    notifyInvalid();
+    notify("interBurstDelay");
   }
 
   storeDataloggerConfiguration();
 }
 
-// TODO: can I modify this to return a JSON instead? It can then be used when writing the comments before the header in the csv
-void Datalogger::getConfiguration(datalogger_settings_type *dataloggerSettings)
+cJSON * Datalogger::getConfigurationJSON()
 {
-  memcpy(dataloggerSettings, &settings, sizeof(datalogger_settings_type));
-
-  // cJSON* json = cJSON_CreateObject();
-  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
-  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
-  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
-  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
-  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
-  // cJSON_AddNumberToObject(json, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
-  // return(json)
+  cJSON* json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, "UUID", getUUIDString());
+  cJSON_AddStringToObject(json, "loggerName", settings.loggerName);
+  cJSON_AddStringToObject(json, "siteName", settings.siteName);
+  cJSON_AddStringToObject(json, "deploymentIdentifier", settings.deploymentIdentifier);
+  cJSON_AddNumberToObject(json, "wakeInterval(min)", settings.wakeInterval);
+  cJSON_AddNumberToObject(json, "startUpDelay(min)", settings.startUpDelay);
+  cJSON_AddNumberToObject(json, "burstNumber", settings.burstNumber);
+  cJSON_AddNumberToObject(json, "interBurstDelay(min)", settings.interBurstDelay);
+  return json;
 }
 
 void Datalogger::setSensorConfiguration(char *type, cJSON *json)
@@ -840,9 +846,9 @@ cJSON *Datalogger::getSensorConfiguration(short index) // returns unprotected **
   return drivers[index]->getConfigurationJSON();
 }
 
-void Datalogger::setInterval(int interval)
+void Datalogger::setWakeInterval(int wakeInterval)
 {
-  settings.interval = interval;
+  settings.wakeInterval = wakeInterval;
   storeDataloggerConfiguration();
 }
 
@@ -858,7 +864,7 @@ void Datalogger::setStartUpDelay(int delay)
   storeDataloggerConfiguration();
 }
 
-void Datalogger::setIntraBurstDelay(int delay)
+void Datalogger::setInterBurstDelay(int delay)
 {
   settings.interBurstDelay = delay;
   storeDataloggerConfiguration();
@@ -1037,7 +1043,7 @@ void Datalogger::powerUpSwitchableComponents()
   bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
   if (externalADCInstalled)
   {
-    debug(F("Set up extADC"));
+    debug(F("Set up exADC"));
     externalADC = new AD7091R();
     externalADC->configure();
     externalADC->enableChannel(0);
@@ -1047,7 +1053,7 @@ void Datalogger::powerUpSwitchableComponents()
   }
   else
   {
-    debug(F("extADC not installed"));
+    debug(F("exADC not installed"));
   }
 
   debug(F("Switchable components powered up"));
@@ -1124,7 +1130,7 @@ void Datalogger::prepareForUserInteraction()
 
 void Datalogger::stopAndAwaitTrigger()
 {
-  debug(F("Await measurement trigger"));
+  // debug(F("Await measurement trigger"));
 
   // printInterruptStatus(Serial2);
   debug(F("Going to sleep"));
@@ -1134,7 +1140,7 @@ void Datalogger::stopAndAwaitTrigger()
   storeAllInterrupts(iser1, iser2, iser3);
 
   clearManualWakeInterrupt();
-  setNextAlarmInternalRTC(settings.interval);
+  setNextAlarmInternalRTC(settings.wakeInterval);
 
   // power down sensors -> function?
   for (unsigned int i = 0; i < sensorCount; i++)
@@ -1151,7 +1157,7 @@ void Datalogger::stopAndAwaitTrigger()
   componentsStopMode();
 
   disableCustomWatchDog();
-  debug(F("disabled watchdog"));
+  // debug(F("disabled watchdog"));
   disableSerialLog();     // TODO
   hardwarePinsStopMode(); // switch to input mode
 
@@ -1247,7 +1253,6 @@ const char *Datalogger::getUUIDString()
   return uuidString;
 }
 
-
 int Datalogger::minMillisecondsUntilNextReading()
 {
   unsigned int minimumNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
@@ -1274,7 +1279,6 @@ int Datalogger::minMillisecondsUntilNextReading()
   }
 
 }
-
 
 void Datalogger::setSensorDebugModes(bool debug)
 {

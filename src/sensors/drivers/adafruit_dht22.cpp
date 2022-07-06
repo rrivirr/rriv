@@ -74,7 +74,7 @@ bool AdaDHT22::takeMeasurement()
   temperature = event.temperature;
   if(isnan(temperature))
   {
-    notify("Error reading temperature)");
+    notify("Read Error: temperature");
   }
   else
   {
@@ -85,7 +85,7 @@ bool AdaDHT22::takeMeasurement()
   humidity = event.relative_humidity;
   if(isnan(humidity))
   {
-    notify("Error reading humidity");
+    notify("Read Error: humidity");
   }
   else
   {
@@ -164,4 +164,9 @@ void AdaDHT22::setDriverDefaults()
   // debug("setting AdaDHT22 driver defaults");
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
+}
+
+unsigned int AdaDHT22::millisecondsUntilNextRequestedReading()
+{
+  return 100;
 }

@@ -53,6 +53,8 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
+    
+    unsigned int millisecondsUntilNextRequestedReading();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

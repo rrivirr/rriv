@@ -171,7 +171,7 @@ bool GenericAnalogDriver::takeMeasurement()
 
   case ADC_SELECT_EXTERNAL:
   {
-    debug("get extADC value");
+    // debug("get extADC value");
     this->value = externalADC->getChannelValue(configurations.sensor_port);
   }
   break;

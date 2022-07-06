@@ -61,15 +61,15 @@ void setNextAlarmInternalRTC(short interval){
   // Serial2.println(secondsUntilWake);
 
   RTClock * clock = new RTClock(RTCSEL_LSE);
-  Serial2.println("made clock");  Serial2.flush();
+  // Serial2.println("made clock");  Serial2.flush();
 
-  char message[100];
-  sprintf(message, "Got clock value (current): %lli", clock->getTime());
-  debug(message);
+  // char message[100];
+  // sprintf(message, "Got clock value (current): %lli", clock->getTime());
+  // debug(message);
     
-  clock->setTime(0);
-  sprintf(message, "Got clock value (reset): %lli", clock->getTime());
-  debug(message);
+  // clock->setTime(0);
+  // sprintf(message, "Got clock value (reset): %lli", clock->getTime());
+  // debug(message);
 
   clock->removeAlarm();
   // secondsUntilWake = 10;
@@ -77,8 +77,8 @@ void setNextAlarmInternalRTC(short interval){
   clock->createAlarm(handleInterrupt, secondsUntilWake);
   delete clock;
 
-  sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
-  debug(message);
+  // sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
+  // debug(message);
 
 }
 

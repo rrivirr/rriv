@@ -47,12 +47,12 @@
 // Currently there are 14 bytes unused
 typedef struct datalogger_settings { 
     char deploymentIdentifier[16]; // 16 bytes
-    char siteName[8]; // 8 bytes
     char loggerName[8]; // 8 bytes
+    char siteName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
-    unsigned short interval;  // 2 bytes minutes
-    unsigned short burstNumber; // 2 bytes
+    unsigned short wakeInterval;  // 2 bytes minutes
     unsigned short startUpDelay; // 2 bytes minutes
+    unsigned short burstNumber; // 2 bytes
     unsigned short interBurstDelay; // 2 bytes minutes
     char mode;       // 1 byte i(interactive), d(debug), l(logging), t(deploy on trigger)
     byte externalADCEnabled : 1;
@@ -100,14 +100,14 @@ public:
     void setLoggerName(char * loggerName);
     void setDeploymentTimestamp(int timestamp);
 
-    void setInterval(int interval);
+    void setWakeInterval(int interval);
     void setBurstSize(int size);
     void setBurstNumber(int number);
     void setStartUpDelay(int delay);
-    void setIntraBurstDelay(int delay);
+    void setInterBurstDelay(int delay);
 
     void setConfiguration(cJSON * config);
-    void getConfiguration(datalogger_settings_type * dataloggerSettings);
+    cJSON * getConfigurationJSON();
     cJSON * getSensorConfiguration(short index);
 
     void setSensorConfiguration(char * type, cJSON * json);
@@ -194,6 +194,7 @@ private:
     // debugging
     void debugValues(char * buffer);
     void setSensorDebugModes(bool debug);
+    void notifyInvalid();
 
 
 };
