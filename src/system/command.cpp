@@ -255,7 +255,7 @@ void CommandInterface::_setDeploymentIdentifier(char * deploymentIdentifier)
 void setInterval(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-interval INTERVAL_BETWEEN_MEASUREMENT_WAKE_MINUTES"));
+    invalidArgumentsMessage(F("set-interval WAKE_INTERVAL_MINUTES"));
     return;
   }
 
@@ -677,41 +677,41 @@ void help(int arg_cnt, char**args)
 
 void CommandInterface::_help()
 {
-  char commands[] = "Command List:\n"
-  "version\n"
-  "show-warranty\n"
-  "show-conditions\n"
-  "get-config\n"
-  "set-config\n"
-  "set-slot-config\n"
-  "clear-slot\n"
-  "set-rtc\n"
-  "get-rtc\n"
-  "restart\n"
-  "set-site-name\n"
-  "set-deployment-identifier\n"
-  "set-logger-name\n"
-  "set-interval\n"
-  "set-burst-number\n"
-  "set-start-up-delay\n"
-  "set-burst-delay\n"
-  "calibrate\n"
-  "set-user-note\n"
-  "set-user-value\n"
-  "start-logging\n"
-  "stop-logging\n"
-  "deploy-now\n"
-  "interactive or i\n"
-  "trace\n"
-  "check-memory\n"
-  "scan-ic2\n"
-  "go\n"
-  "reload-sensors\n"
-  "switched-power-off\n"
-  "enter-stop\n"
-  "mcu-debug-status\n";
+  // char commands[] = "Command List:\n"
+  // "version\n"
+  // "show-warranty\n"
+  // "show-conditions\n"
+  // "get-config\n"
+  // "set-config\n"
+  // "set-slot-config\n"
+  // "clear-slot\n"
+  // "set-rtc\n"
+  // "get-rtc\n"
+  // "restart\n"
+  // "set-site-name\n"
+  // "set-deployment-identifier\n"
+  // "set-logger-name\n"
+  // "set-interval\n"
+  // "set-burst-number\n"
+  // "set-start-up-delay\n"
+  // "set-burst-delay\n"
+  // "calibrate\n"
+  // "set-user-note\n"
+  // "set-user-value\n"
+  // "start-logging\n"
+  // "stop-logging\n"
+  // "deploy-now\n"
+  // "interactive or i\n"
+  // "trace\n"
+  // "check-memory\n"
+  // "scan-ic2\n"
+  // "go\n"
+  // "reload-sensors\n"
+  // "switched-power-off\n"
+  // "enter-stop\n"
+  // "mcu-debug-status\n";
 
-  notify(commands);
+  // notify(commands);
 }
 
 void gpiotest(int arg_cnt, char**args)

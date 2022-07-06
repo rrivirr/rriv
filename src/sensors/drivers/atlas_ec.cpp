@@ -165,7 +165,7 @@ void AtlasECDriver::calibrationStep(char * step, int arg_cnt, char ** args)
   }
   else
   {
-    notify("Invalid step");
+    // notify("Invalid step");
   }
 }
 
