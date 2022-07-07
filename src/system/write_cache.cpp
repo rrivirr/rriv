@@ -55,6 +55,8 @@ void WriteCache::flushCache()
   char hello[100] = "\0";
   outputDevice->writeString(hello); // why is this required??
   outputDevice->writeString(cache);
+  // Serial2.println("flushing cache");
+  // Serial2.println(cache);
   if(outputToSerial)
   {
     Serial2.print(cache);

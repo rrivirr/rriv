@@ -160,6 +160,13 @@ void GenericAnalogDriver::stop()
 bool GenericAnalogDriver::takeMeasurement()
 {
   // take measurement and write to dataString member variable
+  bool switchedVref = true;
+  if(switchedVref)
+  {
+    pinMode(PA8, OUTPUT);
+    digitalWrite(PA8, HIGH);
+  }
+
   switch (configurations.adc_select)
   {
   case ADC_SELECT_INTERNAL:
@@ -180,6 +187,11 @@ bool GenericAnalogDriver::takeMeasurement()
   {
   } // bad configuration
   break;
+  }
+
+  if(switchedVref)
+  {
+    digitalWrite(PA8, LOW);
   }
 
   // validate the value

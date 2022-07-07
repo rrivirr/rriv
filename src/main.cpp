@@ -56,11 +56,11 @@ void setup(void)
   enableI2C1();
   delay(500);
 
-  debug("creating datalogger");
+  // debug("creating datalogger");
   datalogger_settings_type *dataloggerSettings = (datalogger_settings_type *)malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
-  debug("created datalogger");
+  // debug("created datalogger");
   datalogger->setup();
 
   /* We're ready to go! */
@@ -108,7 +108,7 @@ void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
 {
   // Welcome message
 
-   const __FlashStringHelper *welcomeMessage = F("Welcome"); //F(R"RRIV(
+   const __FlashStringHelper *welcomeMessage = F("Hi"); //F(R"RRIV(
 // ____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
 //  __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
 //   _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
@@ -142,6 +142,10 @@ void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
   sprintf(buffer, "Site name: %s", dataloggerSettings->siteName);
   notify(buffer);
   sprintf(buffer, "Software version: %s", WATERBEAR_FIRMWARE_VERSION);
+  notify(buffer);
+  char humanTimeString[25];
+  t_t2ts(timestamp(), 0, humanTimeString); // don't have an offset to count millis correctly
+  sprintf(buffer, "Sys time: %i, %s", time, humanTimeString);
   notify(buffer);
 
   const __FlashStringHelper *handoff = F(R"RRIV(
