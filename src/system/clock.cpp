@@ -67,7 +67,7 @@ void setNextAlarmInternalRTC(short interval){
   // sprintf(message, "Got clock value (current): %lli", clock->getTime());
   // debug(message);
     
-  // clock->setTime(0);
+  clock->setTime(0);
   // sprintf(message, "Got clock value (reset): %lli", clock->getTime());
   // debug(message);
 

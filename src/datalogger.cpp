@@ -352,11 +352,11 @@ void Datalogger::loadSensorConfigurations()
 
     if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
-      notify("no sensor with that code");
+      notify("no sensor code");
       continue;
     }
 
-    debug("getting driver for sensor type");
+    debug("getting sensor driver");
     debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
     // debug("got sensor driver");
