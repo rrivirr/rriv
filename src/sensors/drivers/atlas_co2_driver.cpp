@@ -45,7 +45,7 @@ void AtlasCO2Driver::setup()
 
 void AtlasCO2Driver::stop()
 {
-  modularSensorDriver->sleep();
+  // modularSensorDriver->sleep(); // i2c sensors are on boosted 3v3 power which gets shut off during sleep
   // debug("stop/delete AtlasCO2Driver");
 }
 
@@ -66,7 +66,6 @@ bool AtlasCO2Driver::takeMeasurement()
   {
     value = -1;
   }
-
 
   return measurementTaken;
 }
@@ -123,4 +122,9 @@ void AtlasCO2Driver::setDriverDefaults()
   // debug("setting driver template driver defaults");
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
+}
+
+unsigned int AtlasCO2Driver::millisecondsUntilNextRequestedReading()
+{
+  return 100;
 }

@@ -1176,13 +1176,7 @@ void Datalogger::stopAndAwaitTrigger()
   enableSerialLog();
   enableSwitchedPower();
 
-  // power up sensors -> function?
-  for (unsigned int i = 0; i < sensorCount; i++)
-  {
-    drivers[i]->setup();
-  }
-
-  setupHardwarePins(); // used from setup steps in datalogger
+    setupHardwarePins(); // used from setup steps in datalogger
 
   debug(F("Awoke"));
 
@@ -1198,6 +1192,14 @@ void Datalogger::stopAndAwaitTrigger()
   // printInterruptStatus(Serial2);
 
   powerUpSwitchableComponents();
+  
+  // power up sensors -> function?
+  // relocating so i2c is active for sensors requiring it
+  for (unsigned int i = 0; i < sensorCount; i++)
+  {
+    drivers[i]->setup();
+  }
+
   // turn components back on
   componentsBurstMode();
   fileSystem->reopenFileSystem();
