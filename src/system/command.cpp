@@ -453,7 +453,7 @@ void CommandInterface::_setSlotConfig(char * config)
 
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON)){
     short slot = slotJSON->valueint;
-    if(slot >= EEPROM_TOTAL_SENSOR_SLOTS || slot == 0)
+    if(slot > EEPROM_TOTAL_SENSOR_SLOTS || slot == 0)
     {
       notify(F("Invalid slot"));
       return;
