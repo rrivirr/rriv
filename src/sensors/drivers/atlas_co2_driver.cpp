@@ -1,6 +1,8 @@
 #include "sensors/drivers/atlas_co2_driver.h"
 #include "system/logs.h" // for debug() and notify()
 
+#define CO2_TAG "co2"
+
 AtlasCO2Driver::AtlasCO2Driver()
 {
   // debug("allocating driver template");
@@ -61,6 +63,7 @@ bool AtlasCO2Driver::takeMeasurement()
     value = modularSensorDriver->sensorValues[0];
     modularSensorDriver->clearValues();
     measurementTaken = true;
+    addValueToBurstSummaryMean(CO2_TAG, value);
   }
   else
   {
@@ -71,11 +74,15 @@ bool AtlasCO2Driver::takeMeasurement()
   return measurementTaken;
 }
 
-const char *AtlasCO2Driver::getDataString()
+const char * AtlasCO2Driver::getRawDataString()
 {
-  // debug("configuring driver template dataString");
-  // process data string for .csv
-  sprintf(dataString, "%d,%d",value,0);
+  sprintf(dataString, "%d", value);
+  return dataString;
+}
+
+const char * AtlasCO2Driver::getSummaryDataString()
+{
+  sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
   return dataString;
 }
 

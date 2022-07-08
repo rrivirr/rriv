@@ -22,6 +22,8 @@
 #include "system/eeprom.h" // TODO: ideally not included in this scope
 #include "system/clock.h"  // TODO: ideally not included in this scope
 
+#define EC_TAG "ec"
+
 AtlasECDriver::AtlasECDriver()
 {
   // debug("allocation AtlasECDriver");
@@ -110,7 +112,7 @@ bool AtlasECDriver::takeMeasurement()
     if(newDataAvailable)
     {
       value = oem_ec->getConductivity(true);
-      addValueToBurstSummaryMean("ec", value);
+      addValueToBurstSummaryMean(EC_TAG, value);
       lastSuccessfulReadingMillis = millis();
       return true;
     }
@@ -134,7 +136,7 @@ const char * AtlasECDriver::getRawDataString()
 
 const char * AtlasECDriver::getSummaryDataString()
 {
-  sprintf(dataString, "%0.2f", getBurstSummaryMean("ec"));
+  sprintf(dataString, "%0.2f", getBurstSummaryMean(EC_TAG));
   return dataString;
 }
 
