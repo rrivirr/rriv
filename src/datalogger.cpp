@@ -1027,6 +1027,9 @@ void Datalogger::powerUpSwitchableComponents()
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
   gpioPinOn(GPIO_PIN_3);
+
+  //kctest
+  pinMode(BATTERY_INPUT,INPUT_ANALOG);
   
   delay(250);
   enableI2C1();
@@ -1176,7 +1179,7 @@ void Datalogger::stopAndAwaitTrigger()
   enableSerialLog();
   enableSwitchedPower();
 
-    setupHardwarePins(); // used from setup steps in datalogger
+  setupHardwarePins(); // used from setup steps in datalogger
 
   debug(F("Awoke"));
 
