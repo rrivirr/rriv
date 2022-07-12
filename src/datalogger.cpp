@@ -150,7 +150,7 @@ void Datalogger::setup()
   debug("Built driver sensor map");
   loadSensorConfigurations();
   debug("Loaded sensor configurations");
-  initializeFilesystem();
+  // initializeFilesystem();
   setUpCLI();
 }
 
@@ -286,7 +286,7 @@ void Datalogger::loop()
         if(interactiveModeLogging)
         {
           outputLastMeasurement();
-          Serial2.print(F("CMD >> "));
+          notify(F("CMD >> "));
         }
         writeRawMeasurementToLogFile();
         lastInteractiveLogTime = timestamp();
@@ -632,7 +632,7 @@ bool Datalogger::writeSummaryMeasurementToLogFile()
 
 void Datalogger::setUpCLI()
 {
-  cli = CommandInterface::create(Serial2, this);
+  cli = CommandInterface::create( (Stream * ) &USBSerial, this);
   cli->setup();
 }
 

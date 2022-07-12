@@ -32,8 +32,8 @@ Monitor::Monitor() {}
 
 void Monitor::writeSerialMessage(const char *message)
 {
-  Serial2.println(message);
-  Serial2.flush();
+  USBSerial.println(message);
+  USBSerial.flush();
 }
 
 // void Monitor::writeSerialMessage(const __FlashStringHelper *message)

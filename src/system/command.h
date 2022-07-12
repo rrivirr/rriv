@@ -65,23 +65,18 @@ class CommandInterface
   public:
 
     // TODO: rewrite CommandInterface as OOP class
-    static CommandInterface * create(HardwareSerial &port, Datalogger * datalogger);
+    static CommandInterface * create(Stream * stream, Datalogger * datalogger);
     static CommandInterface * instance();
 
     int state;
 
-    CommandInterface(HardwareSerial &port, Datalogger * datalogger);
+    CommandInterface(Stream * stream, Datalogger * datalogger);
 
     void setup();
     void poll();
 
-    int processControlCommands(Stream * myStream, Datalogger * datalogger);
-    int processControlCommands(HardwareSerial &port, Datalogger * datalogger);
-    // int processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger);
-    // int processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger);
 
     bool ready(Stream * myStream);
-    bool ready(HardwareSerial &port);
     // bool ready(Adafruit_BluefruitLE_UART &ble);
     // bool ready(Adafruit_BluefruitLE_SPI &ble);
 
@@ -89,9 +84,6 @@ class CommandInterface
     // void setTime(time_t toSet);
     // void t_t2ts(time_t epochTS, char *humanTime); //Epoch TS to yyyy/mm/dd dow hh:mm:ss zzz
 
-#if SOFTWARE_SERIAL_AVAILABLE
-    void processControlCommands(SoftwareSerial &port);
-#endif
 
     // cli functions
     void _setSiteName(char * siteName);

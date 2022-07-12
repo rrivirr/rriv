@@ -22,6 +22,10 @@
 #include "configuration.h"
 #include "system/logs.h"
 
+USBCompositeSerial USBSerial;
+USBMassStorage USBStorage;
+
+
 void gpioPinOff(uint8 pin)
 {
     digitalWrite(pin, LOW);

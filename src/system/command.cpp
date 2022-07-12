@@ -48,9 +48,9 @@ const __FlashStringHelper * conditions = F("conditions...");
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 // )RRIV");
 
-CommandInterface * CommandInterface::create(HardwareSerial &port, Datalogger * datalogger)
+CommandInterface * CommandInterface::create(Stream * stream, Datalogger * datalogger)
 {
-  commandInterface = new CommandInterface(Serial2, datalogger);
+  commandInterface = new CommandInterface(stream, datalogger);
   return commandInterface;
 }
 
@@ -60,18 +60,12 @@ CommandInterface * CommandInterface::instance()
   return commandInterface;
 }
 
-CommandInterface::CommandInterface(HardwareSerial &port, Datalogger * datalogger)
+CommandInterface::CommandInterface(Stream * stream, Datalogger * datalogger)
 {
   this->datalogger = datalogger;
-  cmdInit(&port);
+  cmdInit(stream);
 }
 
-
-bool CommandInterface::ready(HardwareSerial &port)
-{
-  Stream *myStream = &port;
-  return CommandInterface::ready(myStream);
-}
 
 // bool CommandInterface::ready(Adafruit_BluefruitLE_UART &ble)
 // {
@@ -98,23 +92,6 @@ bool CommandInterface::ready(Stream * myStream)
   }
 }
 
-int CommandInterface::processControlCommands(HardwareSerial &port, Datalogger * datalogger)
-{
-  Stream *myStream = &port;
-  return CommandInterface::processControlCommands(myStream, datalogger);
-}
-
-// int CommandInterface::processControlCommands(Adafruit_BluefruitLE_UART &ble, Datalogger * datalogger)
-// {
-//   Stream *myStream = &ble;
-//   return CommandInterface::processControlCommands(myStream, datalogger);
-// }
-
-// int CommandInterface::processControlCommands(Adafruit_BluefruitLE_SPI &ble, Datalogger * datalogger)
-// {
-//   Stream *myStream = &ble;
-//   return CommandInterface::processControlCommands(myStream, datalogger);
-// }
 
 
 void ok(){
