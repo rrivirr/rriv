@@ -128,7 +128,7 @@ void Datalogger::setup()
   setupSwitchedPower();
   powerUpSwitchableComponents();
 
-  bool externalADCInstalled = scanIC2(&Wire, 0x2f);
+  bool externalADCInstalled = scanI2C(&Wire, 0x2f);
   settings.externalADCEnabled = externalADCInstalled;
 
   setupManualWakeInterrupts();
@@ -146,9 +146,9 @@ void Datalogger::setup()
 
   checkMemory();
   buildDriverSensorMap();
-  debug("Built driver sensor map");
+  // debug("Built driver sensor map");
   loadSensorConfigurations();
-  debug("Loaded sensor configurations");
+  // debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
 }
@@ -328,7 +328,7 @@ void Datalogger::loadSensorConfigurations()
     notify(commonConfiguration->sensor_type);
     if( sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
-      notify("found configured sensor");
+      // notify("found configured sensor");
       sensorCount++;
     }
     commonConfiguration->slot = i;
@@ -341,7 +341,7 @@ void Datalogger::loadSensorConfigurations()
   // printFreeMemory();
 
   // construct the drivers
-  notify("construct drivers");
+  // notify("construct drivers");
   drivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
@@ -356,8 +356,8 @@ void Datalogger::loadSensorConfigurations()
       continue;
     }
 
-    debug("getting sensor driver");
-    debug(commonConfiguration->sensor_type);
+    // debug("getting sensor driver");
+    // debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
     // debug("got sensor driver");
     checkMemory();
@@ -367,16 +367,16 @@ void Datalogger::loadSensorConfigurations()
 
     if (driver->getProtocol() == i2c)
     {
-      debug("got i2c sensor");
+      // debug("got i2c sensor");
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
-      debug("set wire");
+      // debug("set wire");
     }
     // debug("do setup");
     driver->setup();
 
     // debug("configure sensor driver");
     driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
-    debug("configured sensor driver");
+    // debug("configured sensor driver");
   }
 
 }
@@ -468,11 +468,6 @@ void Datalogger::initializeMeasurementCycle()
 
   if (settings.startUpDelay > 0)
   {
-    // notify("current test");
-    // disableCustomWatchDog();
-    // delay(20000);
-    // startCustomWatchDog();
-
     notify(F("wait for start up delay"));
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
@@ -490,9 +485,9 @@ void Datalogger::initializeMeasurementCycle()
       // notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
-        // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
-        // mcuSleep(drivers[i]->warmUpSleep());
         sensorsWarmedUp = false;
+        // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
+        sleepMCU(drivers[i]->millisecondsUntilReadyToRead());
       }
     }
   }
@@ -960,7 +955,7 @@ bool Datalogger::inMode(mode_type mode)
 
 bool Datalogger::deploy()
 {
-  notify(F("Deploying now!"));
+  // notify(F("Deploying now!"));
   notifyDebugStatus();
   if (checkDebugSystemDisabled() == false)
   {
@@ -991,15 +986,16 @@ void Datalogger::initializeFilesystem()
 
   fileSystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = fileSystem;
-  debug(F("Filesystem started OK"));
+  // debug(F("Filesystem started OK"));
 
   time_t setupTime = timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
   notify(setupTS);
 
-  char header[200];
-  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V";
+  char header[200]; // adjust as necessary, statusFields + csv column headers from each driver
+  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V"; // 68 char + null
+
   strcpy(header, statusFields);
   debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
@@ -1035,7 +1031,7 @@ void Datalogger::powerUpSwitchableComponents()
   enableI2C1();
   enableI2C2();
 
-  debug("reset exADC");
+  // debug("reset exADC");
   // Reset external ADC (if it's installed)
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(EXADC_RESET,LOW); // reset is active low
@@ -1043,7 +1039,7 @@ void Datalogger::powerUpSwitchableComponents()
   digitalWrite(EXADC_RESET,HIGH);
   delay(100); // Wait for ADC to start up
 
-  bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
+  bool externalADCInstalled = scanI2C(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
   if (externalADCInstalled)
   {
     debug(F("Set up exADC"));
@@ -1059,7 +1055,7 @@ void Datalogger::powerUpSwitchableComponents()
     debug(F("exADC not installed"));
   }
 
-  debug(F("Switchable components powered up"));
+  // debug(F("Switchable components powered up"));
 };
 
 void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
@@ -1070,7 +1066,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
-  debug(F("Switchable components powered down"));
+  // debug(F("Switchable components powered down"));
 }
 
 void Datalogger::prepareForUserInteraction()
@@ -1079,7 +1075,7 @@ void Datalogger::prepareForUserInteraction()
   time_t awakenedTime = timestamp();
 
   t_t2ts(awakenedTime, millis(), humanTime);
-  debug(F("Awakened by user"));
+  // debug(F("Awakened by user"));
   debug(F(humanTime));
 
   awakenedByUser = false;

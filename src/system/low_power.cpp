@@ -248,7 +248,6 @@ void hardwarePinsStopMode()
 {
   return; // didn't make a big power difference
   // check pins again on new board //
-  //TODO: consider writing them all Low? //
   pinMode(PA5, INPUT);
   pinMode(PB1, INPUT);
   pinMode(PC0, INPUT); // wasn't originally listed
@@ -259,15 +258,10 @@ void hardwarePinsStopMode()
   pinMode(PC8, INPUT);
   pinMode(PA2, INPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
-
-  // pinMode(BATTERY_INPUT,OUTPUT);
-  // gpioPinOff(BATTERY_INPUT);
 }
 
 void componentsBurstMode()
 {
-
-
   debug(F("turn on components"));
 
   //pinmode?

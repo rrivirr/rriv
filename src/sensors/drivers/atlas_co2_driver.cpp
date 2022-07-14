@@ -43,12 +43,26 @@ void AtlasCO2Driver::setup()
     notify("CO2 setup failed");
   }
   modularSensorDriver->wake();
+  setupTime = millis();
 }
 
 void AtlasCO2Driver::stop()
 {
-  // modularSensorDriver->sleep(); // i2c sensors are on boosted 3v3 power which gets shut off during sleep
+  modularSensorDriver->sleep();
   // debug("stop/delete AtlasCO2Driver");
+}
+
+void AtlasCO2Driver::factoryReset()
+{
+  notify("FactoryReset");
+  wire->beginTransmission(0x69); // default address
+  wire->write((const uint8_t*)"Factory",8);
+
+  // _i2c->beginTransmission(_i2cAddressHex);
+  //   success &= _i2c->write((const uint8_t*)"Sleep",
+  //                          5);  // Write "Sleep" to put it in low power mode
+  //   success &= !_i2c->endTransmission();
+  //   // NOTE: The return of 0 from endTransmission indicates success
 }
 
 bool AtlasCO2Driver::takeMeasurement()
@@ -82,14 +96,6 @@ const char *AtlasCO2Driver::getRawDataString()
 const char * AtlasCO2Driver::getSummaryDataString()
 {
   sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
-  return dataString;
-}
-const char *AtlasCO2Driver::getSummaryDataString()
-{
-  // debug("configuring driver template dataString");
-  // process data string for .csv
-  // TODO: just reporting the last value, not a true summary
-  sprintf(dataString, "%d,%d",value,0);
   return dataString;
 }
 
@@ -133,5 +139,25 @@ void AtlasCO2Driver::setDriverDefaults()
 
 unsigned int AtlasCO2Driver::millisecondsUntilNextRequestedReading()
 {
-  return 100;
+  return 1000; // 1 reading per second
+}
+
+bool AtlasCO2Driver::isWarmedUp()
+{
+  if ( (millis() - setupTime) < 10000 )
+  {
+    return false;
+  }
+  return true;
+}
+
+uint32 AtlasCO2Driver::millisecondsUntilReadyToRead()
+{
+  // check again just in case enough time has elapsed
+  int timeDiff = millis() - setupTime ;
+  if (timeDiff < 10000)
+  {
+    return timeDiff;
+  }
+  return 0;
 }

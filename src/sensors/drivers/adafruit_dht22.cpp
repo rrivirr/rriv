@@ -27,7 +27,6 @@ const char * AdaDHT22::getSensorTypeString()
   return sensorTypeString;
 }
 
-
 configuration_bytes_partition AdaDHT22::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
@@ -39,7 +38,6 @@ void AdaDHT22::configureSpecificConfigurationsFromBytes(configuration_bytes_part
 {
   memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
-
 
 void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
@@ -170,5 +168,5 @@ void AdaDHT22::setDriverDefaults()
 
 unsigned int AdaDHT22::millisecondsUntilNextRequestedReading()
 {
-  return 100;
+  return 2000; // 1 reading per 2 seconds
 }

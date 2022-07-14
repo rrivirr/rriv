@@ -177,8 +177,8 @@ private:
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(SensorDriver * driver);
 
-    void sleepMCU(uint32 milliseconds);
     int minMillisecondsUntilNextReading();
+    void sleepMCU(uint32 milliseconds);
  
     // run loop
     void initializeFilesystem();
@@ -195,7 +195,5 @@ private:
     void debugValues(char * buffer);
     void setSensorDebugModes(bool debug);
     void notifyInvalid();
-
-
 };
 #endif

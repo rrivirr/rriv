@@ -81,11 +81,6 @@ void SensorDriver::initializeBurst()
 
 void SensorDriver::incrementBurst()
 {
-  // reset burst summary sums and counts for next burst
-  // TODO: confirm this works, currently getting a cumulative average of readings
-  burstSummarySumCounts.clear();
-  burstSummarySums.clear();
-
   burstCount++;
 }
 
@@ -272,6 +267,11 @@ bool SensorDriver::getNeedsSave()
   return this->configurationNeedsSave;
 }
 
+uint32 millisecondsUntilReadyToRead()
+{
+  return 0; // default is ready to read... we shouldn't ask this unless a sensor is not warmed up though, so the default should throw an error?
+}
+
 unsigned int SensorDriver::millisecondsUntilNextReadingAvailable()
 {
   return 0; // return min by default, a larger number in driver implementation causes correct delay
@@ -320,3 +320,7 @@ protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
   // debug("getting driver template protocol");
   return drivertemplate;
 }
+
+
+// function for atlas co2 sensor - KC
+void SensorDriver::factoryReset(){}

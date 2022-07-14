@@ -613,10 +613,10 @@ void checkMemory(int arg_cnt, char **args)
   printFreeMemory();
 }
 
-void doScanIC2(int arg_cnt, char**args)
+void doScanI2C(int arg_cnt, char**args)
 {
-  // scanIC2(&Wire);
-  // scanIC2(&Wire2);
+  // scanI2C(&Wire);
+  // scanI2C(&WireTwo);
 }
 
 void switchedPowerOff(int arg_cnt, char**args)
@@ -678,6 +678,20 @@ void CommandInterface::_gpiotest(int pin)
     digitalWrite(pin, LOW);
   else
     digitalWrite(pin, HIGH);
+}
+
+
+void factoryReset(int arg_cnt, char**args)
+{
+  // this->datalogger->
+  // wire->beginTransmission(0x69); // default address
+  // wire->write((const uint8_t*)"Factory",8);
+  CommandInterface::instance()->_factoryReset();
+}
+
+void CommandInterface::_factoryReset()
+{
+  datalogger->drivers[3]->factoryReset();
 }
 
 // void enterSleep(int arg_cnt, char**args)
@@ -744,7 +758,7 @@ void CommandInterface::setup(){
   // qos commands / debug commands
   cmdAdd("restart", restart);
   // cmdAdd("check-memory", checkMemory);
-  // cmdAdd("scan-ic2", doScanIC2);
+  // cmdAdd("scan-i2c", doScanI2C);
   // cmdAdd("go", go);
   // cmdAdd("reload-sensors", reloadSensorConfigurations);
   // cmdAdd("switched-power-off", switchedPowerOff);
@@ -755,6 +769,7 @@ void CommandInterface::setup(){
   cmdAdd("help", help);
 
   // cmdAdd("gpio-test", gpiotest);
+  cmdAdd("factory-reset",factoryReset);
 }
 
 void CommandInterface::poll()

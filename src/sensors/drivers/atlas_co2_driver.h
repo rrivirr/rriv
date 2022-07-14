@@ -22,7 +22,6 @@
 #include <sensors/AtlasScientificCO2.h>
 #include <sensors/CampbellOBS3.h>
 
-
 //#define any pins/static options used
 
 #define ATLAS_CO2_DRIVER_TYPE_STRING "atlas_co2"
@@ -32,7 +31,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
 {
   typedef struct
   {
-    unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration (optional)
+    unsigned long long cal_timestamp; // 8 bytes for unix time of calibration (optional)
   } driver_config;
 
   public:
@@ -54,8 +53,10 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
-
     unsigned int millisecondsUntilNextRequestedReading();
+    bool isWarmedUp();
+    uint32 millisecondsUntilReadyToRead();
+    void factoryReset();
 
   protected:
     bool configureDriverFromJSON(cJSON *json);
@@ -68,6 +69,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     driver_config configuration;
 
     const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
+    uint32 setupTime; // for unix time of setup to track when ready to take samples
 
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/

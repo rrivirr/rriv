@@ -127,6 +127,7 @@ class CommandInterface
     void _help();
 
     void _gpiotest(int pin); // toggles gpio pin state (low/high)
+    void _factoryReset();
 
   private:
     Datalogger * datalogger;

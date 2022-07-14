@@ -96,7 +96,6 @@ public:
   void clearConfigurationNeedsSave();
   bool getNeedsSave();
 
-
 protected:
   common_sensor_driver_config commonConfigurations;
   void configureCSVColumns();
@@ -177,8 +176,10 @@ public:
    */
   virtual const char *getBaseColumnHeaders() = 0;
 
-
+  // Warm Up time, which is only checked once at the start of the measurement cycle
   virtual bool isWarmedUp();
+
+  virtual uint32 millisecondsUntilReadyToRead();
 
   // Calibration
   virtual void initCalibration() = 0;
@@ -189,6 +190,8 @@ public:
   virtual unsigned int millisecondsUntilNextReadingAvailable();
 
   virtual unsigned int millisecondsUntilNextRequestedReading();
+
+  virtual void factoryReset();
 
 protected:
 
