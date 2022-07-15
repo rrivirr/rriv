@@ -97,7 +97,13 @@ void DriverTemplate::calibrationStep(char *step, int arg_cnt, char ** args)
   // debug("driver template calibration steps");
 }
 
-void DriverTemplate::addCalibrationParametersToJSON(cJSON *json)
+void void DriverTemplate::actuateAfterWakeup() {
+  // actually do your actuating stuff.
+  return;
+}
+
+
+void DriverTemplate::CalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");

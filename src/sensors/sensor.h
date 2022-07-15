@@ -190,12 +190,18 @@ public:
 
   virtual unsigned int millisecondsUntilNextRequestedReading();
 
+  virtual void actuateAfterWakeup();
+
 protected:
 
   virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
   
   virtual configuration_bytes_partition getDriverSpecificConfigurationBytes() = 0;
-
+void SensorDriver::setup()
+{
+  // by default no setup
+  return;
+}
   virtual bool configureDriverFromJSON(cJSON *json);
   
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;

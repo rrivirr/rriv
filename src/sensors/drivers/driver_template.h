@@ -48,6 +48,7 @@ class DriverTemplate : public DriverTemplateProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
+    void actuateAfterWakeup();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

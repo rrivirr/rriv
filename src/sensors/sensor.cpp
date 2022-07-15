@@ -315,3 +315,8 @@ protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
   // debug("getting driver template protocol");
   return drivertemplate;
 }
+
+// Default implementation
+void SensorDriver::actuateAfterWakeup() {
+  return;
+}
