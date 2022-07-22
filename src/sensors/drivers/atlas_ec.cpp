@@ -113,7 +113,7 @@ bool AtlasECDriver::takeMeasurement()
     {
       value = oem_ec->getConductivity(true);
       addValueToBurstSummaryMean(EC_TAG, value);
-      lastSuccessfulReadingMillis = millis();
+      // lastSuccessfulReadingMillis = millis();
       return true;
     }
     else
@@ -125,7 +125,8 @@ bool AtlasECDriver::takeMeasurement()
 
 unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
 {
-  return 640 - (millis() - lastSuccessfulReadingMillis);
+  // return 640 - (millis() - lastSuccessfulReadingMillis);
+  return 1000; // 1 reading per second
 }
 
 const char * AtlasECDriver::getRawDataString()

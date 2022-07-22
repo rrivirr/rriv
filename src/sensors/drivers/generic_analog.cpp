@@ -152,9 +152,12 @@ void GenericAnalogDriver::setup()
 
 void GenericAnalogDriver::stop()
 {
-  pinMode(ADC_PINS[configurations.sensor_port], INPUT);
-  digitalWrite(ADC_PINS[configurations.sensor_port], LOW);
-  // notify("ADC port stopped");
+  if (configurations.adc_select == ADC_SELECT_INTERNAL)
+  {
+    pinMode(ADC_PINS[configurations.sensor_port], INPUT);
+    digitalWrite(ADC_PINS[configurations.sensor_port], LOW);
+    // notify("ADC port stopped");
+  }
 }
 
 bool GenericAnalogDriver::takeMeasurement()

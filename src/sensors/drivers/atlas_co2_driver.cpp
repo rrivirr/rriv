@@ -35,6 +35,7 @@ void AtlasCO2Driver::appendDriverSpecificConfigurationJSON(cJSON * json)
   addCalibrationParametersToJSON(json);
 }
 
+// TODO: should setup be distinguished from wakeup?
 void AtlasCO2Driver::setup()
 {
   // debug("setup AtlasCO2Driver");
@@ -52,18 +53,12 @@ void AtlasCO2Driver::stop()
   // debug("stop/delete AtlasCO2Driver");
 }
 
-void AtlasCO2Driver::factoryReset()
-{
-  notify("FactoryReset");
-  wire->beginTransmission(0x69); // default address
-  wire->write((const uint8_t*)"Factory",8);
-
-  // _i2c->beginTransmission(_i2cAddressHex);
-  //   success &= _i2c->write((const uint8_t*)"Sleep",
-  //                          5);  // Write "Sleep" to put it in low power mode
-  //   success &= !_i2c->endTransmission();
-  //   // NOTE: The return of 0 from endTransmission indicates success
-}
+// void AtlasCO2Driver::factoryReset()
+// {
+//   notify("FactoryReset");
+//   wire->beginTransmission(0x69); // default address
+//   wire->write((const uint8_t*)"Factory",8);
+// }
 
 bool AtlasCO2Driver::takeMeasurement()
 {
@@ -137,26 +132,28 @@ void AtlasCO2Driver::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-unsigned int AtlasCO2Driver::millisecondsUntilNextRequestedReading()
+unsigned int AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
 {
   return 1000; // 1 reading per second
 }
 
 bool AtlasCO2Driver::isWarmedUp()
 {
-  if ( (millis() - setupTime) < 10000 )
+  if ( (millis() - setupTime) < 10000 ) // needs 10 seconds to warm up
   {
     return false;
   }
   return true;
 }
 
-uint32 AtlasCO2Driver::millisecondsUntilReadyToRead()
+// until warmed up
+uint32 AtlasCO2Driver::millisecondsToWarmUp()
 {
   // check again just in case enough time has elapsed
-  int timeDiff = millis() - setupTime ;
-  if (timeDiff < 10000)
+  int timeDiff = millis() - setupTime;
+  if (timeDiff < 10000) // needs 10 seconds to warm up
   {
+    setupTime -= timeDiff; // accouunt for systick being off when sleeping
     return timeDiff;
   }
   return 0;

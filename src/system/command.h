@@ -102,15 +102,18 @@ class CommandInterface
     void _setBurstNumber(int number);
     void _setStartUpDelay(int number);
     void _setInterBurstDelay(int number);
-    
+  
     void _setUserNote(char * note);
     void _setUserValue(int value);
-
 
     void _getConfig();
     void _setConfig(char * config);
     void _setSlotConfig(char * config);
     void _clearSlot(int slot);
+
+    void _getRTC();
+    void _setRTC(uint32 setTimestamp);
+
     void _deployNow();
     void _switchToInteractiveMode();
 
@@ -127,7 +130,7 @@ class CommandInterface
     void _help();
 
     void _gpiotest(int pin); // toggles gpio pin state (low/high)
-    void _factoryReset();
+    // void _factoryReset();
 
   private:
     Datalogger * datalogger;

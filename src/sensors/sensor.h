@@ -178,8 +178,8 @@ public:
 
   // Warm Up time, which is only checked once at the start of the measurement cycle
   virtual bool isWarmedUp();
-
-  virtual uint32 millisecondsUntilReadyToRead();
+  
+  virtual uint32 millisecondsToWarmUp();
 
   // Calibration
   virtual void initCalibration() = 0;

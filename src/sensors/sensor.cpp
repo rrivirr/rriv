@@ -145,6 +145,9 @@ void SensorDriver::setDefaults()
   this->setDriverDefaults();
 }
 
+void invalid(){
+  notify("Invalid");
+}
 
 bool SensorDriver::configureFromJSON(cJSON * json)
 {
@@ -171,7 +174,8 @@ bool SensorDriver::configureFromJSON(cJSON * json)
   }
   else
   {
-    notify("Invalid slot");
+    invalid();
+    notify("slot");
     return false;
   }
 
@@ -182,7 +186,8 @@ bool SensorDriver::configureFromJSON(cJSON * json)
   }
   else
   {
-    notify("Invalid tag");
+    invalid();
+    notify("tag");
     return false;
   }
 
@@ -193,7 +198,8 @@ bool SensorDriver::configureFromJSON(cJSON * json)
   }
   else
   {
-    notify("Invalid burst size");
+    invalid();
+    notify("burst_size");
     return false;
   }
 
@@ -267,7 +273,7 @@ bool SensorDriver::getNeedsSave()
   return this->configurationNeedsSave;
 }
 
-uint32 millisecondsUntilReadyToRead()
+uint32 millisecondsToWarmUp()
 {
   return 0; // default is ready to read... we shouldn't ask this unless a sensor is not warmed up though, so the default should throw an error?
 }

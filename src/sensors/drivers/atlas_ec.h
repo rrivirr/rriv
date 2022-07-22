@@ -44,7 +44,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     const char * baseColumnHeaders = "ec.mS";
     char dataString[20]; // local storage for data string
 
-    unsigned long long lastSuccessfulReadingMillis = 0;
+    // unsigned long long lastSuccessfulReadingMillis = 0;
 
   //
   // Interface Implementation

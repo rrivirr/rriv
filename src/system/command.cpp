@@ -405,6 +405,7 @@ void setConfig(int arg_cnt, char **args)
 
 void CommandInterface::_setConfig(char * config)
 {
+  // TODO: use one command for all config set, rather than individual commands, always require json
   cJSON *json = cJSON_Parse(config);
   if(json == NULL){
     notify(F("Invalid JSON"));
@@ -509,19 +510,34 @@ void setRTC(int arg_cnt, char **args)
     invalidArgumentsMessage(F("set-rtc UNIX_EPOCH_TIMESTAMP"));
     return;
   }
+  else
+    CommandInterface::instance()->_setRTC((uint32)atoi(args[1]));
+}
 
-  int timestamp = atoi(args[1]);
-  setTime(timestamp);
+void CommandInterface::_setRTC(uint32 setTimestamp)
+{
+  int time = timestamp();
+  int diff = time - setTimestamp;
+  notify("Time diff since: ");
+  notify(datalogger->settings.RTCsetTime);
+  notify(diff);
+  datalogger->settings.RTCsetTime = setTimestamp;
+
+  setTime(setTimestamp);
   ok();
 }
 
 void getRTC(int arg_cnt, char **args)
 {
+  CommandInterface::instance()->_getRTC();
+}
+
+void CommandInterface::_getRTC()
+{
   int time = timestamp();
   char message[100];
   char humanTimeString[25];
-  // t_t2ts(time, millis(), humanTimeString); // throws off the seconds
-  t_t2ts(time, 0, humanTimeString); // don't have an offset to count millis correctly
+  t_t2ts(time, 0, humanTimeString);
   sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
   notify(message);
 }
@@ -667,8 +683,7 @@ void gpiotest(int arg_cnt, char**args)
     invalidArgumentsMessage(F("gpiotest PIN_INT"));
     return;
   }
-  int pin = atoi(args[1]);
-  CommandInterface::instance()->_gpiotest(pin);
+  CommandInterface::instance()->_gpiotest(atoi(args[1]));
 }
 
 void CommandInterface::_gpiotest(int pin)
@@ -680,19 +695,16 @@ void CommandInterface::_gpiotest(int pin)
     digitalWrite(pin, HIGH);
 }
 
+// void factoryReset(int arg_cnt, char**args)
+// {
+//   CommandInterface::instance()->_factoryReset();
+// }
 
-void factoryReset(int arg_cnt, char**args)
-{
-  // this->datalogger->
-  // wire->beginTransmission(0x69); // default address
-  // wire->write((const uint8_t*)"Factory",8);
-  CommandInterface::instance()->_factoryReset();
-}
-
-void CommandInterface::_factoryReset()
-{
-  datalogger->drivers[3]->factoryReset();
-}
+// // Hardcoded reset for sensor slot 3 [CO2 sensor at the time]
+// void CommandInterface::_factoryReset()
+// {
+//   datalogger->drivers[3]->factoryReset();
+// }
 
 // void enterSleep(int arg_cnt, char**args)
 // {
@@ -720,6 +732,8 @@ void CommandInterface::_reloadSensorConfigurations()
   this->datalogger->reloadSensorConfigurations();
 }
 
+// Note: commands commented out here will lower flash used
+// and not require commenting out code elsewhere
 void CommandInterface::setup(){
   // cmdAdd("version", printVersion);
   // cmdAdd("show-warranty", printWarranty);
@@ -769,7 +783,7 @@ void CommandInterface::setup(){
   cmdAdd("help", help);
 
   // cmdAdd("gpio-test", gpiotest);
-  cmdAdd("factory-reset",factoryReset);
+  // cmdAdd("factory-reset",factoryReset); // TODO: get rid of this in sensor
 }
 
 void CommandInterface::poll()

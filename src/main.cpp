@@ -73,6 +73,8 @@ void setup(void)
 
   printWelcomeMessage(dataloggerSettings);
 
+  // TODO: I think by default the logger should always be in interactive mode on flash, is that possible?
+  // Otherwise we need to check that the unit has been power cycled for debug mode after flashing
   if (datalogger->inMode(logging))
   {
     notify("Device will enter logging mode in 5 seconds");
@@ -92,13 +94,12 @@ void setup(void)
     Serial2.print("CMD >> ");
     Serial2.flush();
   }
-
 }
 
 void loop(void)
 {
   startCustomWatchDog();
-  printWatchDogStatus();
+  // printWatchDogStatus();
   checkMemory();
 
   datalogger->loop();

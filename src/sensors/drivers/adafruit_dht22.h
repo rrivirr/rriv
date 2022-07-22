@@ -54,7 +54,7 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
     
-    unsigned int millisecondsUntilNextRequestedReading();
+    unsigned int millisecondsUntilNextReadingAvailable();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

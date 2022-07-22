@@ -79,13 +79,11 @@ void setNextAlarmInternalRTC(short interval){
 
   // sprintf(message, "set alarm time to wake: %i", secondsUntilWake);
   // debug(message);
-
 }
 
 
 void setNextAlarmInternalRTCSeconds(short seconds)
 {
-
   RTClock * clock = new RTClock(RTCSEL_LSE);
   // Serial2.println("made clock");  Serial2.flush();
 
@@ -104,12 +102,10 @@ void setNextAlarmInternalRTCSeconds(short seconds)
 
   // sprintf(message, "set alarm seconds until wake: %i", seconds);
   // notify(message);
-
 }
 
 void setNextAlarmInternalRTCMilliseconds(int milliseconds)
 {
-
   RTClock * clock = new RTClock(RTCSEL_LSE, 32); //according to sheet clock/(prescaler + 1) = Hz
   // Serial2.println("made clock");  Serial2.flush();
 
@@ -128,7 +124,6 @@ void setNextAlarmInternalRTCMilliseconds(int milliseconds)
 
   // sprintf(message, "set alarm milliseconds until wake: %i", milliseconds);
   // notify(message);
-
 }
 
 #ifdef USES_DS3231_ALARM
@@ -216,8 +211,6 @@ time_t timestamp()
   ts.tm_wday = Clock.getDoW();
   ts.tm_hour = Clock.getHour(h24Flag, pmFlag);
   ts.tm_min = Clock.getMinute();
-  //Serial2.println("timestamp mins");
-  //Serial2.println(ts.tm_min);
   ts.tm_sec = Clock.getSecond();
   ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
   return (mktime(&ts)); // turn tm struct into time_t value
@@ -238,19 +231,14 @@ void setTime(time_t toSet)
   Clock.setSecond(ts.tm_sec);
 }
 
-void t_t2ts(time_t epochTS, uint32 currentMillis, char *humanTime)
+void t_t2ts(time_t unixTS, uint32 diffMillis, char *humanTime)
 {
   struct tm ts;
-  //uint32 currentMillis = millis();
-  char buf[21] ="0";
+  char buf[21] = "0";
 
-  ts = *gmtime(&epochTS); // convert unix to tm structure
-  // Format time, "yyyy-mm-dd hh:mm:ss zzz" = "%Y/%m/%d %H:%M:%S %Z" (yyyy/mm/dd hh:mm:ss zzz) = 23
-  //strftime(humanTime, 24, "%Y-%m-%d %H:%M:%S %Z", &ts); // converts a tm into custom date structure stored in string
+  ts = *gmtime(&unixTS); // convert unix to tm structure
 
-  // Format time, "yyyy-mm-dd hh:mm:ss.sss" = "%Y/%m/%d %H:%M:%S" (yyyy/mm/dd hh:mm:ss.sss) = 23
-  ts.tm_sec = ts.tm_sec + currentMillis/1000; // correct seconds
+  // Format time, "yyyy-mm-dd hh:mm:ss.sss" = "%Y/%m/%d %H:%M:%S" = 23
   strftime(buf, 20, "%Y-%m-%d %H:%M:%S", &ts);
-  sprintf(humanTime, "%s.%03i", buf, (int)currentMillis % 1000);
+  sprintf(humanTime, "%s.%03i", buf, diffMillis % 1000);
 }
-

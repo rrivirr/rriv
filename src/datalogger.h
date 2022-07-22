@@ -44,11 +44,12 @@
 #define DEPLOYMENT_IDENTIFIER_LENGTH 16
 
 // 64 bytes max, one configuration_partition_bytes
-// Currently there are 14 bytes unused
+// Currently there are 6 bytes unused
 typedef struct datalogger_settings { 
     char deploymentIdentifier[16]; // 16 bytes
     char loggerName[8]; // 8 bytes
     char siteName[8]; // 8 bytes
+    unsigned long RTCsetTime; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
     unsigned short wakeInterval;  // 2 bytes minutes
     unsigned short startUpDelay; // 2 bytes minutes
