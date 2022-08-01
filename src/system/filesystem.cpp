@@ -235,11 +235,13 @@ bool WaterBear_FileSystem::openFile(char * filename)
 
   notify("Opening file");
   notify(filename);
-  if(sd.exists(filename))
-  {
-    notify("Error: File Already Exists!!");
-    return false;
-  }
+  // NOTE: file will exist when re-opening
+  
+  // if(sd.exists(filename))
+  // {
+  //   notify("Error: File Already Exists!!");
+  //   return false;
+  // }
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
   notify("Opened");
 
