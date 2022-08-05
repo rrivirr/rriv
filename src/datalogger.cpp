@@ -159,7 +159,11 @@ void Datalogger::setup()
 */
 bool Datalogger::processReadingsCycle()
 {
+  int measureSensorDuration = millis();
+
   measureSensorValues();
+  measureSensorDuration = millis() - measureSensorDuration;
+
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
     writeRawMeasurementToLogFile();
@@ -167,16 +171,14 @@ bool Datalogger::processReadingsCycle()
 
   if (shouldContinueBursting())
   {
-    // sleep for maximum time before next reading
-    // ask all drivers for maximum time until next burst reading
-    // ask all drivers for maximum time until next available reading
-    // sleep for whichever is less
-    notify(minMillisecondsUntilNextReading());
-    sleepMCU(minMillisecondsUntilNextReading());
+    int waitBetweenReadings = minMillisecondsUntilNextReading() - measureSensorDuration;
+    notify(waitBetweenReadings);
+    sleepMCU(waitBetweenReadings);
+
     return true;
   }
 
-  // otherwise burse cycle completed,
+  // otherwise burst cycle completed,
   completedBursts++;
 
   // so output burst summary
@@ -185,23 +187,20 @@ bool Datalogger::processReadingsCycle()
   if (completedBursts < settings.burstNumber)
   {
     // debug(F("do another burst"));
-
     if (settings.interBurstDelay > 0)
     {
-      notify(F("burst delay"));
+      // notify(F("burstDelay"));
       int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
       notify(interBurstDelay);
       sleepMCU(interBurstDelay * 1000); // convert seconds to milliseconds
-      // wakeSensorsFromStandbyMode();
+      // wakeSensorsFromStandbyMode(); 
     }
-
     initializeBurst();
     return true;
   }
-
   return false;
 }
 
@@ -1144,7 +1143,17 @@ void Datalogger::stopAndAwaitTrigger()
   }
 
   powerDownSwitchableComponents();
-  fileSystem->closeFileSystem(); // close file, filesystem
+  fileSystem->closeFileSystem();
+  if(fileSystem->checkFileSize())
+  {
+    notify("newfile");
+    // not working, not sure how this is supposed to work
+    // initializeFilesystem(); // if file size exceeded, make new file
+    // fileSystem->closeFileSystem(); // then close it
+
+    nvic_sys_reset(); // or just reset if this isn't working
+  }
+
   disableSwitchedPower();
 
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
@@ -1267,7 +1276,7 @@ int Datalogger::minMillisecondsUntilNextReading()
   return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
   
   // return min to prioritize sampling at desired speed for ONE specific sensor
-  // if (maxDelayUntilNextAvailableReading == 0)
+  // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
   // {
   //   return minimumDelayUntilNextRequestedReading;
   // }

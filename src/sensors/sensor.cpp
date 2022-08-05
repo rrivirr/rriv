@@ -273,7 +273,7 @@ bool SensorDriver::getNeedsSave()
   return this->configurationNeedsSave;
 }
 
-uint32 millisecondsToWarmUp()
+uint32 SensorDriver::millisecondsToWarmUp()
 {
   return 0; // default is ready to read... we shouldn't ask this unless a sensor is not warmed up though, so the default should throw an error?
 }
