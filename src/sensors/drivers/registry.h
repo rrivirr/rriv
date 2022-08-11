@@ -5,6 +5,9 @@
 #include "atlas_ec.h"
 #include "driver_template.h"
 #include "adafruit_dht22.h"
+#include "generic_actuator.h"
+#include "air_pump.h"
+
 
 #define MAX_SENSOR_TYPE 0xFFFE
 

@@ -47,11 +47,18 @@
 #define ONBOARD_LED_PIN PA5
 
 
+#define GPIO_PIN_1 PA1
+#define GPIO_PIN_2 PB2
+#define GPIO_PIN_3 PB8 // 5v booster
+#define GPIO_PIN_4 PB12
+#define GPIO_PIN_5 PC11 // DHT22
+#define GPIO_PIN_6 PC12 // actuator tests
+#define GPIO_PIN_7 PC13
 
 //available for usage
-#define GPIO_PIN_1 PC10  //doesn't work
-#define GPIO_PIN_2 PC11  // doesn't work
-#define GPIO_PIN_3 PC12  //works, CN7 3
+// #define GPIO_PIN_1 PC10  //doesn't work
+// #define GPIO_PIN_2 PC11  // doesn't work
+// #define GPIO_PIN_3 PC12  //works, CN7 3
 //#define GPIO_PIN_13 PA13 //doesn't work, PA13 labeled "SWDIO" in KiCad
 #define GPIO_PIN_17 PA15  //doesn't work
 #define GPIO_PIN_23 PC13  //works, 
@@ -67,9 +74,6 @@
 //A2-A6 work as GPIO, currently used 
 
 
-
-//using for 5v booster
-#define GPIO_PIN_4 PB8 // works, CN10 3, not using bluetooth currently
 
 #define EXADC_RESET PC5
 

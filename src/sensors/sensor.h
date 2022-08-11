@@ -96,6 +96,8 @@ public:
   void clearConfigurationNeedsSave();
   bool getNeedsSave();
 
+ 
+
 
 protected:
   common_sensor_driver_config commonConfigurations;
@@ -190,6 +192,17 @@ public:
 
   virtual unsigned int millisecondsUntilNextRequestedReading();
 
+  //actuator functions go here for now
+  virtual void actuateBeforeWarmUp();
+
+  virtual void actuateAfterMeasurementCycle();
+
+  //needs renaiming, function for actuators every X measurement cycles
+  virtual void actuatePeriodicalyMeasurementCycle();
+
+  
+
+
 protected:
 
   virtual void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations); 
@@ -201,6 +214,7 @@ protected:
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
+
 
 
 };

@@ -24,7 +24,7 @@
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
-#include "actuator-tests/Stepper.h"
+//#include "actuator-tests/Stepper.h"
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -711,7 +711,7 @@ void CommandInterface::_help()
   "reload-sensors\n"
   "switched-power-off\n"
   "enter-stop\n"
-  "step-test\n"
+  //"step-test\n"
 
   "mcu-debug-status\n";
   
@@ -726,12 +726,12 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
-  if (digitalRead(GPIO_PIN_3) == HIGH ) {
-    digitalWrite(GPIO_PIN_3, LOW);
-    
+  if (digitalRead(GPIO_PIN_6) == HIGH ) {
+    digitalWrite(GPIO_PIN_6, LOW);
+
   }
   else {
-    digitalWrite(GPIO_PIN_3, HIGH);
+    digitalWrite(GPIO_PIN_6, HIGH);
     
   }
   
@@ -771,22 +771,22 @@ void CommandInterface::_reloadSensorConfigurations()
 }
 
 
-void steptest (int arg_cnt, char**args)
-{
-  CommandInterface::instance()->_steptest();
-}
+// void steptest (int arg_cnt, char**args)
+// {
+//   CommandInterface::instance()->_steptest();
+// }
 
-void CommandInterface::_steptest()
-{
+// void CommandInterface::_steptest()
+// {
   
-  Stepper myStepper(200, GPIO_PIN_3, GPIO_PIN_23);
-  myStepper.setSpeed(60);
-  myStepper.step(200);
-  delay(1000);
-  myStepper.step(-200);
-  delay(1000);
+//   Stepper myStepper(200, GPIO_PIN_3, GPIO_PIN_23);
+//   myStepper.setSpeed(60);
+//   myStepper.step(200);
+//   delay(1000);
+//   myStepper.step(-200);
+//   delay(1000);
   
-}
+// }
 
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
@@ -801,13 +801,13 @@ void CommandInterface::setup(){
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
 
-  cmdAdd("set-site-name", setSiteName);
-  cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
-  cmdAdd("set-logger-name", setLoggerName);
-  cmdAdd("set-interval", setInterval);
-  cmdAdd("set-burst-number", setBurstNumber);
-  cmdAdd("set-start-up-delay", setStartUpDelay);
-  cmdAdd("set-burst-delay", setBurstDelay);
+  // cmdAdd("set-site-name", setSiteName);
+  // cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
+  // cmdAdd("set-logger-name", setLoggerName);
+  // cmdAdd("set-interval", setInterval);
+  // cmdAdd("set-burst-number", setBurstNumber);
+  // cmdAdd("set-start-up-delay", setStartUpDelay);
+  // cmdAdd("set-burst-delay", setBurstDelay);
 
   cmdAdd("calibrate", calibrate);
   
@@ -838,7 +838,7 @@ void CommandInterface::setup(){
 
   cmdAdd("gpio-test", gpiotest);
   
-  cmdAdd("step-test", steptest);
+  //cmdAdd("step-test", steptest);
 
 
 

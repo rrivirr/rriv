@@ -227,7 +227,8 @@ void Datalogger::loop()
   }
 
   if (inMode(logging))
-  {
+  { 
+    //AE actuate hook before measurement could go here
 
     if (powerCycle)
     {
@@ -260,6 +261,9 @@ void Datalogger::loop()
 
     // otherwise go to sleep
     fileSystemWriteCache->flushCache();
+
+    //AE actuator hook could go here: is this before or after measurement? 
+
   SLEEP:
     stopAndAwaitTrigger();
     initializeMeasurementCycle();
@@ -458,6 +462,8 @@ void Datalogger::initializeBurst()
 
 void Datalogger::initializeMeasurementCycle()
 {
+  //AE actuate hook before measurement could go here
+
   // notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
@@ -519,6 +525,8 @@ void Datalogger::measureSensorValues(bool performingBurst)
       }
     }
   }
+
+  //AE actuate hook after measurement could go here
 }
 
 void Datalogger::writeStatusFieldsToLogFile(const char * type)
