@@ -5,7 +5,7 @@
 // Follow steps to add a new sensor driver
 //
 
-// Step 1: Include the header for your driver in sensor_map.h
+// Step 1: Include the header for your driver in registry.h
 
 
 #define GENERIC_ANALOG_SENSOR 0x0000
