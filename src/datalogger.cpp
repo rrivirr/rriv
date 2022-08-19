@@ -159,10 +159,10 @@ void Datalogger::setup()
 */
 bool Datalogger::processReadingsCycle()
 {
-  int measureSensorDuration = millis();
-
+  uint32 measureSensorDuration = millis();
   measureSensorValues();
   measureSensorDuration = millis() - measureSensorDuration;
+  // notify(measureSensorDuration);
 
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
@@ -171,10 +171,13 @@ bool Datalogger::processReadingsCycle()
 
   if (shouldContinueBursting())
   {
-    int waitBetweenReadings = minMillisecondsUntilNextReading() - measureSensorDuration;
+    uint32 waitBetweenReadings = minMillisecondsUntilNextReading() - measureSensorDuration;
     notify(waitBetweenReadings);
-    sleepMCU(waitBetweenReadings);
-
+    if (waitBetweenReadings > 0)
+    {
+      burstCycleStartMillis -= waitBetweenReadings; // account for systick during sleep
+      sleepMCU(waitBetweenReadings);
+    }
     return true;
   }
 
@@ -194,8 +197,12 @@ bool Datalogger::processReadingsCycle()
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
-      notify(interBurstDelay);
-      sleepMCU(interBurstDelay * 1000); // convert seconds to milliseconds
+      
+      // notify(interBurstDelay);
+      uint32 millisElapsed = millis() - burstCycleStartMillis;
+      notify(interBurstDelay - (millisElapsed/1000)); // convert to seconds
+      sleepMCU(interBurstDelay * 1000 - millisElapsed); // convert second to millisecond, subtract time passed
+      
       // wakeSensorsFromStandbyMode(); 
     }
     initializeBurst();
@@ -443,6 +450,7 @@ bool Datalogger::shouldContinueBursting()
 
 void Datalogger::initializeBurst()
 {
+  burstCycleStartMillis = millis();
   for (unsigned int i = 0; i < sensorCount; i++)
   {
     drivers[i]->initializeBurst();
@@ -469,20 +477,23 @@ void Datalogger::initializeMeasurementCycle()
 
   // Check if each sensor is warmed up, if not, then store the max interval to sleep
   // before checking again until all report that they are warmed up
-  notify("warming up sensors");
+  // notify("warmup sensors");
+  int warmUpTime = 0;
   for (unsigned short i = 0; i < sensorCount; i++)
   {
-    uint32 warmUpTime = 0;
-
+    // get the max warmup time between all sensors that are not warmed up
     if (drivers[i]->isWarmedUp() == false)
     {
       warmUpTime = max(warmUpTime, drivers[i]->millisecondsToWarmUp());
     }
-    if (i == sensorCount-1 && warmUpTime != 0)
+
+    // sleep for that duration, then check if all sensors are now warmed up
+    if (i == (sensorCount - 1) && warmUpTime > 0)
     {
-      debug(warmUpTime);
-      i = 0;
+      // notify(warmUpTime);
       sleepMCU(warmUpTime);
+      i = 0;
+      warmUpTime = 0;
     }
   }
   notify("sensors warmed");
@@ -1260,10 +1271,10 @@ const char *Datalogger::getUUIDString()
   return uuidString;
 }
 
-int Datalogger::minMillisecondsUntilNextReading()
+uint32 Datalogger::minMillisecondsUntilNextReading()
 {
-  unsigned int minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
-  unsigned int maxDelayUntilNextAvailableReading = 0;
+  uint32 minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  uint32 maxDelayUntilNextAvailableReading = 0;
   for(int i=0; i<sensorCount; i++)
   {
     // retrieve the fastest time requested for sampling

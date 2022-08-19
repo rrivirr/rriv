@@ -123,7 +123,7 @@ bool AtlasECDriver::takeMeasurement()
     }
 }
 
-unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
+uint32 AtlasECDriver::millisecondsUntilNextReadingAvailable()
 {
   // return 640 - (millis() - lastSuccessfulReadingMillis);
   return 1000; // 1 reading per second

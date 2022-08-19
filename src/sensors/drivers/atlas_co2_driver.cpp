@@ -132,29 +132,24 @@ void AtlasCO2Driver::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-unsigned int AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
+uint32 AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
 {
   return 1000; // 1 reading per second
 }
 
 bool AtlasCO2Driver::isWarmedUp()
 {
-  if ( (millis() - setupTime) < 10000 ) // needs 10 seconds to warm up
+  timeDiff = millis() - setupTime;
+  if (timeDiff < 10000) // need 10 seconds to warm up
   {
     return false;
   }
   return true;
 }
 
-// until warmed up
-uint32 AtlasCO2Driver::millisecondsToWarmUp()
+int AtlasCO2Driver::millisecondsToWarmUp()
 {
-  // check again just in case enough time has elapsed
-  int timeDiff = millis() - setupTime;
-  if (timeDiff < 10000) // needs 10 seconds to warm up
-  {
-    setupTime -= timeDiff; // accouunt for systick being off when sleeping
-    return timeDiff;
-  }
-  return 0;
+  int warmupTime = 10000 - timeDiff;
+  setupTime -= warmupTime; // account for systick being off when sleeping
+  return warmupTime;
 }

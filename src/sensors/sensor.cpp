@@ -273,17 +273,17 @@ bool SensorDriver::getNeedsSave()
   return this->configurationNeedsSave;
 }
 
-uint32 SensorDriver::millisecondsToWarmUp()
+int SensorDriver::millisecondsToWarmUp()
 {
   return 0; // default is ready to read... we shouldn't ask this unless a sensor is not warmed up though, so the default should throw an error?
 }
 
-unsigned int SensorDriver::millisecondsUntilNextReadingAvailable()
+uint32 SensorDriver::millisecondsUntilNextReadingAvailable()
 {
   return 0; // return min by default, a larger number in driver implementation causes correct delay
 }
 
-unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+uint32 SensorDriver::millisecondsUntilNextRequestedReading()
 {
   return MAX_REQUESTED_READING_DELAY; // as slow as possible by default, a smaller number in driver implementation forces faster read
 }

@@ -66,7 +66,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     void calibrationStep(char * step, int arg_cnt, char ** args);
     void addCalibrationParametersToJSON(cJSON * json);
 
-    unsigned int millisecondsUntilNextReadingAvailable();
+    uint32 millisecondsUntilNextReadingAvailable();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

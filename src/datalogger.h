@@ -146,6 +146,7 @@ private:
     char loggingFolder[26];
     int completedBursts;
     int awakeTime;
+    uint32 burstCycleStartMillis;
 
     // user
     char userNote[100] = "\0";
@@ -178,7 +179,7 @@ private:
     void storeDataloggerConfiguration();
     void storeSensorConfiguration(SensorDriver * driver);
 
-    int minMillisecondsUntilNextReading();
+    uint32 minMillisecondsUntilNextReading();
     void sleepMCU(uint32 milliseconds);
  
     // run loop

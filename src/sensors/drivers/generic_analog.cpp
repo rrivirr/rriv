@@ -420,7 +420,7 @@ void GenericAnalogDriver::addCalibrationParametersToJSON(cJSON *json)
   }
 }
 
-unsigned int GenericAnalogDriver::millisecondsUntilNextRequestedReading()
+uint32 GenericAnalogDriver::millisecondsUntilNextRequestedReading()
 {
   return 100; // analog can be read continuously, but would not be meaningful
 }

@@ -53,9 +53,9 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
-    unsigned int millisecondsUntilNextReadingAvailable();
+    uint32 millisecondsUntilNextReadingAvailable();
     bool isWarmedUp();
-    uint32 millisecondsToWarmUp();
+    int millisecondsToWarmUp();
     // void factoryReset();
 
   protected:
@@ -70,6 +70,7 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
 
     const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
     uint32 setupTime; // for unix time of setup to track when ready to take samples
+    int timeDiff;
 
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/

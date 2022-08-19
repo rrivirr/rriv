@@ -166,7 +166,7 @@ void AdaDHT22::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-unsigned int AdaDHT22::millisecondsUntilNextReadingAvailable()
+uint32 AdaDHT22::millisecondsUntilNextReadingAvailable()
 {
   return 2000; // 1 reading per 2 seconds
 }
