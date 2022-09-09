@@ -26,6 +26,11 @@ GenericActuator::GenericActuator()
 
 GenericActuator::~GenericActuator(){}
 
+protocol_type GenericActuator::getProtocol()
+{
+  return genericactuator; //actuators don't have protocol type ? 
+}
+
 const char * GenericActuator::getSensorTypeString()
 {
   return sensorTypeString;
@@ -65,6 +70,8 @@ const char *GenericActuator::getRawDataString()
   // process data string for .csv
   //sprintf(dataString, "%d,%0.3f",value,value*31.83);
   //return dataString;
+
+  sprintf(dataString, "%d", value);
   return dataString; 
 }
 
@@ -73,7 +80,10 @@ const char *GenericActuator::getSummaryDataString()
     //actuators likely don't need bursts / burst sumary? 
   // double burstSummaryMean = getBurstSummaryMean("var");
   // sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, burstSummaryMean*31.83);
-  return dataString;  
+  //return dataString
+  sprintf(dataString, "%d", value);
+  return dataString; 
+ 
 }
 
 const char *GenericActuator::getBaseColumnHeaders()
@@ -112,20 +122,19 @@ void GenericActuator::actuatePeriodicalyMeasurementCycle()
 
 void GenericActuator::configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurationPartition)
 {
-  memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
+  //memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
 
 configuration_bytes_partition GenericActuator::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
-  memcpy(&partition, &configuration, sizeof(driver_configuration));
+  //memcpy(&partition, &configuration, sizeof(driver_configuration));
   return partition;
 }
 
 bool GenericActuator::configureDriverFromJSON(cJSON *json)
 {
   return true;
-
 }
 
 void GenericActuator::appendDriverSpecificConfigurationJSON(cJSON * json)
@@ -133,20 +142,20 @@ void GenericActuator::appendDriverSpecificConfigurationJSON(cJSON * json)
   // debug("appeding driver specific driver template json");
   
   //driver specific config, customize
-  addCalibrationParametersToJSON(json);
+  //addCalibrationParametersToJSON(json);
 }
 
 void GenericActuator::setDriverDefaults()
 {
   // debug("setting driver template driver defaults");
   // set default values for driver struct specific values
-  configuration.cal_timestamp = 0;
+  //configuration.cal_timestamp = 0;
 }
 
 void GenericActuator::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
-  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
+  //cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 

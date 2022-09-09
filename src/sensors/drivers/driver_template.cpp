@@ -36,7 +36,7 @@ void DriverTemplate::setup()
   // debug("setup DriverTemplate");
 }
 
-void DriverTemplate::stop()
+void DriverTemplate::stop() 
 {
   // debug("stop/delete DriverTemplate");
 }

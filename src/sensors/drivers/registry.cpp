@@ -31,7 +31,7 @@ void buildDriverSensorMap()
 
   // setupSensorMaps<AtlasECDriver>(ATLAS_EC_OEM_SNSOR, F(ATLAS_EC_OEM_TYPE_STRING));
 
-  setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
+  //setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
  
   //setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
 

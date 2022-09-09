@@ -28,21 +28,32 @@
 #define DUTY_CYCLE_TYPE_STRING reinterpret_cast<const char*>(F("duty_cycle"))
 #define FLOW_RATE_TYPE_STRING reinterpret_cast<const char*>(F("flow_rate"))
 #define VOLUME_TYPE_STRING reinterpret_cast<const char*>(F("volume_evacuate"))
+#define TIME_CYCLE_TYPE_STRING reinterpret_cast<const char*>(F("time_cycle"))
 
 class AirPump : public GenericActuator
 {
     typedef struct
     {
-        unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
+        //unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
         //short sensor_pin : 5; //4 bits (16 states) (this is GPIO pin?)
+
+        //note maxiumum duty cycle maximum is 1 
+        //note for this air pump maximum time on is 5 seconds, so maximum time cycle 10. 
         float dutyCycle = 0.5;
         float flowRate = 2.5; // needs to be in L / min
         float volumeEvacuate = 7.57; //needs to be in L 
-        //int maximumTimeOn = 5; //in seconds  //is this a valid value ?? 
-        //float totalTime = volumeEvacuate/(flowRate/60);
-        float timeOn = (volumeEvacuate/(flowRate/60))*dutyCycle;
-        float timeOff = (volumeEvacuate/(flowRate/60))*(1-dutyCycle);
-        int numIterations = ceil((volumeEvacuate/(flowRate/60))/timeOff);
+        int timeCycle = 4; //total time of 1 on off cycle in seconds
+
+      
+        //float timeOn = (volumeEvacuate/(flowRate/60))*dutyCycle;
+        //float timeOn = dutyCycle*totalTimeCycle; //in seconds, based off maximum rating (not consistent for all types air pumps? )
+        
+        //float timeOff = (volumeEvacuate/(flowRate/60))*(1-dutyCycle);
+        //float timeOff = (1-dutyCycle)*totalTimeCycle;
+        // int numIterations = ceil((volumeEvacuate/(flowRate/60))/(dutyCycle*timeCycle));
+        // int numIterations = 37;
+  
+    
     } driver_configuration;
 
     public:
@@ -60,6 +71,13 @@ class AirPump : public GenericActuator
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
 
+  
+    //unsigned int millisecondsUntilNextReadingAvailable();
+    unsigned int millisecondsUntilNextRequestedReading();
+  
+
+
+
     void actuateBeforeWarmUp();
     void actuateAfterMeasurementCycle();
     //needs renaiming, function for actuators every X measurement cycles
@@ -68,27 +86,33 @@ class AirPump : public GenericActuator
     protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    bool configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json); //name correct?? 
+    bool configureFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
+    
+
 
     private:
     const char *sensorTypeString = AIR_PUMP_TYPE_STRING;
     driver_configuration configuration;
     
-    float dutyCycle; //rating of duty cycle 
-    float flowRate; //in Liters / Min
-    float volumeEvacuate; //total volume to evacuate
+    // float dutyCycle; //rating of duty cycle 
+    // float flowRate; //in Liters / Min
+    // float volumeEvacuate; //total volume to evacuate
     //float totalTime; //total time air pump needs to be on
-    float timeOn; //time air pump on
-    float timeOff; //time air pump off
-    int numIterations; //number of iterations needed
-     
+    // float timeOn; //time air pump on
+    // float timeOff; //time air pump off
+    //int numIterations = ceil((configuration.volEvacuate/(configuration.flowRate/60))/(configuration.dutyCycle*configuration.timeCycle));
+    
+    int numIterations = 5; //temp for testing 
 
+    //void calcIterations(int* iterations, float duty, float rate, float vol, int cycle);
     int value; // sensor raw return(s) to be added to dataString
     const char *baseColumnHeaders = "C,RH"; // will be written to .csv
     char dataString[16]; // will be written to .csv
 
+    
     void addCalibrationParametersToJSON(cJSON *json);
     
 

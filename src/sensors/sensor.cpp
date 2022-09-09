@@ -315,3 +315,11 @@ protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
   // debug("getting driver template");
   return drivertemplate;
 }
+
+GenericActuatorProtocolSensorDriver::~GenericActuatorProtocolSensorDriver(){}
+
+protocol_type GenericActuatorProtocolSensorDriver::getProtocol()
+{
+  // debug("getting generic actuator template");
+  return genericactuator;
+}

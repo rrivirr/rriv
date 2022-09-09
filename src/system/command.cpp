@@ -24,7 +24,9 @@
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
-//#include "actuator-tests/Stepper.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -445,7 +447,7 @@ void setSlotConfig(int arg_cnt, char **args)
 {
   notify(F("set slot config"));
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON"));
+    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON")); // TODO: kinda useless, tell user json structure
     return;
   }
 
@@ -676,6 +678,29 @@ void help(int arg_cnt, char**args)
   CommandInterface::instance()->_help();
 }
 
+void airpumptest (int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_airpumptest();
+}
+
+void CommandInterface::_airpumptest()
+{
+  
+  AirPump ap;
+  ap.actuateBeforeWarmUp();
+  // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
+  // {
+  //   digitalWrite(GPIO_PIN_6, HIGH);
+  //   //delay(dutyCycle*total*1000); //totalTimeCycle not not "declared in scope" other variables are fine tho
+  //   delay(0.5*10*1000);
+  //   digitalWrite(GPIO_PIN_6, LOW);
+  //   // delay((1-dutyCycle)*timeFullCycle*1000);
+  //   delay((1-0.5)*10*1000);
+  // }
+
+  
+}
+
 void CommandInterface::_help()
 {
   char commands[] = "Command List:\n"
@@ -711,7 +736,8 @@ void CommandInterface::_help()
   "reload-sensors\n"
   "switched-power-off\n"
   "enter-stop\n"
-  //"step-test\n"
+
+  "airpump-test\n"
 
   "mcu-debug-status\n";
   
@@ -726,6 +752,7 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
+
   if (digitalRead(GPIO_PIN_6) == HIGH ) {
     digitalWrite(GPIO_PIN_6, LOW);
 
@@ -735,58 +762,19 @@ void CommandInterface::_gpiotest()
     
   }
   
-  // //testing pins if working
-  // digitalWrite(PC10, HIGH);
-  // digitalWrite(PC11, HIGH);
-  // digitalWrite(PC12, HIGH);
-  // //digitalWrite(PA13, HIGH);  pA13 labeled SWDIO in KiCad
-  // digitalWrite(PA15, HIGH);
-  // digitalWrite(PC13, HIGH);
-  // digitalWrite(PC14, HIGH);
-  // digitalWrite(PC15, HIGH);
-  // digitalWrite(PA1, HIGH);
-  // digitalWrite(PB4, HIGH);
-  // digitalWrite(PB3, HIGH);
-  // digitalWrite(PB12, HIGH);
-  // digitalWrite(PB2, HIGH);
-  // //used for sensors
-  // digitalWrite(PC0, HIGH);
-  // digitalWrite(PC1, HIGH);
-  // digitalWrite(PC2, HIGH);
-  // digitalWrite(PC3, HIGH);
-  // digitalWrite(PB1, HIGH);
-  // digitalWrite(PB8, HIGH);
-  
 }
+
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
 {
   CommandInterface::instance()->_reloadSensorConfigurations();
 }
 
-
 void CommandInterface::_reloadSensorConfigurations()
 {
   this->datalogger->reloadSensorConfigurations();
 }
 
-
-// void steptest (int arg_cnt, char**args)
-// {
-//   CommandInterface::instance()->_steptest();
-// }
-
-// void CommandInterface::_steptest()
-// {
-  
-//   Stepper myStepper(200, GPIO_PIN_3, GPIO_PIN_23);
-//   myStepper.setSpeed(60);
-//   myStepper.step(200);
-//   delay(1000);
-//   myStepper.step(-200);
-//   delay(1000);
-  
-// }
 
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
@@ -804,10 +792,10 @@ void CommandInterface::setup(){
   // cmdAdd("set-site-name", setSiteName);
   // cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
   // cmdAdd("set-logger-name", setLoggerName);
-  // cmdAdd("set-interval", setInterval);
-  // cmdAdd("set-burst-number", setBurstNumber);
+  cmdAdd("set-interval", setInterval);
+  cmdAdd("set-burst-number", setBurstNumber);
   // cmdAdd("set-start-up-delay", setStartUpDelay);
-  // cmdAdd("set-burst-delay", setBurstDelay);
+  cmdAdd("set-burst-delay", setBurstDelay);
 
   cmdAdd("calibrate", calibrate);
   
@@ -835,16 +823,13 @@ void CommandInterface::setup(){
   cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
-
+  cmdAdd("airpump-test", airpumptest);
   cmdAdd("gpio-test", gpiotest);
+  cmdAdd("airpump-test", airpumptest);
   
-  //cmdAdd("step-test", steptest);
-
-
+  // cmdAdd("step-test", steptest);
 
 }
-
-
 
 
 

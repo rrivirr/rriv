@@ -51,7 +51,7 @@ typedef struct datalogger_settings {
     char loggerName[8]; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
     unsigned short interval;  // 2 bytes minutes
-    unsigned short burstNumber; // 2 bytes
+    unsigned short burstNumber; // 2 bytes 
     unsigned short startUpDelay; // 2 bytes minutes
     unsigned short interBurstDelay; // 2 bytes minutes
     char mode;       // 1 byte i(interactive), d(debug), l(logging), t(deploy on trigger)
@@ -178,7 +178,7 @@ private:
     void storeSensorConfiguration(SensorDriver * driver);
 
     void sleepMCU(uint32 milliseconds);
-    int minMillisecondsUntilNextReading();
+    unsigned int minMillisecondsUntilNextReading();
  
     // run loop
     void initializeFilesystem();

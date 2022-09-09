@@ -30,6 +30,8 @@ AirPump::AirPump()
 
 AirPump::~AirPump(){}
 
+
+
 const char * AirPump::getSensorTypeString()
 {
   return sensorTypeString;
@@ -39,16 +41,21 @@ void AirPump::setup()
 {
   //setup struct using JSON?  
   
-  
+   
 }
 
-void AirPump::stop()
-{
-  // debug("stop/delete DriverTemplate");
-}
 
 bool AirPump::takeMeasurement()
 {
+  //AE temp fix: measurement turns pump on & off 
+    notify(F("in take measurement"));
+    digitalWrite(GPIO_PIN_6, HIGH);
+    //delay(configuration.dutyCycle*configuration.timeCycle*1000);
+    delay(2000);
+    digitalWrite(GPIO_PIN_6, LOW);
+    // delay((1-configuration.dutyCycle)*configuration.timeCycle*1000);
+  
+
   // // debug("taking measurement from driver template");
   // //return true if measurement taken store in class value(s), false if not
   // bool measurementTaken = false;
@@ -100,41 +107,44 @@ void AirPump::calibrationStep(char *step, int arg_cnt, char ** args)
   // debug("driver template calibration steps");
 }
 
+
+// unsigned int AirPump::millisecondsUntilNextReadingAvailable()
+// {
+//   return ((1-configuration.dutyCycle)*configuration.timeCycle*1000);
+//   //return 5000; // return min by default, a larger number in driver implementation causes correct delay
+// }
+
+unsigned int AirPump::millisecondsUntilNextRequestedReading()
+{
+  //return ((1-configuration.dutyCycle)*configuration.timeCycle*1000); // as slow as possible by default, a smaller number in driver implementation forces faster read
+  return(2000);
+}
+
+void AirPump::stop()
+{
+  //stop
+  digitalWrite(GPIO_PIN_6, LOW);
+}
+
+bool isWarmedUp()
+{
+  return true; 
+}
+
+
 //actuator funcs
  void AirPump::actuateBeforeWarmUp()
 {
-  for(int i = 0; i < numIterations; ++i)
-  {
-    digitalWrite(GPIO_PIN_3, HIGH);
-    delay(timeOn*1000);
-    digitalWrite(GPIO_PIN_3, LOW);
-    delay(timeOff*1000);
-  }
+   
+  // for(int i = 0; i < numIterations; i++)
+  // {
+  //   digitalWrite(GPIO_PIN_6, HIGH);
+  //   delay(configuration.dutyCycle*configuration.timeCycle*1000);
+  //   digitalWrite(GPIO_PIN_6, LOW);
+  //   delay((1-configuration.dutyCycle)*configuration.timeCycle*1000);
+  // }
 
-}
 
-void AirPump::actuateAfterMeasurementCycle()
-{
-  for(int i = 0; i < numIterations; ++i)
-  {
-    digitalWrite(GPIO_PIN_3, HIGH);
-    delay(timeOn*1000);
-    digitalWrite(GPIO_PIN_3, LOW);
-    delay(timeOff*1000);
-  }
-
-}
-
-  
-void AirPump::actuatePeriodicalyMeasurementCycle() 
-{
-  for(int i = 0; i < numIterations; ++i)
-  {
-    digitalWrite(GPIO_PIN_3, HIGH);
-    delay(timeOn*1000);
-    digitalWrite(GPIO_PIN_3, LOW);
-    delay(timeOff*1000);
-  }
 }
 
 
@@ -154,9 +164,13 @@ bool AirPump::configureDriverFromJSON(cJSON *json)
 {
   const cJSON *dutyCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "duty_cycle");
   const cJSON *flowRateJSON = cJSON_GetObjectItemCaseSensitive(json, "flow_rate");
+  const cJSON *volumeEvacuateJSON = cJSON_GetObjectItemCaseSensitive(json, "volume_evacuate");
+  const cJSON *timeCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "time_cycle");
   configuration.dutyCycle = (byte)dutyCycleJSON->valueint;
   configuration.flowRate = (byte)flowRateJSON->valueint;
-
+  configuration.volumeEvacuate = (byte)volumeEvacuateJSON->valueint;
+  configuration.timeCycle = (byte)timeCycleJSON->valueint;
+  
 
   return true;
 }
@@ -173,18 +187,26 @@ void AirPump::setDriverDefaults()
 {
   // debug("setting driver template driver defaults");
   // set default values for driver struct specific values
-  configuration.cal_timestamp = 0;
-  configuration.dutyCycle = 0.5;
-  configuration.flowRate = 1;
+  //configuration.cal_timestamp = 0;
+  // configuration.dutyCycle = 0.5;
+  // configuration.flowRate = 1;
 
 }
+
+// void AirPump::calcIterations(int* iterations, float duty, float rate, float vol, int cycle)
+// {
+//    //*numIterations = 5; //ceil((configuration.volEvacuate/(configuration.flowRate/60))/(configuration.dutyCycle*configuration.timeCycle));
+ 
+// }
+
+
 
 void AirPump::addCalibrationParametersToJSON(cJSON *json)
 {
   // follows structure of calibration parameters in .h
   // debug("add driver template calibration parameters to json");
-  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
-  cJSON_AddNumberToObject(json, DUTY_CYCLE_TYPE_STRING, configuration.dutyCycle);
+  //cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
+  //cJSON_AddNumberToObject(json, DUTY_CYCLE_TYPE_STRING, configuration.dutyCycle);
 }
 
 

@@ -29,6 +29,11 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
+// #include "sensors/drivers/air_pump.h"
+// #include "sensors/drivers/generic_actuator.h"
 
 void Datalogger::sleepMCU(uint32 milliseconds)
 {
@@ -96,11 +101,14 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 {
   powerCycle = true;
 
-  // defaults
+  //defaults
   if (settings->interval < 1)
   {
     settings->interval = 1;
   }
+
+
+
 
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
@@ -160,11 +168,14 @@ void Datalogger::setup()
 */
 bool Datalogger::processReadingsCycle()
 {
+
   measureSensorValues();
+ 
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
     writeRawMeasurementToLogFile();
   }
+  
 
   if (shouldContinueBursting())
   {
@@ -172,6 +183,7 @@ bool Datalogger::processReadingsCycle()
     // ask all drivers for maximum time until next burst reading
     // ask all drivers for maximum time until next available reading
     // sleep for whichever is less
+
     notify(minMillisecondsUntilNextReading());
     sleepMCU(minMillisecondsUntilNextReading());
     return true;
@@ -213,6 +225,7 @@ void Datalogger::testMeasurementCycle()
     fileSystemWriteCache->flushCache();
     outputLastMeasurement();
   }      
+  notify(F("after while loop"));
   fileSystemWriteCache->flushCache();            // instead of using a boolean in this particular write cache
   fileSystemWriteCache->setOutputToSerial(false);// and then set it back to the original writecache here
 }
@@ -254,7 +267,7 @@ void Datalogger::loop()
       return;
     }
 
-    if(processReadingsCycle())
+    if(processReadingsCycle() == true) // nothing changes if this true/false
     {
       return;
     }
@@ -502,11 +515,14 @@ void Datalogger::initializeMeasurementCycle()
       }
     }
   }
+  //AE actuator call could go here 
+  
 
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
+  notify(F("made it to measureSensorValue"));
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
@@ -525,6 +541,13 @@ void Datalogger::measureSensorValues(bool performingBurst)
       }
     }
   }
+  //AE temp for actuators 
+// for (unsigned int i = 0; i < sensorCount; i++)
+//   {
+//     drivers[i]->stop();
+//     delay(drivers[i]->millisecondsUntilNextRequestedReading);
+//   }  
+
 
   //AE actuate hook after measurement could go here
 }
@@ -1256,31 +1279,27 @@ const char *Datalogger::getUUIDString()
 }
 
 
-int Datalogger::minMillisecondsUntilNextReading()
+unsigned int Datalogger::minMillisecondsUntilNextReading()
 {
-  unsigned int minimumNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  unsigned int minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  unsigned int maxDelayUntilNextAvailableReading = 0;
   for(int i=0; i<sensorCount; i++)
   {
-    minimumNextRequestedReading = min(minimumNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
-  }
-
-  unsigned int maxDelayUntilNextAvailableReading = 0; 
-  for(int i=0; i<sensorCount; i++)
-  {
+    // retrieve the fastest time requested for sampling
+    minimumDelayUntilNextRequestedReading = min(minimumDelayUntilNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
+    // retrieve the slowest response time for sampling
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
   }
-  
-  // we want to read as fast the speed requested by the fastest sensor
-  // or as slow as the slowest sensor has a new reading available
-  if(maxDelayUntilNextAvailableReading == 0)
-  {
-    return minimumNextRequestedReading;
-  }
-  else 
-  {
-    return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
-  }
 
+  // return max to prioritize sampling as soon as ALL sensors are ready to sample
+  return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
+  
+  // return min to prioritize sampling at desired speed for ONE specific sensor
+  // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
+  // {
+  //   return minimumDelayUntilNextRequestedReading;
+  // }
+  // return min(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
 }
 
 
