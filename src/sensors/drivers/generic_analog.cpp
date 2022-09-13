@@ -148,6 +148,10 @@ void GenericAnalogDriver::setup()
     pinMode(ADC_PINS[configurations.sensor_port], INPUT_ANALOG);
     // notify("Internal ADC Pin setup");
   }
+
+  // turn off power pin
+  // digitalWrite(PA8, HIGH);
+
 }
 
 void GenericAnalogDriver::stop()
@@ -164,7 +168,11 @@ bool GenericAnalogDriver::takeMeasurement()
   if(switchedVref)
   {
     pinMode(PA8, OUTPUT);
+    // while(1){
     digitalWrite(PA8, HIGH);
+    // delay(1000);
+    // }
+    // delay(100);
   }
 
   switch (configurations.adc_select)
@@ -178,7 +186,7 @@ bool GenericAnalogDriver::takeMeasurement()
 
   case ADC_SELECT_EXTERNAL:
   {
-    debug("get extADC value");
+    // debug("get extADC value");
     this->value = externalADC->getChannelValue(configurations.sensor_port);
   }
   break;

@@ -169,12 +169,12 @@ void CommandInterface::_toggleDebug()
   ok();
 }
 
-void printVersion(int arg_cnt, char **args)
-{
-  char message[100];
-  sprintf(message, "Firmware Version: %s", WATERBEAR_FIRMWARE_VERSION);
-  notify(message);
-}
+// void printVersion(int arg_cnt, char **args)
+// {
+//   char message[100];
+//   sprintf(message, "Firmware Version: %s", WATERBEAR_FIRMWARE_VERSION);
+//   notify(message);
+// }
 
 void invalidArgumentsMessage(const __FlashStringHelper * message)
 {
@@ -220,14 +220,14 @@ void setLoggerName(int arg_cnt, char **args)
     invalidArgumentsMessage(F("Logger name must be 7 characters or less"));
     return;
   }
-  CommandInterface::instance()->_setLoggerName(loggerName);
+  // CommandInterface::instance()->_setLoggerName(loggerName);
 }
 
-void CommandInterface::_setLoggerName(char * loggerName)
-{
-  this->datalogger->setLoggerName(loggerName);
-  ok();
-}
+// void CommandInterface::_setLoggerName(char * loggerName)
+// {
+//   this->datalogger->setLoggerName(loggerName);
+//   ok();
+// }
 
 void setDeploymentIdentifier(int arg_cnt, char **args)
 {
@@ -740,9 +740,9 @@ void CommandInterface::_reloadSensorConfigurations()
 }
 
 void CommandInterface::setup(){
-  cmdAdd("version", printVersion);
-  cmdAdd("show-warranty", printWarranty);
-  cmdAdd("show-conditions", printConditions);
+  // cmdAdd("version", printVersion);
+  // cmdAdd("show-warranty", printWarranty);
+  // cmdAdd("show-conditions", printConditions);
 
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
@@ -762,8 +762,8 @@ void CommandInterface::setup(){
 
   cmdAdd("calibrate", calibrate);
   
-  cmdAdd("set-user-note", setUserNote);
-  cmdAdd("set-user-value", setUserValue);
+  // cmdAdd("set-user-note", setUserNote);
+  // cmdAdd("set-user-value", setUserValue);
 
   cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
