@@ -74,6 +74,7 @@ void WaterBear_FileSystem::writeString(const char * string)
   // notify((int)strlen(string));
   // notify(string);
   this->logfile.print(string);
+  this->logfile.flush();
 }
 
 void WaterBear_FileSystem::endOfLine()
@@ -222,7 +223,7 @@ bool WaterBear_FileSystem::openFile(char * filename)
 
   if(!this->sd.chdir(this->loggingFolder))
   {
-    notify("failed:");
+    notify("failed lf:");
     notify(loggingFolder);
   }
   // else
@@ -234,6 +235,11 @@ bool WaterBear_FileSystem::openFile(char * filename)
 
   notify("Opening file");
   notify(filename);
+  if(sd.exists(filename))
+  {
+    notify("Error: File Already Exists!!");
+    return false;
+  }
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
   notify("Opened");
 
@@ -274,7 +280,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
   // TODO: add datalogger/slot settings as formatted header, prefaced with #
 
   this->logfile.println(header); // write the headers to the new logfile
-  // this->logfile.flush();
+  this->logfile.flush();
   //Serial2.print("wrote:");
   //notify(ret);
 }

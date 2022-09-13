@@ -102,6 +102,11 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
     settings->interval = 1;
   }
 
+  if( strcmp(settings->siteName, "") == 0)
+  {
+    strcpy(settings->siteName, "NO_SITE");
+  }
+
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
   switch (settings->mode)
@@ -116,7 +121,7 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
     break;
   default:
     changeMode(interactive);
-    strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
+    strcpy(loggingFolder, reinterpret_cast<const char *> F("INTERACTIVE"));
     break;
   }
 }
@@ -283,12 +288,10 @@ void Datalogger::loop()
       {
         // notify(F("interactive log"));
         measureSensorValues(false);
-        if(interactiveModeLogging)
-        {
-          outputLastMeasurement();
-          Serial2.print(F("CMD >> "));
-        }
+        outputLastMeasurement();
+        Serial2.print(F("CMD >> "));
         writeRawMeasurementToLogFile();
+        fileSystemWriteCache->flushCache();
         lastInteractiveLogTime = timestamp();
       }
     }
@@ -337,8 +340,8 @@ void Datalogger::loadSensorConfigurations()
   {
     notify("no sensor configurations found");
   }
-  notify("FREE MEM");
-  printFreeMemory();
+  // notify("FREE MEM");
+  // printFreeMemory();
 
   // construct the drivers
   notify("construct drivers");
@@ -346,8 +349,8 @@ void Datalogger::loadSensorConfigurations()
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("FREE MEM");
-    printFreeMemory();
+    // notify("FREE MEM");
+    // printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
     if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
@@ -367,16 +370,16 @@ void Datalogger::loadSensorConfigurations()
 
     if (driver->getProtocol() == i2c)
     {
-      debug("got i2c sensor");
+      // debug("got i2c sensor");
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
-      debug("set wire");
+      // debug("set wire");
     }
     debug("do setup");
     driver->setup();
 
-    debug("configure sensor driver");
+    // debug("configure sensor driver");
     driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
-    debug("configured sensor driver");
+    // debug("configured sensor driver");
   }
 
 }
@@ -385,16 +388,16 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
 {
   // calling this function does not deal with memory fragmentation
   // so it's not part of the main system, only for dev & debug
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   // free sensor configs
   for(unsigned short i=0; i<sensorCount; i++)
   {
     delete(drivers[i]);
   }
   free(drivers);
-  notify("FREE MEM reload");
-  printFreeMemory();
+  // notify("FREE MEM reload");
+  // printFreeMemory();
   loadSensorConfigurations();
 }
 
