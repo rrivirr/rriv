@@ -25,7 +25,7 @@ configuration_bytes_partition rgbDriver::getDriverSpecificConfigurationBytes()
   return partition;
 }
 
-void configureDriverFromJSON(cJSON *json)
+void rgbDriver::configureDriverFromJSON(cJSON *json)
 {
 }
 
