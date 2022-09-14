@@ -51,7 +51,7 @@ class rgbDriver : public I2CProtocolSensorDriver
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 

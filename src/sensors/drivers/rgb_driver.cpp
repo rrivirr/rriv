@@ -1,5 +1,5 @@
 #include "sensors/drivers/rgb_driver.h"
-#include "system/monitor.h" // for debug() and notify()
+#include "system/logs.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 
 #define RGBI2CADDRESS 0x70
@@ -24,7 +24,7 @@ configuration_bytes_partition rgbDriver::getDriverSpecificConfigurationBytes()
   return partition;
 }
 
-void rgbDriver::configureDriverFromJSON(cJSON *json)
+bool rgbDriver::configureDriverFromJSON(cJSON *json)
 {
 }
 
