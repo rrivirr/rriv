@@ -737,6 +737,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
 
   SensorDriver *driver = NULL;
   short typeCode = typeCodeForSensorTypeString(type);
+  notify(typeCode);
   driver = driverForSensorTypeCode(typeCode);
 
   if (driver != NULL)
