@@ -73,9 +73,7 @@ class rgbDriver : public I2CProtocolSensorDriver
     double cieyValue;
     double cieYValue;
 
-    // Example of data string from instrument. May be incorrect.
-    // XXX,XXX,XXX,xyY,X.XXX,X.XXX,XXX,Lux,XXXXX
-    const char *baseColumnHeaders = "value"; // will be written to .csv
+    const char *baseColumnHeaders = "red_value,green_value,blue_value,lux,cie_x,cie_y,cie_Y"; // will be written to .csv
     char dataString[50]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);
