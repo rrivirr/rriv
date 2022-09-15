@@ -149,7 +149,7 @@ private:
     // user
     char userNote[100] = "\0";
     int userValue = INT_MIN;
-    int lastInteractiveLogTime = 0;
+    uint lastInteractiveLogTime = 0;
 
     void loadSensorConfigurations();
     bool shouldExitLoggingMode();

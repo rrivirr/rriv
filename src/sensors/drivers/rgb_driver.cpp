@@ -5,6 +5,14 @@
 #define RGBI2CADDRESS 0x70
 #define RGBDELAY 300
 
+#define REDVALUE_TAG "redValue"
+#define GREENVALUE_TAG "greenValue"
+#define BLUEVALUE_TAG "blueValue"
+#define LUX_TAG "lux"
+#define CIExVALUE_TAG "ciexValue"
+#define CIEyVALUE_TAG "cieyValue"
+#define CIEYVALUE_TAG "cieYValue"
+
 rgbDriver::rgbDriver()
 {
   // debug("allocating driver template");
@@ -77,6 +85,8 @@ void rgbDriver::stop()
 
 bool rgbDriver::takeMeasurement()
 {
+  
+
   // debug("taking measurement from driver template");
   // return true if measurement taken store in class value(s), false if not
   const char *RGBRead = "R";
@@ -123,15 +133,58 @@ bool rgbDriver::takeMeasurement()
       break; // exit the while loop.
     }
   }
+  //notify(value);
+     /* get the first token */
+    char * token = strtok(value, ",");
+    if(token==NULL){return false;}
+    redValue = atoi(token);
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    greenValue = atoi(token);
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    blueValue = atoi(token);
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    lux = atoi(token);
+    token = strtok(NULL, ",");
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    ciexValue = atof(token);
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    cieyValue = atof(token);
+    token = strtok(NULL, ",");
+    if(token==NULL){return false;}
+    cieYValue = atof(token);
+
+    addValueToBurstSummaryMean(REDVALUE_TAG, redValue);
+    addValueToBurstSummaryMean(GREENVALUE_TAG, greenValue);
+    addValueToBurstSummaryMean(BLUEVALUE_TAG, blueValue);
+    addValueToBurstSummaryMean(LUX_TAG, lux);
+    addValueToBurstSummaryMean(CIExVALUE_TAG, ciexValue);
+    addValueToBurstSummaryMean(CIEyVALUE_TAG, cieyValue);
+    addValueToBurstSummaryMean(CIEYVALUE_TAG, cieYValue);
   return true;
 }
 
-const char *rgbDriver::getDataString()
+const char *rgbDriver::getRawDataString()
 {
   // debug("configuring driver template dataString");
   // process data string for .csv
   //sprintf(dataString, "%d,%d",value,int(value*31.83));
-  sprintf(dataString, "%s",value);
+  sprintf(dataString, "%d,%d,%d,%d,%.3f,%.3f,%f",redValue,greenValue,blueValue,lux,ciexValue,cieyValue,cieYValue);
+  return dataString;
+}
+
+const char *rgbDriver::getSummaryDataString()
+{
+  //double burstSummaryMean = getBurstSummaryMean(VAR_TAG);
+  sprintf(dataString, "%d,%d,%d,%d,%.3f,%.3f,%f", getBurstSummaryMean(REDVALUE_TAG),getBurstSummaryMean(GREENVALUE_TAG),
+  getBurstSummaryMean(BLUEVALUE_TAG),getBurstSummaryMean(LUX_TAG),getBurstSummaryMean(CIExVALUE_TAG),
+  getBurstSummaryMean(CIEyVALUE_TAG),getBurstSummaryMean(CIEYVALUE_TAG));
   return dataString;
 }
 

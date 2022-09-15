@@ -43,7 +43,8 @@ class rgbDriver : public I2CProtocolSensorDriver
     void setup();
     void stop();
     bool takeMeasurement();
-    const char * getDataString();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
@@ -63,10 +64,18 @@ class rgbDriver : public I2CProtocolSensorDriver
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/
     char value[42]; // sensor raw return(s) to be added to dataString
+    int redValue;
+    int greenValue;
+    int blueValue;
+    int lux;
+    double ciexValue;
+    double cieyValue;
+    double cieYValue;
+
     // Example of data string from instrument. May be incorrect.
     // XXX,XXX,XXX,xyY,X.XXX,X.XXX,XXX,Lux,XXXXX
     const char *baseColumnHeaders = "value"; // will be written to .csv
-    char dataString[16]; // will be written to .csv
+    char dataString[50]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);
 };
