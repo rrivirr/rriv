@@ -219,3 +219,8 @@ void rgbDriver::setDriverDefaults()
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
 }
+
+unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+{
+  return 0;
+}
