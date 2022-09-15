@@ -182,7 +182,7 @@ const char *rgbDriver::getRawDataString()
 const char *rgbDriver::getSummaryDataString()
 {
   //double burstSummaryMean = getBurstSummaryMean(VAR_TAG);
-  sprintf(dataString, "%d,%d,%d,%d,%.3f,%.3f,%f", getBurstSummaryMean(REDVALUE_TAG),getBurstSummaryMean(GREENVALUE_TAG),
+  sprintf(dataString, "%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%f", getBurstSummaryMean(REDVALUE_TAG),getBurstSummaryMean(GREENVALUE_TAG),
   getBurstSummaryMean(BLUEVALUE_TAG),getBurstSummaryMean(LUX_TAG),getBurstSummaryMean(CIExVALUE_TAG),
   getBurstSummaryMean(CIEyVALUE_TAG),getBurstSummaryMean(CIEYVALUE_TAG));
   return dataString;
