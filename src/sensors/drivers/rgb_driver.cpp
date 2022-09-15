@@ -220,7 +220,7 @@ void rgbDriver::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
-unsigned int SensorDriver::millisecondsUntilNextRequestedReading()
+unsigned int rgbDriver::millisecondsUntilNextRequestedReading()
 {
   return 0;
 }
