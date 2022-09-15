@@ -279,9 +279,9 @@ void Datalogger::loop()
   {
     if (interactiveModeLogging)
     {
-      if (timestamp() > lastInteractiveLogTime + 1)
+      if (millis() > lastInteractiveLogTime + 1000)
       {
-        // notify(F("interactive log"));
+        notify(F("interactive log"));
         measureSensorValues(false);
         if(interactiveModeLogging)
         {
@@ -289,10 +289,9 @@ void Datalogger::loop()
           Serial2.print(F("CMD >> "));
         }
         writeRawMeasurementToLogFile();
-        lastInteractiveLogTime = timestamp();
+        lastInteractiveLogTime = millis();
       }
-    }
-    
+    } 
   }
   else if (inMode(debugging))
   {
