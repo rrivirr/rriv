@@ -149,8 +149,10 @@ void GenericAnalogDriver::setup()
     // notify("Internal ADC Pin setup");
   }
 
+  
   // turn off power pin
-  // digitalWrite(PA8, HIGH);
+  pinMode(PA8, OUTPUT);
+  digitalWrite(PA8, HIGH);
 
 }
 
@@ -169,10 +171,10 @@ bool GenericAnalogDriver::takeMeasurement()
   {
     pinMode(PA8, OUTPUT);
     // while(1){
-    digitalWrite(PA8, HIGH);
+    digitalWrite(PA8, LOW);
     // delay(1000);
     // }
-    // delay(100);
+    delay(1000);
   }
 
   switch (configurations.adc_select)
@@ -199,7 +201,7 @@ bool GenericAnalogDriver::takeMeasurement()
 
   if(switchedVref)
   {
-    digitalWrite(PA8, LOW);
+    digitalWrite(PA8, HIGH);
   }
 
   // validate the value
