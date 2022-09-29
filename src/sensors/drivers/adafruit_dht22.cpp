@@ -3,13 +3,13 @@
 #include "system/hardware.h" // for pin names
 
 short GPIO_PINS[7] = {
-    GPIO_PIN_1,
-    GPIO_PIN_2,
-    GPIO_PIN_3,
-    GPIO_PIN_4,
-    GPIO_PIN_5,
-    GPIO_PIN_6,
-    GPIO_PIN_7
+    GPIO_PIN_1, // CN7-30
+    GPIO_PIN_2, // CN10-22
+    GPIO_PIN_3, // CN10-24 // 5v booster
+    GPIO_PIN_4, // CN10-16
+    GPIO_PIN_5, // CN7-2
+    GPIO_PIN_6, // CN7-3
+    GPIO_PIN_7 // CN7-23
 };
 
 #define TEMPERATURE_VALUE_TAG "temperature"
