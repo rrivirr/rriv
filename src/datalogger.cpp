@@ -1274,6 +1274,7 @@ const char *Datalogger::getUUIDString()
 uint32 Datalogger::minMillisecondsUntilNextReading()
 {
   uint32 minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  uint32 maxRequestedReadingDelay = MAX_REQUESTED_READING_DELAY;
   uint32 maxDelayUntilNextAvailableReading = 0;
   for(int i=0; i<sensorCount; i++)
   {
@@ -1281,6 +1282,11 @@ uint32 Datalogger::minMillisecondsUntilNextReading()
     minimumDelayUntilNextRequestedReading = min(minimumDelayUntilNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
     // retrieve the slowest response time for sampling
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
+  }
+  // TODO: clean up logic for minimum delay, default is max, and compared to max, if no sensor wants to run faster, then it stays at max
+  if(minimumDelayUntilNextRequestedReading == maxRequestedReadingDelay) // can't compare to #define?
+  {
+    minimumDelayUntilNextRequestedReading = 0;
   }
 
   // return max to prioritize sampling as soon as ALL sensors are ready to sample
