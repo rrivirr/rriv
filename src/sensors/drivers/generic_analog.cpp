@@ -169,12 +169,13 @@ bool GenericAnalogDriver::takeMeasurement()
   bool switchedVref = true;
   if(switchedVref)
   {
-    pinMode(PA8, OUTPUT);
+   
+
     // while(1){
     digitalWrite(PA8, LOW);
     // delay(1000);
     // }
-    delay(1000);
+    delay(500);
   }
 
   switch (configurations.adc_select)
@@ -202,6 +203,7 @@ bool GenericAnalogDriver::takeMeasurement()
   if(switchedVref)
   {
     digitalWrite(PA8, HIGH);
+    delay(3000);
   }
 
   // validate the value
