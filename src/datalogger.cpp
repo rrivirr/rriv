@@ -78,7 +78,8 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   memcpy(settings, buffer, sizeof(datalogger_settings_type));
 
   // apply defaults
-  if (settings->burstNumber == 0 || settings->burstNumber > 20)
+  // TODO: why was the max burstNumber 20?
+  if (settings->burstNumber == 0 || settings->burstNumber > 100)
   {
     settings->burstNumber = 1;
   }
@@ -1273,9 +1274,17 @@ const char *Datalogger::getUUIDString()
 
 uint32 Datalogger::minMillisecondsUntilNextReading()
 {
+  /*
+    TODO: split into two modes, asynchronous and synchronous logging
+    consider that eventually a sensor may have a very long delay until ready
+    or a user may want differing burst counts per sensor
+    ie the DHT22 could be pinged once every minute, rather than once every 2s
+  */
+
   uint32 minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
   uint32 maxRequestedReadingDelay = MAX_REQUESTED_READING_DELAY;
   uint32 maxDelayUntilNextAvailableReading = 0;
+  // if logMode == "synchronous"
   for(int i=0; i<sensorCount; i++)
   {
     // retrieve the fastest time requested for sampling
@@ -1292,6 +1301,7 @@ uint32 Datalogger::minMillisecondsUntilNextReading()
   // return max to prioritize sampling as soon as ALL sensors are ready to sample
   return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
   
+  // if logMode == "asynchronous"{}
   // return min to prioritize sampling at desired speed for ONE specific sensor
   // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
   // {
