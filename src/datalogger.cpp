@@ -90,6 +90,7 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
 
   settings->debug_values = true;
   settings->log_raw_data = true;
+  settings->debug_to_file = false;
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
@@ -124,6 +125,7 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 void Datalogger::setup()
 {
   startCustomWatchDog();
+  Monitor::instance()->debugToFile = settings.debug_to_file;
 
   setupHardwarePins();
   setupSwitchedPower();
@@ -164,6 +166,10 @@ bool Datalogger::processReadingsCycle()
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
     writeRawMeasurementToLogFile();
+    if(settings.debug_to_file)
+    {
+      fileSystemWriteCache->flushCache();
+    }
   }
 
   if (shouldContinueBursting())
@@ -182,6 +188,10 @@ bool Datalogger::processReadingsCycle()
 
   // so output burst summary
   writeSummaryMeasurementToLogFile();
+  if(settings.debug_to_file)
+  {
+    fileSystemWriteCache->flushCache();
+  }
 
   if (completedBursts < settings.burstNumber)
   {
