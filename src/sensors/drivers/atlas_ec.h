@@ -44,7 +44,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     const char * baseColumnHeaders = "ec.mS";
     char dataString[20]; // local storage for data string
 
-    unsigned long long lastSuccessfulReadingMillis = 0;
+    // unsigned long long lastSuccessfulReadingMillis = 0;
 
   //
   // Interface Implementation
@@ -66,7 +66,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     void calibrationStep(char * step, int arg_cnt, char ** args);
     void addCalibrationParametersToJSON(cJSON * json);
 
-    unsigned int millisecondsUntilNextReadingAvailable();
+    uint32 millisecondsUntilNextReadingAvailable();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
