@@ -50,6 +50,7 @@ void AtlasCO2Driver::setup()
 void AtlasCO2Driver::stop()
 {
   modularSensorDriver->sleep();
+  delete modularSensorDriver;
   // debug("stop/delete AtlasCO2Driver");
 }
 

@@ -93,7 +93,7 @@ bool scanI2C(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.print(F("I2C dev at addr 0x"));
+      Serial.print(F("I2C 0x"));
       if (address < 16)
         Serial.print(F("0"));
       Serial.println(address, HEX);
@@ -105,7 +105,7 @@ bool scanI2C(TwoWire *wire, int searchAddress)
     }
     else if (error == 4)
     {
-      Serial.print(F("Unknown error at addr 0x"));
+      Serial.print(F("error 0x"));
       if (address < 16)
         Serial.print(F("0"));
       Serial.println(address, HEX);
