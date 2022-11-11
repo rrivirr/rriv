@@ -72,7 +72,7 @@ class Datalogger
 {
 
 public:
-
+    
     // sensors
     unsigned short sensorCount = 0;
     bool * dirtyConfigurations = NULL;      // configuration change tracking
@@ -144,7 +144,8 @@ private:
     time_t currentEpoch;
     uint32 offsetMillis;
     char loggingFolder[26];
-    int completedBursts;
+    unsigned short completedBursts;
+    unsigned short measurementCycle; 
     int awakeTime;
     uint32 burstCycleStartMillis;
 

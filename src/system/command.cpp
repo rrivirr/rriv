@@ -695,16 +695,6 @@ void CommandInterface::_gpiotest(int pin)
     digitalWrite(pin, HIGH);
 }
 
-// void factoryReset(int arg_cnt, char**args)
-// {
-//   CommandInterface::instance()->_factoryReset();
-// }
-
-// // Hardcoded reset for sensor slot 3 [CO2 sensor at the time]
-// void CommandInterface::_factoryReset()
-// {
-//   datalogger->drivers[3]->factoryReset();
-// }
 
 // void enterSleep(int arg_cnt, char**args)
 // {

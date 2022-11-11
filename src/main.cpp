@@ -64,7 +64,7 @@ void setup(void)
   datalogger->setup();
 
   /* We're ready to go! */
-  debug(F("done with setup"));
+  debug(F("setup done"));
   notifyDebugStatus();
 
   startCustomWatchDog(); // printMCUDebugStatus delays with user message, don't want watchdog to trigger
@@ -77,8 +77,8 @@ void setup(void)
   // Otherwise we need to check that the unit has been power cycled for debug mode after flashing
   if (datalogger->inMode(logging))
   {
-    notify("Device will enter logging mode in 5 seconds");
-    notify("Type 'i' to exit to interactive mode");
+    notify("Device -> log mode in 5 sec");
+    notify("Enter 'i' for interactive mode");
     Serial2.print("CMD >> ");
     int start = timestamp();
     int now = start;

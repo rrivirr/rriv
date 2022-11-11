@@ -183,10 +183,9 @@ bool Datalogger::processReadingsCycle()
   }
 
   // otherwise burst cycle completed,
-  completedBursts++;
-
   // so output burst summary
-  writeSummaryMeasurementToLogFile();
+  writeSummaryMeasurementToLogFile();    
+  completedBursts++;
 
   if (completedBursts < settings.burstNumber)
   {
@@ -465,6 +464,7 @@ void Datalogger::initializeMeasurementCycle()
   currentEpoch = timestamp(); // only call time once per measurement cycle to preserve battery
   offsetMillis = millis(); // use systick to keep track of time instead, offset lets us start at 0
 
+  measurementCycle++;
   initializeBurst();
   completedBursts = 0;
 
@@ -497,7 +497,7 @@ void Datalogger::initializeMeasurementCycle()
       warmUpTime = 0;
     }
   }
-  notify("sensors warmed");
+  notify("warmed");
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
@@ -575,6 +575,10 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
 
   // hardcoded to have battery into exADC port 3 along side 5v booster
   sprintf(buffer, "%d,", externalADC->getChannelValue(3)); 
+  fileSystemWriteCache->writeString(buffer);
+
+  // write measurement cycle number and burst number
+  sprintf(buffer,"%d,%d,", measurementCycle, completedBursts+1);
   fileSystemWriteCache->writeString(buffer);
 }
 
@@ -975,6 +979,8 @@ bool Datalogger::deploy()
   }
 
   setDeploymentTimestamp(timestamp());  // TODO: deployment should span across power cycles
+  measurementCycle = 0; // reset measurement cycle count when we deploy
+  // increment at start of cycle, or after?
   enterFieldLoggingMode();
   return true;
 }
@@ -1003,9 +1009,11 @@ void Datalogger::initializeFilesystem()
   sprintf(setupTS, "unixtime: %lld", setupTime);
   notify(setupTS);
 
+  // example with co2, dht22, and methane sensor
+  // "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V,measurement,burst,dht_C,dht_RH,atlas_CO2_ppm,ch4rf_raw,ch4rf_cal,ch4_raw,ch4_cal,user_note,user_value"
   char header[200]; // adjust as necessary, statusFields + csv column headers from each driver
-  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V"; // 68 char + null
-
+  const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V,measurementCycle,burstCycle"; // 96 char + null
+  
   strcpy(header, statusFields);
   debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
