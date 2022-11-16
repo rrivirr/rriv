@@ -322,7 +322,7 @@ void WaterBear_FileSystem::reopenFileSystem()
   }
 }
 
-bool WaterBear_FileSystem::checkFileSize()
-{
-  return (this->logfile.fileSize() > MAX_FILE_SIZE_BYTES);
-}
+// bool WaterBear_FileSystem::checkFileSize()
+// {
+//   return (this->logfile.fileSize() > MAX_FILE_SIZE_BYTES);
+// }

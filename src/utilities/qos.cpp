@@ -45,10 +45,11 @@ void checkMemory()
   // reset the system if we are running out of memory
   // char freeMemoryMessage[21];
   int freeMemoryAmount = freeMemory();
-  // sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
+  // sprintf(freeMemoryMessage, reinterpretCharPtr(F("FreeMem: %d")), freeMemoryAmount);
   // debug(freeMemoryMessage);
   if(freeMemoryAmount < 500){
-    debug(F("Low mem, resetting!"));
+    //debug(F("Low mem, resetting!"));
+    debug(F("LOWMEM"));
     nvic_sys_reset(); // software reset, takes us back to init
   }
 }

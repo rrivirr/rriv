@@ -52,6 +52,7 @@ class AtlasECDriver : public I2CProtocolSensorDriver
   public:
     const char * getSensorTypeString();
     void setup();
+    void stop();
 
     void wake();
     void hibernate();

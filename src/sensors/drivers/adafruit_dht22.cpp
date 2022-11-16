@@ -59,7 +59,7 @@ void AdaDHT22::setup()
 
 void AdaDHT22::stop()
 {
-  free(dht);
+  delete dht;
   pinMode(GPIO_PINS[configuration.sensor_pin], INPUT);
   digitalWrite(GPIO_PINS[configuration.sensor_pin], LOW);
   // notify("AdaDHT22 stopped");

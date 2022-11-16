@@ -76,6 +76,12 @@ void AtlasECDriver::setup()
   oem_ec->setProbeType(1.0);
 }
 
+void AtlasECDriver::stop()
+{
+  delete oem_ec;
+  // debug("stop/delete AtlasCO2Driver");
+}
+
 void AtlasECDriver::hibernate()
 {
   oem_ec->setHibernate();

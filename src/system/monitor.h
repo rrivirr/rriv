@@ -26,7 +26,7 @@ class Monitor
 
 public:
     //TODO: CLI command to toggle these
-    bool debugToFile = false; // currently causes issues with logging, due to batch logging?
+    bool debugToFile = true;
     bool debugToSerial = true;
     WaterBear_FileSystem * filesystem = NULL;
 

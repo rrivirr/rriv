@@ -78,7 +78,6 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   memcpy(settings, buffer, sizeof(datalogger_settings_type));
 
   // apply defaults
-  // TODO: why was the max burstNumber 20?
   if (settings->burstNumber == 0 || settings->burstNumber > 100)
   {
     settings->burstNumber = 1;
@@ -90,6 +89,7 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
 
   settings->debug_values = true;
   settings->log_raw_data = true;
+  settings->debug_to_file = true;
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
@@ -116,7 +116,7 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
     break;
   default:
     changeMode(interactive);
-    strcpy(loggingFolder, reinterpret_cast<const char *> F("NOT_DEPLOYED"));
+    strcpy(loggingFolder, reinterpret_cast<const char *> F("BENCH"));
     break;
   }
 }
@@ -124,6 +124,7 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 void Datalogger::setup()
 {
   startCustomWatchDog();
+  Monitor::instance()->debugToFile = settings.debug_to_file;
 
   setupHardwarePins();
   setupSwitchedPower();
@@ -168,6 +169,10 @@ bool Datalogger::processReadingsCycle()
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
     writeRawMeasurementToLogFile();
+    if(settings.debug_to_file)
+    {
+      fileSystemWriteCache->flushCache();
+    }
   }
 
   if (shouldContinueBursting())
@@ -186,6 +191,10 @@ bool Datalogger::processReadingsCycle()
   // so output burst summary
   writeSummaryMeasurementToLogFile();    
   completedBursts++;
+  if(settings.debug_to_file)
+  {
+    fileSystemWriteCache->flushCache();
+  }
 
   if (completedBursts < settings.burstNumber)
   {
@@ -309,7 +318,7 @@ void Datalogger::loop()
   else
   {
     // invalid mode!
-    notify(F("Invalid Mode!"));
+    notify(F("Bad Mode"));
     notify(mode);
     mode = interactive;
     delay(1000);
@@ -341,7 +350,7 @@ void Datalogger::loadSensorConfigurations()
   }
   if (sensorCount == 0)
   {
-    notify("no sensor configurations found");
+    notify("no sensor config");
   }
   // notify("FREE MEM");
   // printFreeMemory();
@@ -599,7 +608,7 @@ bool Datalogger::writeRawMeasurementToLogFile()
   writeStatusFieldsToLogFile("raw");
 
   // and write out the sensor data
-  debug(F("Write sensor data"));
+  debug(F("Write data"));
   for (unsigned short i = 0; i < sensorCount; i++)
   {
     // get values from the sensors
@@ -820,7 +829,7 @@ void Datalogger::clearSlot(unsigned short slot)
   }
   if (!slotConfigured)
   {
-    notify("Slot not configured");
+    notify("Slot no config");
     return;
   }
 
@@ -957,7 +966,7 @@ void Datalogger::storeMode(mode_type mode)
 void Datalogger::changeMode(mode_type mode)
 {
   char message[50];
-  sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
+  sprintf(message, reinterpret_cast<const char *> F("->Mode %d"), mode);
   notify(message);
   this->mode = mode;
 }
@@ -967,14 +976,15 @@ bool Datalogger::inMode(mode_type mode)
   return this->mode == mode;
 }
 
+const char * abortMessage = "**** ABORTING DEPLOYMENT *****";
+
 bool Datalogger::deploy()
 {
   // notify(F("Deploying now!"));
   notifyDebugStatus();
   if (checkDebugSystemDisabled() == false)
   {
-    notify("**** ABORTING DEPLOYMENT *****");
-    notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    notify(abortMessage);
     return false;
   }
 
@@ -1147,7 +1157,7 @@ void Datalogger::stopAndAwaitTrigger()
   // debug(F("Await measurement trigger"));
 
   // printInterruptStatus(Serial2);
-  debug(F("Going to sleep"));
+  debug(F("GoingToSleep"));
 
   // save enabled interrupts
   int iser1, iser2, iser3;
@@ -1164,15 +1174,16 @@ void Datalogger::stopAndAwaitTrigger()
 
   powerDownSwitchableComponents();
   fileSystem->closeFileSystem();
-  if(fileSystem->checkFileSize())
-  {
-    notify("newfile");
-    // not working, not sure how this is supposed to work
-    // initializeFilesystem(); // if file size exceeded, make new file
-    // fileSystem->closeFileSystem(); // then close it
+  //// filesize issue work around, maybe solved by addressing memory leak in drivers?
+  // if(fileSystem->checkFileSize())
+  // {
+  //   notify("newfile");
+  //   // not working, not sure how this is supposed to work
+  //   // initializeFilesystem(); // if file size exceeded, make new file
+  //   // fileSystem->closeFileSystem(); // then close it
 
-    nvic_sys_reset(); // or just reset if this isn't working
-  }
+  //   nvic_sys_reset(); // or just reset if this isn't working
+  // }
 
   disableSwitchedPower();
 

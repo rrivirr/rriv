@@ -5,7 +5,7 @@
 // Follow steps to add a new sensor driver
 //
 
-// Step 1: Include the header for your driver in sensor_map.h
+// Step 1: Include the header for your driver in registry.h
 
 
 #define GENERIC_ANALOG_SENSOR 0x0000
@@ -33,5 +33,10 @@ void buildDriverSensorMap()
   setupSensorMaps<AtlasCO2Driver>(ATLAS_CO2_SENSOR, F(ATLAS_CO2_DRIVER_TYPE_STRING)); // 4848 bytes
 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
+  // setupSensorMaps<$CLASS_NAME>($SENSOR_CODE, F($SENSOR_STRING_NAME));
+  // $CLASS_NAME is the C++ class of the sensor
+  // $SENSOR_CODE is the define added in step 2 above for this sensor
+  // $SENSOR_STRING_NAME is the define for human readable sensor name found in the .h for this sensor driver
+
 
 }
