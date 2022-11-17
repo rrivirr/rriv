@@ -1067,7 +1067,7 @@ void Datalogger::powerUpSwitchableComponents()
   bool externalADCInstalled = scanI2C(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
   if (externalADCInstalled)
   {
-    debug(F("Set up exADC"));
+    debug(F("Setup exADC"));
     externalADC = new AD7091R();
     externalADC->configure();
     externalADC->enableChannel(0);
@@ -1077,7 +1077,7 @@ void Datalogger::powerUpSwitchableComponents()
   }
   else
   {
-    debug(F("exADC not installed"));
+    debug(F("no exADC"));
   }
 
   // debug(F("Switchable components powered up"));
@@ -1092,6 +1092,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
   // debug(F("Switchable components powered down"));
+  delete externalADC;
 }
 
 void Datalogger::prepareForUserInteraction()

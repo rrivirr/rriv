@@ -318,7 +318,7 @@ void WaterBear_FileSystem::reopenFileSystem()
   }
   else 
   {
-    debug(F("Reopen file succeeded"));
+    debug(F("Reopened file"));
   }
 }
 
