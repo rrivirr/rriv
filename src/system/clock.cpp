@@ -219,7 +219,7 @@ time_t timestamp()
   //Serial2.println("timestamp mins");
   //Serial2.println(ts.tm_min);
   ts.tm_sec = Clock.getSecond();
-  ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  ts.tm_isdst = 0; // Is DST on? 1 = yes, 0 = no, -1 = unknown
   return (mktime(&ts)); // turn tm struct into time_t value
 }
 
