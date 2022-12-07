@@ -203,7 +203,7 @@ bool GenericAnalogDriver::takeMeasurement()
   if(switchedVref)
   {
     digitalWrite(PA8, HIGH);
-    delay(3000);
+    delay(1000);
   }
 
   // validate the value
