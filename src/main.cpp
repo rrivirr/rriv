@@ -69,7 +69,7 @@ void setup(void)
 
   startCustomWatchDog(); // printMCUDebugStatus delays with user message, don't want watchdog to trigger
 
-  Monitor::instance()->debugToSerial = true;
+  Monitor::instance()->debugToSerial = false;
 
   printWelcomeMessage(dataloggerSettings);
 

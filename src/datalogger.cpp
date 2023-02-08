@@ -634,6 +634,7 @@ bool Datalogger::writeSummaryMeasurementToLogFile()
   {
     // get values from the sensors
     const char *dataString = drivers[i]->getSummaryDataString();
+    notify(dataString);
     fileSystemWriteCache->writeString(dataString);
     if (i < sensorCount - 1)
     {

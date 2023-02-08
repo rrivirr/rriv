@@ -517,28 +517,47 @@ void setRTC(int arg_cnt, char **args)
 void CommandInterface::_setRTC(uint32 setTimestamp)
 {
   int time = timestamp();
-  int diff = time - setTimestamp;
-  notify("Time diff since: ");
-  notify(datalogger->settings.RTCsetTime);
-  notify(diff);
-  datalogger->settings.RTCsetTime = setTimestamp;
+  char message[55];
+  
+  sprintf(message, "Time diff since:%i =%i", (int)datalogger->settings.RTCsetTime, (int)setTimestamp-time);
+  notify(message);
 
+  datalogger->settings.RTCsetTime = setTimestamp;
   setTime(setTimestamp);
   ok();
 }
 
 void getRTC(int arg_cnt, char **args)
-{
-  CommandInterface::instance()->_getRTC();
+{ 
+  // if(arg_cnt == 2){
+  //   CommandInterface::instance()->_getRTC((uint32)atoi(args[1]));
+  // }
+  // else
+    CommandInterface::instance()->_getRTC();
 }
+
+// An overload that could be useful for debugging time with the CLI client, things like drift or larger time based issues
+// void CommandInterface::_getRTC(uint32 currentTimestamp)
+// {
+//   int time = timestamp();
+//   char message[55];
+//   char humanTimeString[25];
+//   t_t2ts(time, 0, humanTimeString);
+//   sprintf(message, "exRTC: %i, %s", time, humanTimeString);
+//   notify(message);
+
+//   // sprintf(message, "Time diff since:%i =%i", (int)datalogger->settings.RTCsetTime, (int)currentTimestamp-time);
+//   // notify(message);
+// }
+
 
 void CommandInterface::_getRTC()
 {
   int time = timestamp();
-  char message[100];
+  char message[60];
   char humanTimeString[25];
   t_t2ts(time, 0, humanTimeString);
-  sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
+  sprintf(message, "exRTC: %i, %s", time, humanTimeString);
   notify(message);
 }
 

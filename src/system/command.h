@@ -112,6 +112,7 @@ class CommandInterface
     void _clearSlot(int slot);
 
     void _getRTC();
+    // void _getRTC(uint32 currentTimestamp);
     void _setRTC(uint32 setTimestamp);
 
     void _deployNow();

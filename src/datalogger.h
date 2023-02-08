@@ -63,7 +63,7 @@ typedef struct datalogger_settings {
     byte debug_to_file: 1;
     byte reserved2 : 3;
 } datalogger_settings_type;
- 
+
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
 
 // Forward declaration of class

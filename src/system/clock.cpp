@@ -206,26 +206,37 @@ time_t timestamp()
 	bool pmFlag;
 
   ts.tm_year = Clock.getYear();
-  ts.tm_mon = Clock.getMonth(century);
+  ts.tm_mon = Clock.getMonth(century)-1;
   ts.tm_mday = Clock.getDate();
-  ts.tm_wday = Clock.getDoW();
+  ts.tm_wday = Clock.getDoW()-1;
   ts.tm_hour = Clock.getHour(h24Flag, pmFlag);
   ts.tm_min = Clock.getMinute();
   ts.tm_sec = Clock.getSecond();
   ts.tm_isdst = -1; // Is DST on? 1 = yes, 0 = no, -1 = unknown
+
+  // notify(ts.tm_year);
+  // notify(ts.tm_mon);
+  // notify(ts.tm_mday);
+  // notify(ts.tm_wday);
+  // notify(ts.tm_hour);
+  // notify(ts.tm_min);
+  // notify(ts.tm_sec);
+  // notify(ts.tm_isdst);
+
   return (mktime(&ts)); // turn tm struct into time_t value
 }
 
 void setTime(time_t toSet)
 {
+  // Clock.setEpoch(toSet); //takes up too much space
   struct tm ts;
 
   ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
   Clock.setClockMode(false); //true for 12h false for 24h
   Clock.setYear(ts.tm_year);
-  Clock.setMonth(ts.tm_mon);
+  Clock.setMonth(ts.tm_mon+1);
   Clock.setDate(ts.tm_mday);
-  Clock.setDoW(ts.tm_wday);
+  Clock.setDoW(ts.tm_wday+1);
   Clock.setHour(ts.tm_hour);
   Clock.setMinute(ts.tm_min);
   Clock.setSecond(ts.tm_sec);
