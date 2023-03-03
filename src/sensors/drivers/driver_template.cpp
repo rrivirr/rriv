@@ -19,6 +19,8 @@
 #include "system/logs.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 
+#define VAR_TAG "var"
+
 DriverTemplate::DriverTemplate()
 {
   // debug("allocating driver template");
@@ -51,7 +53,7 @@ bool DriverTemplate::takeMeasurement()
     value = 42;
     measurementTaken = true;
   }
-  addValueToBurstSummaryMean("var", value); // use the default option for computing the burst summary value
+  addValueToBurstSummaryMean(VAR_TAG, value); // use the default option for computing the burst summary value
   return measurementTaken;
 }
 
@@ -65,7 +67,7 @@ const char *DriverTemplate::getRawDataString()
 
 const char *DriverTemplate::getSummaryDataString()
 {
-  double burstSummaryMean = getBurstSummaryMean("var");
+  double burstSummaryMean = getBurstSummaryMean(VAR_TAG);
   sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, burstSummaryMean*31.83);
   return dataString;  
 }

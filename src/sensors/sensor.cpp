@@ -75,8 +75,8 @@ void SensorDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
 void SensorDriver::initializeBurst()
 {
   burstCount = 0;
-  // burstSummarySumCounts.clear();
-  // burstSummarySums.clear();
+  burstSummarySumCounts.clear();
+  burstSummarySums.clear();
 }
 
 void SensorDriver::incrementBurst()
