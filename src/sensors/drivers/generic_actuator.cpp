@@ -134,22 +134,17 @@ configuration_bytes_partition GenericActuator::getDriverSpecificConfigurationByt
 
 bool GenericActuator::configureDriverFromJSON(cJSON *json)
 {
-  return true;
+  return true; 
 }
 
 void GenericActuator::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
-  // debug("appeding driver specific driver template json");
   
-  //driver specific config, customize
-  //addCalibrationParametersToJSON(json);
 }
 
 void GenericActuator::setDriverDefaults()
 {
-  // debug("setting driver template driver defaults");
-  // set default values for driver struct specific values
-  //configuration.cal_timestamp = 0;
+  
 }
 
 void GenericActuator::addCalibrationParametersToJSON(cJSON *json)

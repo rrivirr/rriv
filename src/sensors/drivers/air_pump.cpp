@@ -48,23 +48,18 @@ void AirPump::setup()
 bool AirPump::takeMeasurement()
 {
   //AE temp fix: measurement turns pump on & off 
-    notify(F("in take measurement"));
-    digitalWrite(GPIO_PIN_6, HIGH);
-    //delay(configuration.dutyCycle*configuration.timeCycle*1000);
-    delay(2000);
-    digitalWrite(GPIO_PIN_6, LOW);
-    // delay((1-configuration.dutyCycle)*configuration.timeCycle*1000);
-  
+  //notify(F("in take measurement"));
+  digitalWrite(GPIO_PIN_6, HIGH);
+  //delay(configuration.dutyCycle*configuration.timeCycle*1000);
+  delay(5000);
+  digitalWrite(GPIO_PIN_6, LOW);
+  delay(5000);
+  // delay((1-configuration.dutyCycle)*configuration.timeCycle*1000);
+
 
   // // debug("taking measurement from driver template");
   // //return true if measurement taken store in class value(s), false if not
-  // bool measurementTaken = false;
-  // if(true)
-  // {
-  //   value = 42; //why 42? 
-  //   measurementTaken = true;
-  // }
-  // addValueToBurstSummaryMean("var", value); // use the default option for computing the burst summary value
+  addValueToBurstSummaryMean("actuate", 1); // use the default option for computing the burst summary value
   // return measurementTaken;
 
   //for actuators, no measurement taken
@@ -75,7 +70,7 @@ const char *AirPump::getRawDataString()
 {
   // // debug("configuring driver template dataString");
   // // process data string for .csv
-  // sprintf(dataString, "%d,%0.3f",value,value*31.83);
+  sprintf(dataString, "%d",1);
   return dataString;
 
 }
@@ -85,7 +80,8 @@ const char *AirPump::getSummaryDataString()
   //   //actuators likely don't need bursts / burst sumary? 
   // double burstSummaryMean = getBurstSummaryMean("var");
   // sprintf(dataString, "%0.3f,%0.3f", burstSummaryMean, burstSummaryMean*31.83);
-  // return dataString;  
+  // return dataString; 
+  sprintf(dataString, "%d",1); 
   return dataString;
 }
 
@@ -117,7 +113,7 @@ void AirPump::calibrationStep(char *step, int arg_cnt, char ** args)
 unsigned int AirPump::millisecondsUntilNextRequestedReading()
 {
   //return ((1-configuration.dutyCycle)*configuration.timeCycle*1000); // as slow as possible by default, a smaller number in driver implementation forces faster read
-  return(2000);
+  return(10000);
 }
 
 void AirPump::stop()
@@ -162,14 +158,14 @@ configuration_bytes_partition AirPump::getDriverSpecificConfigurationBytes()
 
 bool AirPump::configureDriverFromJSON(cJSON *json)
 {
-  const cJSON *dutyCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "duty_cycle");
-  const cJSON *flowRateJSON = cJSON_GetObjectItemCaseSensitive(json, "flow_rate");
-  const cJSON *volumeEvacuateJSON = cJSON_GetObjectItemCaseSensitive(json, "volume_evacuate");
-  const cJSON *timeCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "time_cycle");
-  configuration.dutyCycle = (byte)dutyCycleJSON->valueint;
-  configuration.flowRate = (byte)flowRateJSON->valueint;
-  configuration.volumeEvacuate = (byte)volumeEvacuateJSON->valueint;
-  configuration.timeCycle = (byte)timeCycleJSON->valueint;
+  // const cJSON *dutyCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "duty_cycle");
+  // const cJSON *flowRateJSON = cJSON_GetObjectItemCaseSensitive(json, "flow_rate");
+  // const cJSON *volumeEvacuateJSON = cJSON_GetObjectItemCaseSensitive(json, "volume_evacuate");
+  // const cJSON *timeCycleJSON = cJSON_GetObjectItemCaseSensitive(json, "time_cycle");
+  // configuration.dutyCycle = (byte)dutyCycleJSON->valueint;
+  // configuration.flowRate = (byte)flowRateJSON->valueint;
+  // configuration.volumeEvacuate = (byte)volumeEvacuateJSON->valueint;
+  // configuration.timeCycle = (byte)timeCycleJSON->valueint;
   
 
   return true;
@@ -190,6 +186,7 @@ void AirPump::setDriverDefaults()
   //configuration.cal_timestamp = 0;
   // configuration.dutyCycle = 0.5;
   // configuration.flowRate = 1;
+  configuration.cal_timestamp = 0;
 
 }
 
@@ -207,6 +204,7 @@ void AirPump::addCalibrationParametersToJSON(cJSON *json)
   // debug("add driver template calibration parameters to json");
   //cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
   //cJSON_AddNumberToObject(json, DUTY_CYCLE_TYPE_STRING, configuration.dutyCycle);
+  cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
 

@@ -33,7 +33,7 @@ typedef enum protocol
   i2c,
   gpio,
   drivertemplate,
-  genericactuator
+  genericactuator,
 } protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64

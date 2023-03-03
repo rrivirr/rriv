@@ -39,11 +39,10 @@ class AirPump : public GenericActuator
 
         //note maxiumum duty cycle maximum is 1 
         //note for this air pump maximum time on is 5 seconds, so maximum time cycle 10. 
-        float dutyCycle = 0.5;
-        float flowRate = 2.5; // needs to be in L / min
-        float volumeEvacuate = 7.57; //needs to be in L 
-        int timeCycle = 4; //total time of 1 on off cycle in seconds
-
+        // float dutyCycle = 0.5;
+        // float flowRate = 2.5; // needs to be in L / min
+        // float volumeEvacuate = 7.57; //needs to be in L 
+        // int timeCycle = 4; //total time of 1 on off cycle in seconds
       
         //float timeOn = (volumeEvacuate/(flowRate/60))*dutyCycle;
         //float timeOn = dutyCycle*totalTimeCycle; //in seconds, based off maximum rating (not consistent for all types air pumps? )
@@ -52,6 +51,7 @@ class AirPump : public GenericActuator
         //float timeOff = (1-dutyCycle)*totalTimeCycle;
         // int numIterations = ceil((volumeEvacuate/(flowRate/60))/(dutyCycle*timeCycle));
         // int numIterations = 37;
+        unsigned long long cal_timestamp;
   
     
     } driver_configuration;
@@ -105,11 +105,11 @@ class AirPump : public GenericActuator
     // float timeOff; //time air pump off
     //int numIterations = ceil((configuration.volEvacuate/(configuration.flowRate/60))/(configuration.dutyCycle*configuration.timeCycle));
     
-    int numIterations = 5; //temp for testing 
+
 
     //void calcIterations(int* iterations, float duty, float rate, float vol, int cycle);
-    int value; // sensor raw return(s) to be added to dataString
-    const char *baseColumnHeaders = "C,RH"; // will be written to .csv
+    // int value; // sensor raw return(s) to be added to dataString
+    const char *baseColumnHeaders = "actuate"; // will be written to .csv
     char dataString[16]; // will be written to .csv
 
     

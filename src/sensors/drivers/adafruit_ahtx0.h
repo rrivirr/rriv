@@ -15,47 +15,27 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ATLAS_EC
-#define WATERBEAR_ATLAS_EC
+
+#ifndef WATERBEAR_ADAFRUIT_AHTX0
+#define WATERBEAR_ADAFRUIT_AHTX0
 
 #include "sensors/sensor.h"
-#include "EC_OEM.h"
+#include <Adafruit_AHTX0.h>
 
-#define ATLAS_EC_OEM_TYPE_STRING "atlas_ec"
 
-class AtlasECDriver : public I2CProtocolSensorDriver
+#define ADAFRUIT_DHTX0_TYPE_STRING "adafruit_ahtx0"
+
+class AdaAHTX0 : public I2CProtocolSensorDriver
 {
-
   typedef struct // 32 bytes max
   {
     unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
   } driver_configuration;
-
-  public: 
-    AtlasECDriver();
-    ~AtlasECDriver();
-  
-  private:
-    const char *sensorTypeString = ATLAS_EC_OEM_TYPE_STRING;
-    driver_configuration configuration;
-    EC_OEM *oem_ec; // A pointer to the I2C driver for the Atlas EC sensor
-    
-    int value;
-    const char * baseColumnHeaders = "ec.mS";
-    char dataString[20]; // local storage for data string
-
-    unsigned long long lastSuccessfulReadingMillis = 0;
-
-  //
-  // Interface Implementation
-  //
   public:
+  //Constrcutor
+    AdaAHTX0();
+    ~AdaAHTX0();
     const char * getSensorTypeString();
-    void setup();
-
-    void wake();
-    void hibernate();
-    void setDebugMode(bool debug); // for setting internal debug parameters, such as LED on 
 
     bool takeMeasurement();
     const char * getRawDataString();
@@ -65,15 +45,33 @@ class AtlasECDriver : public I2CProtocolSensorDriver
     void initCalibration();
     void calibrationStep(char * step, int arg_cnt, char ** args);
     void addCalibrationParametersToJSON(cJSON * json);
+    
+    void setup();
+    void stop();
 
     unsigned int millisecondsUntilNextReadingAvailable();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    // bool configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
+
+  private:
+    const char *sensorTypeString = ADAFRUIT_DHTX0_TYPE_STRING;
+    driver_configuration configuration;
+    Adafruit_AHTX0 *aht; //pointer to I2C driver for Adafruit_AHTX0
+    
+    float temperature;
+    float humidity;
+    const char * baseColumnHeaders = "C,RH";
+    char dataString[16]; // local storage for data string
+
+    unsigned long long lastSuccessfulReadingMillis = 0;
+
+    
+
 };
 
 #endif

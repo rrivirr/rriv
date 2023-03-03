@@ -221,11 +221,13 @@ void Datalogger::testMeasurementCycle()
 {
   initializeMeasurementCycle();
   fileSystemWriteCache->setOutputToSerial(true); // another way to do this would be to set a special write cache
+
   while(processReadingsCycle()){
+
     fileSystemWriteCache->flushCache();
     outputLastMeasurement();
   }      
-  notify(F("after while loop"));
+  //notify("after while loop");
   fileSystemWriteCache->flushCache();            // instead of using a boolean in this particular write cache
   fileSystemWriteCache->setOutputToSerial(false);// and then set it back to the original writecache here
 }
@@ -522,7 +524,7 @@ void Datalogger::initializeMeasurementCycle()
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
-  notify(F("made it to measureSensorValue"));
+  
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
@@ -533,11 +535,14 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
   for (unsigned int i = 0; i < sensorCount; i++)
   {
+
     if (drivers[i]->takeMeasurement())
     {
+
       if (performingBurst)
       {
         drivers[i]->incrementBurst(); // burst bookkeeping
+
       }
     }
   }
@@ -776,6 +781,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       return;
     }
+
     if (driver->getProtocol() == i2c)
     {
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
@@ -788,6 +794,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       if (drivers[i]->getCommonConfigurations()->slot == driver->getCommonConfigurations()->slot)
       {
+         notify("flag 1 set config");
         slotReplacement = true;
         SensorDriver *replacedDriver = drivers[i];
         drivers[i] = driver;
@@ -795,6 +802,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
         break;
       }
     }
+    notify("flag 2 set config");
     if (!slotReplacement)
     {
       sensorCount = sensorCount + 1;
@@ -819,8 +827,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       }
       free(drivers);
       drivers = updatedDrivers;
+       notify("flag 3 set config");
     }
   }
+  notify("end set config");
 }
 
 void Datalogger::clearSlot(unsigned short slot)

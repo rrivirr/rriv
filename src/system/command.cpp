@@ -686,8 +686,8 @@ void airpumptest (int arg_cnt, char**args)
 void CommandInterface::_airpumptest()
 {
   
-  AirPump ap;
-  ap.actuateBeforeWarmUp();
+  // AirPump ap;
+  // ap.actuateBeforeWarmUp();
   // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
   // {
   //   digitalWrite(GPIO_PIN_6, HIGH);
@@ -752,7 +752,7 @@ void gpiotest(int arg_cnt, char**args)
 
 void CommandInterface::_gpiotest()
 {
-
+  
   if (digitalRead(GPIO_PIN_6) == HIGH ) {
     digitalWrite(GPIO_PIN_6, LOW);
 
@@ -776,6 +776,7 @@ void CommandInterface::_reloadSensorConfigurations()
 }
 
 
+
 void CommandInterface::setup(){
   cmdAdd("version", printVersion);
   cmdAdd("show-warranty", printWarranty);
@@ -789,12 +790,12 @@ void CommandInterface::setup(){
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
 
-  // cmdAdd("set-site-name", setSiteName);
-  // cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
-  // cmdAdd("set-logger-name", setLoggerName);
+  cmdAdd("set-site-name", setSiteName);
+  cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
+  cmdAdd("set-logger-name", setLoggerName);
   cmdAdd("set-interval", setInterval);
   cmdAdd("set-burst-number", setBurstNumber);
-  // cmdAdd("set-start-up-delay", setStartUpDelay);
+  cmdAdd("set-start-up-delay", setStartUpDelay);
   cmdAdd("set-burst-delay", setBurstDelay);
 
   cmdAdd("calibrate", calibrate);
@@ -826,6 +827,7 @@ void CommandInterface::setup(){
   cmdAdd("airpump-test", airpumptest);
   cmdAdd("gpio-test", gpiotest);
   cmdAdd("airpump-test", airpumptest);
+
   
   // cmdAdd("step-test", steptest);
 

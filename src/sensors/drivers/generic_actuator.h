@@ -30,7 +30,7 @@ class GenericActuator: public GenericActuatorProtocolSensorDriver
     {
         unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration
         //unsigned int GPIO_pin : 6; //is this number of bits or the pin number? 
-       
+
     } driver_configuration;
   
     public:
