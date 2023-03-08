@@ -28,6 +28,8 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
 {
   strcpy(this->loggingFolder, loggingFolder);
   this->chipSelectPin = chipSelectPin;
+  this->spiClass = new SPIClass(2);
+  this->sd = new SdFat(spiClass);
   this->initializeSDCard();
  
   this->setLoggingFolder(loggingFolder);
@@ -43,7 +45,7 @@ void WaterBear_FileSystem::initializeSDCard(){
   pinMode(this->chipSelectPin, OUTPUT);
 
   // see if the card is present and can be initialized:
-  if(!this->sd.begin(chipSelectPin, SPI_CLOCK_DIV4))
+  if(!this->sd->begin(chipSelectPin, SPI_CLOCK_DIV4))
   {
     notify(F("Card fail"));
     // one way to handle a failure:
@@ -98,7 +100,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     // Debug
     // printCurrentDirListing();
 
-    if (!sd.chdir(dataDirectory)) {
+    if (!sd->chdir(dataDirectory)) {
       notify(F("fail: Data."));
       state = 0;
       return;
@@ -108,12 +110,12 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
     // printCurrentDirListing();
     // notify(lastDownloadDate);
 
-    sd.vwd()->rewind();
+    sd->vwd()->rewind();
     SdFile dirFile;
     char sdDirName[30];
     char sdFileName[30];
     short rootDirIndex = 0;
-    while (dirFile.openNext(sd.vwd(), O_READ)) {
+    while (dirFile.openNext(sd->vwd(), O_READ)) {
       dir_t d;
       if (!dirFile.dirEntry(&d)) {
         //notify(F("dirEntry failed"));
@@ -128,7 +130,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       //Serial2.write("Dir: ");
       //notify(sdDirName);
 
-      if(! sd.chdir(sdDirName) ){
+      if(! sd->chdir(sdDirName) ){
         Serial2.write("fail:");
         notify(sdDirName);
         state = 0;
@@ -136,9 +138,9 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       }
       dirFile.close();
 
-      sd.vwd()->rewind();
+      sd->vwd()->rewind();
       SdFile deploymentFile;
-      while (deploymentFile.openNext(sd.vwd(), O_READ)) {
+      while (deploymentFile.openNext(sd->vwd(), O_READ)) {
         dir_t d;
         if (!deploymentFile.dirEntry(&d)) {
           // notify(F("depl file fail"));
@@ -151,7 +153,7 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
         if(strncmp(sdFileName, lastDownloadDate, 10) > 0){
             //notify(sdFilename);
 
-            File datafile = sd.open(sdFileName);
+            File datafile = sd->open(sdFileName);
             // send size of transmission ?
             // notify(datafile.fileSize());
             while (datafile.available()) {
@@ -165,22 +167,22 @@ void WaterBear_FileSystem::dumpLoggedDataToStream(Stream * myStream, char * last
       //char deploymentCompleteMessage[34] = ">WT_DEPLOYMENT_TRANSFERRED<";
       //Serial2.write(deploymentCompleteMessage);
 
-      sd.chdir(dataDirectory);
+      sd->chdir(dataDirectory);
 
       rootDirIndex = rootDirIndex + 1;
 
-      // sd.vwd()->rewind();
+      // sd->vwd()->rewind();
       // printCurrentDirListing();
       // Advance to the last directoy we were at
-      sd.vwd()->rewind();
+      sd->vwd()->rewind();
 
       for(short i = 0; i < rootDirIndex; i = i + 1){
-        dirFile.openNext(sd.vwd(), O_READ);
+        dirFile.openNext(sd->vwd(), O_READ);
         dirFile.close();
       }
     }
 
-    if (!sd.chdir("/")) {
+    if (!sd->chdir("/")) {
       notify(F("fail /"));
       state = 0;
       return;
@@ -195,16 +197,16 @@ void WaterBear_FileSystem::setLoggingFolder(char *newLoggingFolder)
 
 bool WaterBear_FileSystem::openFile(char * filename)
 {
-  this->sd.chdir("/");
+  this->sd->chdir("/");
   printCurrentDirListing();
-  if(!this->sd.exists(dataDirectory))
+  if(!this->sd->exists(dataDirectory))
   {
     notify("mkdir");
-    this->sd.mkdir(dataDirectory);
+    this->sd->mkdir(dataDirectory);
     delay(10);
   }
 
-  if(!this->sd.chdir(dataDirectory))
+  if(!this->sd->chdir(dataDirectory))
   {
     notify(F("failed: /Data."));
   }
@@ -213,15 +215,15 @@ bool WaterBear_FileSystem::openFile(char * filename)
     //notify(F("cd /Data."));
   }
 
-  if(!this->sd.exists(loggingFolder))
+  if(!this->sd->exists(loggingFolder))
   {
     // printCurrentDirListing();
     notify("mkdir:");
     notify(loggingFolder);
-    this->sd.mkdir(loggingFolder);
+    this->sd->mkdir(loggingFolder);
   }
 
-  if(!this->sd.chdir(this->loggingFolder))
+  if(!this->sd->chdir(this->loggingFolder))
   {
     notify("failed lf:");
     notify(loggingFolder);
@@ -237,15 +239,15 @@ bool WaterBear_FileSystem::openFile(char * filename)
   notify(filename);
   // NOTE: file will exist when re-opening
   
-  // if(sd.exists(filename))
+  // if(sd->exists(filename))
   // {
   //   notify("Error: File Already Exists!!");
   //   return false;
   // }
-  this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
+  this->logfile = this->sd->open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
   notify("Opened");
 
-  //sd.chdir();
+  //sd->chdir();
   if(!logfile)
   {
     notify(F(">not found<"));
@@ -266,7 +268,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
   strncpy(&filename[10], suffix, 5);
 
   notify("cd");
-  this->sd.chdir("/");
+  this->sd->chdir("/");
   delay(1);
 
   notify(header);
@@ -291,10 +293,10 @@ void WaterBear_FileSystem::printCurrentDirListing()
 {
   debug("dir");
 
-  this->sd.vwd()->rewind();
+  this->sd->vwd()->rewind();
   SdFile dirFile;
   char sdFilename[30];
-  while (dirFile.openNext(sd.vwd(), O_READ))
+  while (dirFile.openNext(sd->vwd(), O_READ))
   {
     dirFile.getName(sdFilename, 30);
     debug(sdFilename);
@@ -307,7 +309,7 @@ void WaterBear_FileSystem::closeFileSystem()
   Serial2.print(F("Close filesystem"));
   //this->logfile.sync();
   this->logfile.close(); // syncs then closes
-  //this->sd.end // doesn't exist
+  //this->sd->end // doesn't exist
 }
 
 void WaterBear_FileSystem::reopenFileSystem()

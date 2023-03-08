@@ -43,7 +43,7 @@ void cycleSwitchablePower()
 {
   debug(F("Cycle switched power"));
   disableSwitchedPower();
-  delay(500);
+  delay(2000);
   enableSwitchedPower();
-  delay(500);
+  delay(2000);
 }

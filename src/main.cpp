@@ -36,8 +36,8 @@ void workspace();
 
 void setup(void)
 {
-  startSerial2();
-  Monitor::instance()->debugToSerial = true;
+  // startSerial2();
+  // Monitor::instance()->debugToSerial = true;
 
   workspace();
 
@@ -159,7 +159,138 @@ Type 'help' for command list.
 
 void workspace()
 {
+  // delay(5000);
+
+  pinMode(PA0, INPUT); // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
+  pinMode(PA1, INPUT); // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
+  pinMode(PA2, INPUT);
+  pinMode(PA3, INPUT);
+  pinMode(PA4, INPUT);
+  pinMode(PA5, INPUT);
+  pinMode(PA6, INPUT);
+  pinMode(PA7, INPUT);
+  pinMode(PA8, INPUT);
+  pinMode(PA9, INPUT);
+  pinMode(PA10, INPUT);
+  pinMode(PA11, INPUT);
+  pinMode(PA12, INPUT);
+  pinMode(PA13, INPUT);
+  pinMode(PA14, INPUT);
+  pinMode(PA15, INPUT);
+
+  pinMode(PB0, INPUT); // PB0 ADC12_IN8/TIM3_CH3
+  pinMode(PB1, INPUT);
+  pinMode(PB2, INPUT);
+  pinMode(PB3, INPUT);
+  pinMode(PB4, INPUT);
+  pinMode(PB5, INPUT);
+  pinMode(PB6, INPUT);
+  pinMode(PB7, INPUT);
+  pinMode(PB8, INPUT);
+  pinMode(PB9, INPUT);
+  pinMode(PB10, INPUT);
+  pinMode(PB11, INPUT);
+  pinMode(PB12, INPUT);
+  pinMode(PB13, INPUT);
+  pinMode(PB14, INPUT);
+  pinMode(PB15, INPUT);
+
+ 
+  pinMode(PC0, INPUT);
+  pinMode(PC1, INPUT);
+  pinMode(PC2, INPUT);
+  pinMode(PC3, INPUT);
+  pinMode(PC4, INPUT);
+  pinMode(PC5, INPUT); // external ADC reset
+  pinMode(PC6, INPUT); // this is the switch power pin
+  pinMode(PC7, INPUT);
+  pinMode(PC8, INPUT);
+  pinMode(PC9, INPUT);
+  pinMode(PC10, INPUT);
+  pinMode(PC11, INPUT);
+  pinMode(PC12, INPUT);
+  pinMode(PC13, INPUT);
+  pinMode(PC14, INPUT);
+  pinMode(PC15, INPUT);  
+  
+  // pinMode(PD0, INPUT);
+  // pinMode(PD1, INPUT);
+
+
+  // disable unused peripherals
+  ADC1->regs->CR2 &= ~ADC_CR2_TSVREFE;  
+  adc_disable(ADC1); 
+
+  // disable 5V
+  pinMode(PB12, OUTPUT);
+  digitalWrite(PB12, LOW);
+
+
+  Serial2.begin(SERIAL_BAUD);
+  while (!Serial2)
+  {
+    delay(100);
+  }
+  Serial2.println("Serial 2 begin");
+
+while(1){
+      delay(1000);
+  pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
+        delay(1000);
+
+  Serial2.println("Set high");
+      delay(1000);
+
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+      delay(1000);
+
+  Serial2.println(F("OK"));
+      delay(1000);
+
+  for(int i=0; i<5; i++){
+    Serial2.println(i);
+    delay(1000);
+  }
+
+  Serial2.println(F("Set low"));
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+  delay(1000);
+  Serial2.println(F("OK"));
+  for(int i=0; i<5; i++){
+    Serial2.println(i);
+    delay(1000);
+  }
+
+  Serial2.println("Set high again");
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+  Serial2.println(F("OK again"));
+  for(int i=0; i<10; i++){
+    Serial2.println(i);
+    delay(1000);
+  }
+
+
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+  delay(2000);
+   Serial2.println(F("C"));
+
+}
+  // setupSwitchedPower();
+  // cycleSwitchablePower();
+  while(1){}
+  return;
   // notify(sizeof(long long));
   // notify(sizeof(sone));
   // exit(0);
+  setupSwitchedPower();
+  enableSwitchedPower();
+  pinMode(PA8, OUTPUT_OPEN_DRAIN);
+  bool pin = HIGH;
+  while(true){
+    Serial2.println("tick");
+    Serial2.println(pin);
+    digitalWrite(PA8, pin);
+    delay(5000);
+    pin = !pin;
+  }
 }

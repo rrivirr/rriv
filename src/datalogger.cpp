@@ -141,10 +141,13 @@ void Datalogger::setup()
   disableManualWakeInterrupt(); // don't respond to interrupt during setup
   clearManualWakeInterrupt();
 
-  clearAllAlarms(); // don't respond to alarms during setup
+  // debug("clear all alarms");
+  // this is no longer needed, we don't use DS3231 alarms
+  // clearAllAlarms(); // don't respond to alarms during setup
 
   //initBLE();
 
+  debug("get uuid from EEPROM");
   unsigned char uuid[UUID_LENGTH];
   readUniqueId(uuid);
 

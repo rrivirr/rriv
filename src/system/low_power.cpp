@@ -186,7 +186,50 @@ void hardwarePinsAlwaysOff() // not currently used
   pinMode(PA6, INPUT);
   pinMode(PA7, INPUT);
   pinMode(PA8, INPUT);
+  pinMode(PA9, INPUT); pinMode(PA0, INPUT); // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
+  pinMode(PA1, INPUT); // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
+
+  pinMode(PA4, INPUT);
+
+  pinMode(PA6, INPUT);
+  pinMode(PA7, INPUT);
+  pinMode(PA8, INPUT);
   pinMode(PA9, INPUT);
+  pinMode(PA10, INPUT);
+  pinMode(PA11, INPUT);
+  pinMode(PA12, INPUT);
+  pinMode(PA13, INPUT);
+  pinMode(PA14, INPUT);
+  pinMode(PA15, INPUT);
+
+  pinMode(PB0, INPUT); // PB0 ADC12_IN8/TIM3_CH3
+
+  pinMode(PB2, INPUT);
+  pinMode(PB3, INPUT);
+  pinMode(PB4, INPUT);
+  pinMode(PB5, INPUT);
+  pinMode(PB6, INPUT);
+  pinMode(PB7, INPUT);
+  pinMode(PB8, INPUT);
+  pinMode(PB9, INPUT);
+  pinMode(PB10, INPUT);
+  pinMode(PB11, INPUT);
+  pinMode(PB12, INPUT);
+  pinMode(PB13, INPUT);
+  pinMode(PB14, INPUT);
+  pinMode(PB15, INPUT);
+
+  pinMode(PC4, INPUT);
+  // pinMode(PC5, INPUT); // external ADC reset
+  // pinMode(PC6, INPUT); // this is the switch power pin
+
+  pinMode(PC9, INPUT);
+  pinMode(PC10, INPUT);
+  pinMode(PC11, INPUT);
+  pinMode(PC12, INPUT);
+  pinMode(PC13, INPUT);
+  pinMode(PC14, INPUT);
+  pinMode(PC15, INPUT);
   pinMode(PA10, INPUT);
   pinMode(PA11, INPUT);
   pinMode(PA12, INPUT);
@@ -324,7 +367,7 @@ void restorePinDefaults()
   pinMode(PB1, OUTPUT); // ADC12_IN9/TIM3_CH4
   pinMode(PB2, OUTPUT); // PB2/BOOT1
   pinMode(PB3, OUTPUT); // JTDO
-  pinMode(PB4, OUTPUT); // JNTRST
+  pinMode(PB4, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
   pinMode(PB5, OUTPUT); // I2C1_SMBAI
   pinMode(PB6, OUTPUT); // I2C1_SCL/TIM4_CH1
   pinMode(PB7, OUTPUT); // I2C1_SDA/TIM4_CH2
@@ -342,7 +385,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
+  pinMode(PC5, OUTPUT); // Switched Power
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);

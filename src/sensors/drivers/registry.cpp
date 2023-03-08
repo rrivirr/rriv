@@ -25,7 +25,7 @@ void buildDriverSensorMap()
 
   setupSensorMaps<GenericAnalogDriver>(GENERIC_ANALOG_SENSOR, F(GENERIC_ANALOG_DRIVER_TYPE_STRING));
 
-  // setupSensorMaps<AtlasECDriver>(ATLAS_EC_OEM_SENSOR, F(ATLAS_EC_OEM_TYPE_STRING));
+  setupSensorMaps<AtlasECDriver>(ATLAS_EC_OEM_SENSOR, F(ATLAS_EC_OEM_TYPE_STRING));
 
   // setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
  
@@ -33,7 +33,7 @@ void buildDriverSensorMap()
 
   // setupSensorMaps<AtlasCO2Driver>(ATLAS_CO2_SENSOR, F(ATLAS_CO2_DRIVER_TYPE_STRING));
 
-  setupSensorMaps<MinieCDriver>(MINIEC_SENSOR, F(MINIEC_SENSOR_TYPE_STRING));
+  // setupSensorMaps<MinieCDriver>(MINIEC_SENSOR, F(MINIEC_SENSOR_TYPE_STRING));
 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
 
