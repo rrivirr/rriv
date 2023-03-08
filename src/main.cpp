@@ -252,24 +252,24 @@ void workspace()
   USBComposite.clear(); // clear any plugins previously registered
   USBComposite.setProductId(0x29);
   USBSerial.registerComponent(); 
-  USBStorage.setDriveData(0, sizeof(image)/SCSI_BLOCK_SIZE, read, write);
-  USBStorage.registerComponent();
+  // USBStorage.setDriveData(0, sizeof(image)/SCSI_BLOCK_SIZE, read, write);
+  // USBStorage.registerComponent();
   USBComposite.begin();
   while(!USBComposite)
   {
-    Serial2.println("waiting");
+    Serial2.println("waiting USBComposite");
     delay(1000);
   }
 
   // usb_resume_init();
   // USBSerial.begin();
-  // while(!USBSerial)
-  // {
-  //   Serial2.println("waiting");
-  //   delay(1000);
-  // }
-  // Serial2.println("Begin USBSerial");
-  // USBSerial.write("began");
+  while(!USBSerial)
+  {
+    Serial2.println("waiting");
+    delay(1000);
+  }
+  Serial2.println("Begin USBSerial");
+  USBSerial.write("began");
   // return;
   
   while(1)
