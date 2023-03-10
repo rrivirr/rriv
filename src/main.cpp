@@ -36,8 +36,8 @@ void workspace();
 
 void setup(void)
 {
-  // startSerial2();
-  // Monitor::instance()->debugToSerial = true;
+  startSerial2();
+  Monitor::instance()->debugToSerial = true;
 
   workspace();
 
@@ -156,10 +156,244 @@ Type 'help' for command list.
 
 // space to work our development details
 
+void testVinMeasure();
+void testExADCMOSFET();
+void testEnableAVDD();
+void ledTest();
+void testIntADC();
+void testExADC();
+
 
 void workspace()
 {
-  // delay(5000);
+    Serial2.println("test vin");
+
+  // testSwitchedPower();
+  // testVinMeasure();
+  // testExADCMOSFET();
+  // testEnableAVDD();
+  // ledTest();
+  // testIntADC();
+  testExADC();
+}
+
+#define RGB1 PA8
+#define RGB2 PA9
+#define RGB3 PA10
+
+#include "system/measurement_components.h"
+
+void testExADC(){
+    enableI2C1();
+
+  bool externalADCInstalled =  scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
+  if (externalADCInstalled)
+  {
+      Serial2.println("reset exADC");
+  // Reset external ADC (if it's installed)
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(EXADC_RESET,HIGH);
+  delay(100); // Wait for ADC to start up
+
+    Serial2.println(F("Set up extADC"));
+    externalADC = new AD7091R();
+    externalADC->configure();
+    externalADC->enableChannel(0);
+    externalADC->enableChannel(1);
+    externalADC->enableChannel(2);
+    externalADC->enableChannel(3);
+  }
+  else
+  {
+    Serial2.println(F("extADC not installed"));
+  }
+  while(1){
+    externalADC->convertEnabledChannels();
+    Serial2.println(externalADC->channel0Value());
+    Serial2.println(externalADC->channel1Value());
+    Serial2.println(externalADC->channel2Value());
+    Serial2.println(externalADC->channel3Value());
+    delay(1000);
+
+  }
+}
+
+void testIntADC(){
+  pinMode(ANALOG_INPUT_1_PIN, INPUT_ANALOG);
+  pinMode(ANALOG_INPUT_2_PIN, INPUT_ANALOG);
+  pinMode(ANALOG_INPUT_3_PIN, INPUT_ANALOG);
+  pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
+  pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
+  while(1){
+    Serial2.println(analogRead(ANALOG_INPUT_1_PIN));
+    Serial2.println(analogRead(ANALOG_INPUT_2_PIN));
+    Serial2.println(analogRead(ANALOG_INPUT_3_PIN));
+    Serial2.println(analogRead(ANALOG_INPUT_4_PIN));
+    Serial2.println(analogRead(ANALOG_INPUT_5_PIN));
+    delay(4000);
+  }
+}
+
+void ledTest() {
+  pinMode(RGB1, OUTPUT_OPEN_DRAIN);
+  pinMode(RGB2, OUTPUT_OPEN_DRAIN);
+  pinMode(RGB3, OUTPUT_OPEN_DRAIN);
+
+  int blue = 0;
+  int red = 100;
+  int green = 200;
+  int factor = 2;
+  while(1){
+    // Serial2.println(blue);
+    analogWrite(RGB1, red);
+    analogWrite(RGB2, blue);
+    analogWrite(RGB3, green);
+    blue = (blue + 1*factor) % 256;
+    red = (red + 1*factor) % 256;
+    green = (green + 1*factor) % 256;
+    delay(20);
+  }
+}
+
+void testExADCMOSFET(){
+  Serial2.println("test exADC MOSFET");
+  pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  pinMode(ENABLE_5V, OUTPUT);
+
+  digitalWrite(ENABLE_5V, true);
+
+  int delayTime = 10000;
+  while(1){
+  // digitalWrite(ENABLE_5V, false);
+  // Serial2.println("5V low");
+  // delay(delay  Time);
+
+  digitalWrite(ENABLE_5V, true);
+  Serial2.println("5V high");
+  // delay(delayTime);
+
+  digitalWrite(ENABLE_EX_ADC, false);
+  Serial2.println(false);
+  delay(delayTime);
+  enableI2C1();
+  
+  digitalWrite(ENABLE_EX_ADC, true);
+  Serial2.println(true);
+  delay(delayTime);
+  enableI2C1();
+  }
+}
+
+void testEnableAVDD() {
+  Serial2.println("test avdd  ");
+  pinMode(ENABLE_F103_AVDD, OUTPUT_OPEN_DRAIN);
+
+  int delayTime = 10000;
+  while(1){
+  // digitalWrite(ENABLE_5V, false);
+  // Serial2.println("5V low");
+  // delay(delayTime);
+
+  // digitalWrite(ENABLE_5V, true);
+  // Serial2.println("5V high");
+  // delay(delayTime);
+
+  digitalWrite(ENABLE_F103_AVDD, false);
+    Serial2.println(false);
+  delay(delayTime);
+  // enableI2C1();
+  
+  digitalWrite(ENABLE_F103_AVDD, true);
+    Serial2.println(true);
+  delay(delayTime);
+  // enableI2C1();
+  }
+}
+
+void testVinMeasure() {
+  Serial2.println("test vin");
+  pinMode(ENABLE_VIN_MEASURE, OUTPUT_OPEN_DRAIN);
+  pinMode(PB0, INPUT_ANALOG);
+
+
+  int delayTime = 10000;
+  while(1){
+  // digitalWrite(ENABLE_5V, false);
+  // Serial2.println("5V low");
+  // delay(delayTime);
+
+  // digitalWrite(ENABLE_5V, true);
+  // Serial2.println("5V high");
+  // delay(delayTime);
+
+  digitalWrite(ENABLE_VIN_MEASURE, false);
+    Serial2.println(false);
+  delay(delayTime);
+  // enableI2C1();
+  
+  digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(true);
+  delay(delayTime);
+  // enableI2C1();
+  }
+
+  bool enabled = false;
+  while(1) {
+    Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+    
+    Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+    Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+      Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+      Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+      Serial2.println(true);
+    digitalWrite(ENABLE_VIN_MEASURE, true);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+    Serial2.println(false);
+    digitalWrite(ENABLE_VIN_MEASURE, false);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+     Serial2.println(false);
+    digitalWrite(ENABLE_VIN_MEASURE, false);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+     Serial2.println(false);
+    digitalWrite(ENABLE_VIN_MEASURE, false);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+
+     Serial2.println(false);
+    digitalWrite(ENABLE_VIN_MEASURE, false);
+    Serial2.println(getBatteryValue());
+    delay(2000);
+  }
+}
+
+void testSwitchedPower() {
 
   pinMode(PA0, INPUT); // PA0-WKUP/USART2_CTS/ADC12_IN0/TIM2_CH1_ETR
   pinMode(PA1, INPUT); // INPUT_ANALOG was suggested or INPUT_PULLDOWN?
@@ -194,11 +428,6 @@ void workspace()
   pinMode(PB13, INPUT);
   pinMode(PB14, INPUT);
   pinMode(PB15, INPUT);
-
- 
-  pinMode(PC0, INPUT);
-  pinMode(PC1, INPUT);
-  pinMode(PC2, INPUT);
   pinMode(PC3, INPUT);
   pinMode(PC4, INPUT);
   pinMode(PC5, INPUT); // external ADC reset
@@ -263,6 +492,7 @@ while(1){
 
   Serial2.println("Set high again");
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+
   Serial2.println(F("OK again"));
   for(int i=0; i<10; i++){
     Serial2.println(i);

@@ -32,6 +32,8 @@
 #define WireTwo Wire1
 
 #define SWITCHED_POWER_ENABLE PC5
+#define ENABLE_5V PB12
+#define ENABLE_F103_AVDD PA1
 #define SD_ENABLE_PIN PC8
 
 #define BLE_COMMAND_MODE_PIN PB5
@@ -49,6 +51,10 @@
 // #define GPIO_PIN_2 PC11 // using for DHT22
 // #define GPIO_PIN_3 PC12 // CN7 3
 // #define GPIO_PIN_4 PB8 // CN10 3, not using bluetooth currently
+
+#define ENABLE_VIN_MEASURE PB1
+#define ENABLE_EX_ADC PC4
+
 
 #define GPIO_PIN_1 PA1
 #define GPIO_PIN_2 PB2
