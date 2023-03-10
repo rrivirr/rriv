@@ -66,6 +66,7 @@ void AdaAHTX0::setup()
 
 bool AdaAHTX0::takeMeasurement()
 {
+  notify("in aht sensor driver take measurement\n");
   sensors_event_t hum, temp;
   bool measurementTaken = false;
   aht->getEvent(&hum, &temp);
@@ -86,6 +87,7 @@ bool AdaAHTX0::takeMeasurement()
     notify("measurement read");
     addValueToBurstSummaryMean("temperature", temperature);
     addValueToBurstSummaryMean("humidity", humidity);
+    lastSuccessfulReadingMillis = millis();
   }
 
   return measurementTaken;
@@ -132,13 +134,12 @@ void AdaAHTX0::addCalibrationParametersToJSON(cJSON *json)
   cJSON_AddNumberToObject(json, CALIBRATION_TIME_STRING, configuration.cal_timestamp);
 }
 
-unsigned int AdaAHTX0::millisecondsUntilNextReadingAvailable()
-{
-  return 640 - (millis() - lastSuccessfulReadingMillis);
-}
-
 const char * AdaAHTX0::getRawDataString()
 {
   sprintf(dataString, "%.2f,%.2f", temperature, humidity);
   return dataString;
+}
+unsigned int AdaAHTX0::millisecondsUntilNextReadingAvailable()
+{
+  return (30000 - (millis() - lastSuccessfulReadingMillis)); // return min by default, a larger number in driver implementation causes correct delay
 }

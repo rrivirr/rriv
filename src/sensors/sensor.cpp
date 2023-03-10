@@ -93,6 +93,7 @@ bool SensorDriver::burstCompleted()
 
 void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
 {
+  notify("in add burst summary mean\n");
   if(burstSummarySums.count(tag) == 0)
   {
     burstSummarySums[tag] = 0;

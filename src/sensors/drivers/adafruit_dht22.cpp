@@ -86,6 +86,7 @@ void AdaDHT22::stop()
 
 bool AdaDHT22::takeMeasurement()
 {
+  notify("in driver take measurement\n");
   // debug("taking measurement from AdaDHT22");
   sensors_event_t event;
   bool measurementTaken = false;

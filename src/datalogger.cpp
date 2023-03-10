@@ -168,9 +168,7 @@ void Datalogger::setup()
 */
 bool Datalogger::processReadingsCycle()
 {
-
   measureSensorValues();
- 
   if (settings.log_raw_data) // we are really talking about a burst summary
   {
     writeRawMeasurementToLogFile();
@@ -179,6 +177,7 @@ bool Datalogger::processReadingsCycle()
 
   if (shouldContinueBursting())
   {
+    notify("should continue burst\n");
     // sleep for maximum time before next reading
     // ask all drivers for maximum time until next burst reading
     // ask all drivers for maximum time until next available reading
@@ -186,6 +185,7 @@ bool Datalogger::processReadingsCycle()
 
     notify(minMillisecondsUntilNextReading());
     sleepMCU(minMillisecondsUntilNextReading());
+    notify("returning true\n");
     return true;
   }
 
@@ -194,6 +194,7 @@ bool Datalogger::processReadingsCycle()
 
   // so output burst summary
   writeSummaryMeasurementToLogFile();
+  notify("wrote summer mean to log\n");
 
   if (completedBursts < settings.burstNumber)
   {
@@ -201,7 +202,6 @@ bool Datalogger::processReadingsCycle()
 
     if (settings.interBurstDelay > 0)
     {
-      notify(F("burst delay"));
       int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
@@ -211,9 +211,10 @@ bool Datalogger::processReadingsCycle()
     }
 
     initializeBurst();
+    notify("returning true from proces reading cycle\n");
     return true;
   }
-
+  notify("returning false from proces reading cycle\n");
   return false;
 }
 
@@ -221,13 +222,11 @@ void Datalogger::testMeasurementCycle()
 {
   initializeMeasurementCycle();
   fileSystemWriteCache->setOutputToSerial(true); // another way to do this would be to set a special write cache
-
   while(processReadingsCycle()){
-
+    
     fileSystemWriteCache->flushCache();
     outputLastMeasurement();
   }      
-  //notify("after while loop");
   fileSystemWriteCache->flushCache();            // instead of using a boolean in this particular write cache
   fileSystemWriteCache->setOutputToSerial(false);// and then set it back to the original writecache here
 }
@@ -524,6 +523,7 @@ void Datalogger::initializeMeasurementCycle()
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
+  // notify("in measure senosr values\n");
   
   if (settings.externalADCEnabled)
   {
@@ -546,15 +546,6 @@ void Datalogger::measureSensorValues(bool performingBurst)
       }
     }
   }
-  //AE temp for actuators 
-// for (unsigned int i = 0; i < sensorCount; i++)
-//   {
-//     drivers[i]->stop();
-//     delay(drivers[i]->millisecondsUntilNextRequestedReading);
-//   }  
-
-
-  //AE actuate hook after measurement could go here
 }
 
 void Datalogger::writeStatusFieldsToLogFile(const char * type)
@@ -794,7 +785,6 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       if (drivers[i]->getCommonConfigurations()->slot == driver->getCommonConfigurations()->slot)
       {
-         notify("flag 1 set config");
         slotReplacement = true;
         SensorDriver *replacedDriver = drivers[i];
         drivers[i] = driver;
@@ -802,7 +792,6 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
         break;
       }
     }
-    notify("flag 2 set config");
     if (!slotReplacement)
     {
       sensorCount = sensorCount + 1;
@@ -827,10 +816,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       }
       free(drivers);
       drivers = updatedDrivers;
-       notify("flag 3 set config");
+
     }
   }
-  notify("end set config");
+
 }
 
 void Datalogger::clearSlot(unsigned short slot)
@@ -1297,13 +1286,16 @@ unsigned int Datalogger::minMillisecondsUntilNextReading()
   {
     // retrieve the fastest time requested for sampling
     minimumDelayUntilNextRequestedReading = min(minimumDelayUntilNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
+
     // retrieve the slowest response time for sampling
+    //AE comment out next line
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
   }
 
   // return max to prioritize sampling as soon as ALL sensors are ready to sample
-  return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
-  
+  // return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
+  // AE return min not max
+  return min (minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
   // return min to prioritize sampling at desired speed for ONE specific sensor
   // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
   // {

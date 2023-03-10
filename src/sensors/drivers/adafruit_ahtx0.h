@@ -49,14 +49,13 @@ class AdaAHTX0 : public I2CProtocolSensorDriver
     void setup();
     void stop();
 
-    unsigned int millisecondsUntilNextReadingAvailable();
-
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
     bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
+    unsigned int millisecondsUntilNextReadingAvailable();
 
   private:
     const char *sensorTypeString = ADAFRUIT_DHTX0_TYPE_STRING;
@@ -69,6 +68,7 @@ class AdaAHTX0 : public I2CProtocolSensorDriver
     char dataString[16]; // local storage for data string
 
     unsigned long long lastSuccessfulReadingMillis = 0;
+    
 
     
 
