@@ -156,6 +156,7 @@ Type 'help' for command list.
 
 // space to work our development details
 
+void testSwitchedPower();
 void testVinMeasure();
 void testExADCMOSFET();
 void testEnableAVDD();
@@ -166,15 +167,17 @@ void testExADC();
 
 void workspace()
 {
+  return;
     Serial2.println("test vin");
+
+  // ledTest();
 
   // testSwitchedPower();
   // testVinMeasure();
   // testExADCMOSFET();
   // testEnableAVDD();
-  // ledTest();
   // testIntADC();
-  testExADC();
+  // testExADC();
 }
 
 #define RGB1 PA8
@@ -251,9 +254,9 @@ void ledTest() {
     analogWrite(RGB2, blue);
     analogWrite(RGB3, green);
     blue = (blue + 1*factor) % 256;
-    red = (red + 1*factor) % 256;
-    green = (green + 1*factor) % 256;
-    delay(20);
+    red = (red + 2*factor) % 256;
+    green = (green + 3*factor) % 256;
+    delay(50);
   }
 }
 
@@ -277,12 +280,12 @@ void testExADCMOSFET(){
   digitalWrite(ENABLE_EX_ADC, false);
   Serial2.println(false);
   delay(delayTime);
-  enableI2C1();
+  // enableI2C1();
   
   digitalWrite(ENABLE_EX_ADC, true);
   Serial2.println(true);
   delay(delayTime);
-  enableI2C1();
+  // enableI2C1();
   }
 }
 
@@ -329,14 +332,20 @@ void testVinMeasure() {
   // delay(delayTime);
 
   digitalWrite(ENABLE_VIN_MEASURE, false);
-    Serial2.println(false);
-  delay(delayTime);
-  // enableI2C1();
+  Serial2.println(false);
+  for(int i=0; i<10; i=i+1){
+    Serial2.println(getBatteryValue());
+    delay(1000);
+  }
+
   
   digitalWrite(ENABLE_VIN_MEASURE, true);
-    Serial2.println(true);
-  delay(delayTime);
-  // enableI2C1();
+  Serial2.println(true);
+  for(int i=0; i<10; i=i+1){
+    Serial2.println(getBatteryValue());
+        delay(1000);
+
+  }
   }
 
   bool enabled = false;
@@ -461,16 +470,32 @@ void testSwitchedPower() {
     delay(100);
   }
   Serial2.println("Serial 2 begin");
+  // while(1){
+  //   delay(1000);
+  // }
 
 while(1){
-      delay(1000);
+  delay(1000);
+  Serial2.println("Set low");
   pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
-        delay(1000);
+  digitalWrite(SWITCHED_POWER_ENABLE, LOW);
+
+  delay(1000);
+
+  for(int i=0; i<6; i++){
+    Serial2.println(i);
+    delay(1000);
+  }
 
   Serial2.println("Set high");
-      delay(1000);
-
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
+      delay(1000);
+  for(int i=0; i<6; i++){
+    Serial2.println(i);
+    delay(1000);
+  }
+  continue;
+
       delay(1000);
 
   Serial2.println(F("OK"));
