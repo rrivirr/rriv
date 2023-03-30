@@ -49,6 +49,6 @@ void decodeUniqueId(unsigned char * uuid, char * uuidString, int uuidLength)
   {
     sprintf(&uuidString[2 * i], "%02X", (byte)uuid[i]);
   }
-  Serial2.println(uuidString);
-  Serial2.flush();
+  // Serial2.println(uuidString);
+  // Serial2.flush();
 }

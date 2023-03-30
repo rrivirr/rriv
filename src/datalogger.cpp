@@ -155,9 +155,9 @@ void Datalogger::setup()
 
   checkMemory();
   buildDriverSensorMap();
-  debug("Built driver sensor map");
+  // debug("Built driver sensor map");
   loadSensorConfigurations();
-  debug("Loaded sensor configurations");
+  // debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
 }
@@ -177,7 +177,6 @@ bool Datalogger::processReadingsCycle()
 
   if (shouldContinueBursting())
   {
-    notify("should continue burst\n");
     // sleep for maximum time before next reading
     // ask all drivers for maximum time until next burst reading
     // ask all drivers for maximum time until next available reading
@@ -185,7 +184,6 @@ bool Datalogger::processReadingsCycle()
 
     notify(minMillisecondsUntilNextReading());
     sleepMCU(minMillisecondsUntilNextReading());
-    notify("returning true\n");
     return true;
   }
 
@@ -194,7 +192,6 @@ bool Datalogger::processReadingsCycle()
 
   // so output burst summary
   writeSummaryMeasurementToLogFile();
-  notify("wrote summer mean to log\n");
 
   if (completedBursts < settings.burstNumber)
   {
@@ -211,10 +208,8 @@ bool Datalogger::processReadingsCycle()
     }
 
     initializeBurst();
-    notify("returning true from proces reading cycle\n");
     return true;
   }
-  notify("returning false from proces reading cycle\n");
   return false;
 }
 
@@ -246,7 +241,7 @@ void Datalogger::loop()
 
     if (powerCycle)
     {
-      debug("Powercycle");
+      // debug("Powercycle");
       bool deployed = enterFieldLoggingMode();
       if (!deployed)
       {
@@ -263,7 +258,7 @@ void Datalogger::loop()
 
     if (shouldExitLoggingMode())
     {
-      notify("Should exit logging mode");
+      // notify("Should exit logging mode");
       changeMode(interactive);
       return;
     }
@@ -321,8 +316,8 @@ void Datalogger::loop()
   else
   {
     // invalid mode!
-    notify(F("Invalid Mode!"));
-    notify(mode);
+    // notify(F("Invalid Mode!"));
+    // notify(mode);
     mode = interactive;
     delay(1000);
   }
@@ -338,63 +333,59 @@ void Datalogger::loadSensorConfigurations()
   configuration_bytes sensorConfigs[EEPROM_TOTAL_SENSOR_SLOTS];
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("reading slot");
+    // notify("reading slot");
     readSensorConfigurationFromEEPROM(i, &sensorConfigs[i]);
 
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
-    notify(commonConfiguration->sensor_type);
+    // notify(commonConfiguration->sensor_type);
     if( sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
-      notify("found configured sensor");
+      // notify("found configured sensor");
       sensorCount++;
     }
     commonConfiguration->slot = i;
   }
   if (sensorCount == 0)
   {
-    notify("no sensor configurations found");
+    // notify("no sensor configurations found");
   }
-  notify("FREE MEM");
-  printFreeMemory();
+  // notify("FREE MEM");
+  // printFreeMemory();
 
   // construct the drivers
-  notify("construct drivers");
+  // notify("construct drivers");
   drivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("FREE MEM");
-    printFreeMemory();
+    // notify("FREE MEM");
+    // printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
     if ( !sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
-      notify("no sensor with that code");
+      // notify("no sensor with that code");
       continue;
     }
 
-    debug("getting driver for sensor type");
-    debug(commonConfiguration->sensor_type);
+    // debug("getting driver for sensor type");
+    // debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
-    debug("got sensor driver");
-    checkMemory();
+    // debug("got driver");
+    // checkMemory();
 
     drivers[j] = driver;
     j++;
 
     if (driver->getProtocol() == i2c)
     {
-      debug("got i2c sensor");
+      debug("got i2c");
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
-      debug("set wire");
     }
-    debug("do setup");
     driver->setup();
 
-    debug("configure sensor driver");
     driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
-    debug("configured sensor driver");
   }
 
 }
@@ -403,7 +394,7 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
 {
   // calling this function does not deal with memory fragmentation
   // so it's not part of the main system, only for dev & debug
-  notify("FREE MEM reload");
+  // notify("FREE MEM reload");
   printFreeMemory();
   // free sensor configs
   for(unsigned short i=0; i<sensorCount; i++)
@@ -411,7 +402,7 @@ void Datalogger::reloadSensorConfigurations() // for dev & debug
     delete(drivers[i]);
   }
   free(drivers);
-  notify("FREE MEM reload");
+  // notify("FREE MEM reload");
   printFreeMemory();
   loadSensorConfigurations();
 }
@@ -493,12 +484,12 @@ void Datalogger::initializeMeasurementCycle()
     // delay(20000);
     // startCustomWatchDog();
 
-    notify(F("wait for start up delay"));
+    // notify(F("wait for start up delay"));
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
-    notify(startUpDelay);
+    // notify(startUpDelay);
     sleepMCU(startUpDelay * 1000); // convert seconds to milliseconds
-    notify("sleep done");
+    // notify("sleep done");
   }
 
   bool sensorsWarmedUp = false;
@@ -507,7 +498,6 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
@@ -523,14 +513,13 @@ void Datalogger::initializeMeasurementCycle()
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
-  // notify("in measure senosr values\n");
   
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
-    debug("converting enabled channels call");
+    // debug("converting enabled channels call");
     externalADC->convertEnabledChannels();
-    debug("converted enabled channels");
+    // debug("converted enabled channels");
   }
 
   for (unsigned int i = 0; i < sensorCount; i++)
@@ -579,10 +568,10 @@ void Datalogger::writeStatusFieldsToLogFile(const char * type)
   {
     char deploymentIdentifier[16] = {0};
     strncpy(deploymentIdentifier, settings.deploymentIdentifier, 15);
-    debug(deploymentIdentifier[0]);
-    debug(deploymentIdentifier);
-    debug(uuidString);
-    debug(settings.deploymentTimestamp);
+    // debug(deploymentIdentifier[0]);
+    // debug(deploymentIdentifier);
+    // debug(uuidString);
+    // debug(settings.deploymentTimestamp);
     sprintf(buffer, "%s-%s-%lu", deploymentIdentifier, uuidString, settings.deploymentTimestamp);
   }
   fileSystemWriteCache->writeString(buffer);
@@ -618,7 +607,7 @@ bool Datalogger::writeRawMeasurementToLogFile()
   writeStatusFieldsToLogFile("raw");
 
   // and write out the sensor data
-  debug(F("Write sensor data"));
+  // debug(F("Write sensor data"));
   for (unsigned short i = 0; i < sensorCount; i++)
   {
     // get values from the sensors
@@ -688,7 +677,7 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     strcpy(settings.siteName, siteNameJSON->valuestring);
   } else {
-    notify("Invalid site name");
+    // notify("Invalid site name");
   }
 
   const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
@@ -940,7 +929,6 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
 
   if (strcmp(subcommand, "init") == 0)
   {
-    notify("calling init");
     driver->initCalibration();
   }
   else
@@ -971,9 +959,9 @@ void Datalogger::storeMode(mode_type mode)
 
 void Datalogger::changeMode(mode_type mode)
 {
-  char message[50];
-  sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
-  notify(message);
+  // char message[50];
+  // sprintf(message, reinterpret_cast<const char *> F("Moving to mode %d"), mode);
+  // notify(message);
   this->mode = mode;
 }
 
@@ -984,7 +972,7 @@ bool Datalogger::inMode(mode_type mode)
 
 bool Datalogger::deploy()
 {
-  notify(F("Deploying now!"));
+  // notify(F("Deploying now!"));
   notifyDebugStatus();
   if (checkDebugSystemDisabled() == false)
   {
@@ -1015,21 +1003,21 @@ void Datalogger::initializeFilesystem()
 
   fileSystem = new WaterBear_FileSystem(loggingFolder, SD_ENABLE_PIN);
   Monitor::instance()->filesystem = fileSystem;
-  debug(F("Filesystem started OK"));
+  // debug(F("Filesystem started OK"));
 
   time_t setupTime = timestamp();
   char setupTS[21];
   sprintf(setupTS, "unixtime: %lld", setupTime);
-  notify(setupTS);
+  // notify(setupTS);
 
   char header[200];
   const char *statusFields = "type,site,logger,deployment,deployed_at,uuid,time.s,time.h,battery.V";
   strcpy(header, statusFields);
-  debug(header);
+  // debug(header);
   for (unsigned short i = 0; i < sensorCount; i++)
   {
-    debug(i);
-    debug(drivers[i]->getCSVColumnHeaders());
+    // debug(i);
+    // debug(drivers[i]->getCSVColumnHeaders());
     strcat(header, ",");
     strcat(header, drivers[i]->getCSVColumnHeaders());
   }
@@ -1056,7 +1044,7 @@ void Datalogger::powerUpSwitchableComponents()
   enableI2C1();
   enableI2C2();
 
-  debug("reset exADC");
+  // debug("reset exADC");
   // Reset external ADC (if it's installed)
   delay(1); // delay > 50ns before applying ADC reset
   digitalWrite(EXADC_RESET,LOW); // reset is active low
@@ -1067,7 +1055,7 @@ void Datalogger::powerUpSwitchableComponents()
   bool externalADCInstalled = scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
   if (externalADCInstalled)
   {
-    debug(F("Set up extADC"));
+    // debug(F("Set up extADC"));
     externalADC = new AD7091R();
     externalADC->configure();
     externalADC->enableChannel(0);
@@ -1080,7 +1068,7 @@ void Datalogger::powerUpSwitchableComponents()
     debug(F("extADC not installed"));
   }
 
-  debug(F("Switchable components powered up"));
+  // debug(F("Switchable components powered up"));
 };
 
 void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigger
@@ -1091,7 +1079,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
-  debug(F("Switchable components powered down"));
+  // debug(F("Switchable components powered down"));
 }
 
 void Datalogger::prepareForUserInteraction()
@@ -1100,8 +1088,8 @@ void Datalogger::prepareForUserInteraction()
   time_t awakenedTime = timestamp();
 
   t_t2ts(awakenedTime, millis(), humanTime);
-  debug(F("Awakened by user"));
-  debug(F(humanTime));
+  // debug(F("Awakened by user"));
+  // debug(F(humanTime));
 
   awakenedByUser = false;
   awakeTime = awakenedTime;
@@ -1154,10 +1142,10 @@ void Datalogger::prepareForUserInteraction()
 
 void Datalogger::stopAndAwaitTrigger()
 {
-  debug(F("Await measurement trigger"));
+  // debug(F("Await measurement trigger"));
 
   // printInterruptStatus(Serial2);
-  debug(F("Going to sleep"));
+  // debug(F("Going to sleep"));
 
   // save enabled interrupts
   int iser1, iser2, iser3;
@@ -1181,7 +1169,7 @@ void Datalogger::stopAndAwaitTrigger()
   componentsStopMode();
 
   disableCustomWatchDog();
-  debug(F("disabled watchdog"));
+  // debug(F("disabled watchdog"));
   disableSerialLog();     // TODO
   hardwarePinsStopMode(); // switch to input mode
 
@@ -1208,14 +1196,14 @@ void Datalogger::stopAndAwaitTrigger()
 
   setupHardwarePins(); // used from setup steps in datalogger
 
-  debug(F("Awoke"));
+  // debug(F("Awoke"));
 
   startCustomWatchDog(); // could go earlier once working reliably
   // delay( (DEFAULT_WATCHDOG_TIMEOUT_SECONDS + 5) * 1000); // to test the watchdog
 
   if (awakenedByUser == true)
   {
-    notify(F("User interrupt"));
+    // notify(F("User interrupt"));
   }
 
   // We have woken from the interrupt
@@ -1288,14 +1276,11 @@ unsigned int Datalogger::minMillisecondsUntilNextReading()
     minimumDelayUntilNextRequestedReading = min(minimumDelayUntilNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
 
     // retrieve the slowest response time for sampling
-    //AE comment out next line
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
   }
 
   // return max to prioritize sampling as soon as ALL sensors are ready to sample
-  // return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
-  // AE return min not max
-  return min (minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
+  return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
   // return min to prioritize sampling at desired speed for ONE specific sensor
   // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
   // {

@@ -57,25 +57,15 @@ void setup(void)
   enableI2C1();
   delay(500);
 
-
-  
-
-  
-
-
-
-
-
-
-  debug("creating datalogger");
+  // debug("creating datalogger");
   datalogger_settings_type *dataloggerSettings = (datalogger_settings_type *)malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
   datalogger = new Datalogger(dataloggerSettings);
-  debug("created datalogger");
+  // debug("created datalogger");
   datalogger->setup();
 
   /* We're ready to go! */
-  debug(F("done with setup"));
+  // debug(F("done with setup"));
   notifyDebugStatus();
 
   startCustomWatchDog(); // printMCUDebugStatus delays with user message, don't want watchdog to trigger

@@ -31,13 +31,13 @@ WaterBear_FileSystem::WaterBear_FileSystem(char * loggingFolder, int chipSelectP
   this->initializeSDCard();
  
   this->setLoggingFolder(loggingFolder);
-  debug("logging folder set");
+  // debug("logging folder set");
 }
 
 void WaterBear_FileSystem::initializeSDCard(){
    // initialize the SD card
   //Serial2.print(F("Initializing SD card..."));
-  notify("Start SD card...");
+  // notify("Start SD card...");
 
   // Make sure chip select pin is set to output
   pinMode(this->chipSelectPin, OUTPUT);
@@ -64,7 +64,7 @@ void WaterBear_FileSystem::initializeSDCard(){
   }
   else
   {
-    notify(F("card initialized."));
+    // notify(F("SD card initialized."));
   }
 }
 
@@ -235,7 +235,7 @@ bool WaterBear_FileSystem::openFile(char * filename)
   notify("Opening file");
   notify(filename);
   this->logfile = this->sd.open(filename, FILE_WRITE); //O_CREAT | O_WRITE | O_APPEND);
-  notify("Opened");
+  // notify("Opened");
 
   //sd.chdir();
   if(!logfile)
@@ -257,7 +257,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
   strncpy(filename, uniquename, 10);
   strncpy(&filename[10], suffix, 5);
 
-  notify("cd");
+  // notify("cd");
   this->sd.chdir("/");
   delay(1);
 
@@ -281,7 +281,7 @@ void WaterBear_FileSystem::setNewDataFile(long unixtime, char * header)
 
 void WaterBear_FileSystem::printCurrentDirListing()
 {
-  debug("dir");
+  // debug("dir");
 
   this->sd.vwd()->rewind();
   SdFile dirFile;

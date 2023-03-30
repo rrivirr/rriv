@@ -398,8 +398,8 @@ void CommandInterface::_getConfig()
   
   cJSON_Delete(dataloggerConfiguration);
 
-  debug("sensorCount is:");
-  debug(short(this->datalogger->sensorCount));
+  // debug("sensorCount is:");
+  // debug(short(this->datalogger->sensorCount));
   for(unsigned short i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);

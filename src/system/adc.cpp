@@ -109,7 +109,7 @@ void AD7091R::disableChannel(short channel)
 
 void AD7091R::updateChannelRegister()
 {
-  debug("update channel register");
+  // debug("update channel register");
   struct channel_register channelRegister = this->readChannelRegister();
   channelRegister.CH0 = channel0Enabled;
   channelRegister.CH1 = channel1Enabled;
@@ -310,22 +310,22 @@ short AD7091R::channel3Value()
 
 void AD7091R::printConfigurationRegister(configuration_register configurationRegister)
 {
-  debug(F("AD7091 conf reg"));
-  char buffer[100];
-  sprintf(buffer,
-          "%d %d %d %d %d %d %d %d %d %d %d %d %d",
-          configurationRegister.ALERT_DRIVE_TYPE,
-          configurationRegister.GPO_2,
-          configurationRegister.RSV,
-          configurationRegister.FLTR,
-          configurationRegister.CMD,
-          configurationRegister.SWRS,
-          configurationRegister.AUTO,
-          configurationRegister.CYCLE_TIMER,
-          configurationRegister.BUSY,
-          configurationRegister.ALERT_EN_OR_GPO0,
-          configurationRegister.ALERT_POL_OR_GPO0,
-          configurationRegister.GPO1,
-          configurationRegister.P_DOWN);
-  debug(buffer);
+  // debug(F("AD7091 conf reg"));
+  // char buffer[100];
+  // sprintf(buffer,
+  //         "%d %d %d %d %d %d %d %d %d %d %d %d %d",
+  //         configurationRegister.ALERT_DRIVE_TYPE,
+  //         configurationRegister.GPO_2,
+  //         configurationRegister.RSV,
+  //         configurationRegister.FLTR,
+  //         configurationRegister.CMD,
+  //         configurationRegister.SWRS,
+  //         configurationRegister.AUTO,
+  //         configurationRegister.CYCLE_TIMER,
+  //         configurationRegister.BUSY,
+  //         configurationRegister.ALERT_EN_OR_GPO0,
+  //         configurationRegister.ALERT_POL_OR_GPO0,
+  //         configurationRegister.GPO1,
+  //         configurationRegister.P_DOWN);
+  // debug(buffer);
 }

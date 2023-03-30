@@ -81,7 +81,7 @@ void scanIC2(TwoWire *wire)
 
 bool scanIC2(TwoWire *wire, int searchAddress)
 {
-  Serial.println("Scanning");
+  // Serial.println("Scanning");
   byte error, address;
   int nDevices;
   nDevices = 0;
@@ -95,10 +95,10 @@ bool scanIC2(TwoWire *wire, int searchAddress)
     error = wire->endTransmission(); 
     if (error == 0)
     {
-      Serial.print(F("I2C dev at addr 0x"));
+      // Serial.print(F("I2C dev at addr 0x"));
       if (address < 16)
-        Serial.println(F("0"));
-      Serial.println(address, HEX);
+        // Serial.println(F("0"));
+      // Serial.println(address, HEX);
       if(address == searchAddress)
       {
         found = true;
@@ -124,7 +124,7 @@ void enableI2C1()
   
   i2c_disable(I2C1);
   i2c_master_enable(I2C1, 0, 0);
-  debug(F("Enabled I2C1"));
+  // debug(F("Enabled I2C1"));
 
   // delay(500);
   // i2c_bus_reset(I2C1); // hangs here if this is called
@@ -133,9 +133,9 @@ void enableI2C1()
   WireOne.begin();
   delay(250);
 
-  debug(F("Began TwoWire 1"));
+  // debug(F("Began TwoWire 1"));
   
-  debug(F("Scanning 1"));
+  // debug(F("Scanning 1"));
 
   scanIC2(&Wire);
 }
@@ -144,15 +144,15 @@ void enableI2C2()
 {
   i2c_disable(I2C2);
   i2c_master_enable(I2C2, 0, 0);
-  debug(F("Enabled I2C2"));
+  // debug(F("Enabled I2C2"));
 
   //i2c_bus_reset(I2C2); // hang if this is called
   WireTwo.begin();
   delay(250);
 
-  debug(F("Began TwoWire 2"));
+  // debug(F("Began TwoWire 2"));
 
-  debug(F("Scanning 2"));
+  // debug(F("Scanning 2"));
 
   scanIC2(&WireTwo);
 }

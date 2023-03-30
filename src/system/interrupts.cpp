@@ -49,7 +49,7 @@ void handleManualWakeInterrupt()
 void setupManualWakeInterrupts()
 {
 
-  debug("setup manual wake int");
+  // debug("setup manual wake int");
 
   // Set up interrupts
   awakenedByUser = false;

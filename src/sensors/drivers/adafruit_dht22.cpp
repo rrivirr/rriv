@@ -86,7 +86,6 @@ void AdaDHT22::stop()
 
 bool AdaDHT22::takeMeasurement()
 {
-  notify("in driver take measurement\n");
   // debug("taking measurement from AdaDHT22");
   sensors_event_t event;
   bool measurementTaken = false;
@@ -95,7 +94,7 @@ bool AdaDHT22::takeMeasurement()
   temperature = event.temperature;
   if(isnan(temperature))
   {
-    notify("Error reading temperature)");
+    // notify("Error  temp)");
   }
   else
   {
@@ -106,7 +105,7 @@ bool AdaDHT22::takeMeasurement()
   humidity = event.relative_humidity;
   if(isnan(humidity))
   {
-    notify("Error reading humidity");
+    // notify("Error hum");
   }
   else
   {
@@ -173,7 +172,7 @@ bool AdaDHT22::configureDriverFromJSON(cJSON *json)
   }
   else
   {
-    notify("Invalid sensor pin");
+    // notify("Invalid sensor pin");
     return false;
   }
   return true;

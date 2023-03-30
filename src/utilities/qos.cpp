@@ -26,8 +26,8 @@ extern "C" char* _sbrk(int incr);
 int freeMemory()
 {
   char top;
-  debug((int) &top );
-  debug((int) reinterpret_cast<char*>(_sbrk(0)) );
+  // debug((int) &top );
+  // debug((int) reinterpret_cast<char*>(_sbrk(0)) );
 
   return &top - reinterpret_cast<char*>(_sbrk(0));
 }
@@ -56,8 +56,8 @@ void checkMemory()
 
 void printFreeMemory()
 {
-  char freeMemoryMessage[21];
-  int freeMemoryAmount = freeMemory();
-  sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
-  notify(freeMemoryAmount);
+  // char freeMemoryMessage[21];
+  // int freeMemoryAmount = freeMemory();
+  // sprintf(freeMemoryMessage, reinterpretCharPtr(F("Free Memory: %d")), freeMemoryAmount);
+  // notify(freeMemoryAmount);
 }

@@ -171,7 +171,7 @@ bool GenericAnalogDriver::takeMeasurement()
 
   case ADC_SELECT_EXTERNAL:
   {
-    debug("get extADC value");
+    // debug("get extADC value");
     this->value = externalADC->getChannelValue(configurations.sensor_port);
   }
   break;
@@ -200,7 +200,7 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
   int x[MAX_CALIBRATION_BURST_LENGTH];
   int sum = 0;
   double sum1 = 0;
-  notify("Calibration measurements:");
+  // notify("Calibration measurements:");
   for (int i = 0; i < configurations.calibrationBurstCount; i++)
   {
     if (configurations.adc_select == ADC_SELECT_EXTERNAL)
@@ -210,7 +210,7 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
     takeMeasurement();
     // TODO: check for 0 values, report them, and either skip them for calibration, or halt calibration and notify that board may have electrical issues?
     // Thoughts: reasons for 0 values? electrical issue, power failure, or are there scenarios where 0's are acceptable but still need to be skipped?
-    notify(this->value);
+    // notify(this->value);
     sum += this->value;
     x[i] = this->value;
     delay(100);
@@ -225,8 +225,8 @@ void GenericAnalogDriver::takeCalibrationBurstMeasurement()
   }
   calibrationVariance = sum1 / (float)(configurations.calibrationBurstCount);
   char buffer[50];
-  sprintf(buffer, "variance = %.2f\n", calibrationVariance);
-  notify(buffer);
+  // sprintf(buffer, "variance = %.2f\n", calibrationVariance);
+  // notify(buffer);
 }
 
 double GenericAnalogDriver::getCalibratedValue(double value)
@@ -250,29 +250,30 @@ const char *GenericAnalogDriver::getSummaryDataString()
 
 void GenericAnalogDriver::initCalibration()
 {
-  notify(F("Two point calibration"));
-  notify(F("calibrate SLOT low VALUE"));
-  notify(F("calibrate SLOT high VALUE"));
-  notify(F("calibrate SLOT store"));
+  // notify(F("Two point calibration"));
+  // notify(F("calibrate SLOT low VALUE"));
+  // notify(F("calibrate SLOT high VALUE"));
+  // notify(F("calibrate SLOT store"));
   calibrate_high_reading = calibrate_high_value = calibrate_low_reading = calibrate_low_value = 0;
 }
 
 void GenericAnalogDriver::printCalibrationStatus()
 {
-  notify(F("Calibration status:"));
-  char buffer[50];
-  sprintf(buffer, "high_reading: %d", calibrate_high_reading);
-  notify(buffer);
-  sprintf(buffer, "high_variance: %f", calibrate_high_variance);
-  notify(buffer);
-  sprintf(buffer, "high_value: %f", calibrate_high_value);
-  notify(buffer);
-  sprintf(buffer, "low_reading: %d", calibrate_low_reading);
-  notify(buffer);
-  sprintf(buffer, "low_variance: %f", calibrate_low_variance);
-  notify(buffer);
-  sprintf(buffer, "low_value: %f", calibrate_low_value);
-  notify(buffer);
+  //AE comented for space
+  // notify(F("Calibration status:"));
+  // char buffer[50];
+  // sprintf(buffer, "high_reading: %d", calibrate_high_reading);
+  // notify(buffer);
+  // sprintf(buffer, "high_variance: %f", calibrate_high_variance);
+  // notify(buffer);
+  // sprintf(buffer, "high_value: %f", calibrate_high_value);
+  // notify(buffer);
+  // sprintf(buffer, "low_reading: %d", calibrate_low_reading);
+  // notify(buffer);
+  // sprintf(buffer, "low_variance: %f", calibrate_low_variance);
+  // notify(buffer);
+  // sprintf(buffer, "low_value: %f", calibrate_low_value);
+  // notify(buffer);
 }
 
 void missingArg()

@@ -57,7 +57,6 @@ void AdaAHTX0::appendDriverSpecificConfigurationJSON(cJSON * json)
 
 void AdaAHTX0::setup()
 {
-  notify("aht setup");
   aht = new Adafruit_AHTX0();
   if(!aht->begin(wire,1,AHTX0_I2CADDR_DEFAULT)){
     notify("aht setup fail");
@@ -66,25 +65,25 @@ void AdaAHTX0::setup()
 
 bool AdaAHTX0::takeMeasurement()
 {
-  notify("in aht sensor driver take measurement\n");
+  // notify("in aht sensor driver take measurement\n");
   sensors_event_t hum, temp;
   bool measurementTaken = false;
   aht->getEvent(&hum, &temp);
   humidity = hum.relative_humidity;
   temperature = temp.temperature;
   if(isnan(humidity)){
-    notify("Error reading humidity");
+    // notify("Error reading humidity");
   } else{
     measurementTaken = true;
   }
   if(isnan(temperature)){
-    notify("Error reading temperature");
+    // notify("Error reading temperature");
   } else{
     measurementTaken = true;
   }
   if(measurementTaken)
   {
-    notify("measurement read");
+    // notify("measurement read");
     addValueToBurstSummaryMean("temperature", temperature);
     addValueToBurstSummaryMean("humidity", humidity);
     lastSuccessfulReadingMillis = millis();

@@ -93,7 +93,6 @@ bool SensorDriver::burstCompleted()
 
 void SensorDriver::addValueToBurstSummaryMean(std::string tag, double value)
 {
-  notify("in add burst summary mean\n");
   if(burstSummarySums.count(tag) == 0)
   {
     burstSummarySums[tag] = 0;
@@ -156,7 +155,7 @@ bool SensorDriver::configureFromJSON(cJSON * json)
     // TODO: improve these messages to indicate how much overflow there is
     // TODO: tell which driver is causing the issue, along the lines of this->getType()
     // TODO: this is to help during driver dev, not production firmware
-    notify("Invalid memory size for driver common configuration");
+    // notify("Invalid memory size for driver common configuration");
     exit(1);
   }
 #endif
