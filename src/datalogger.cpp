@@ -87,9 +87,11 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
     settings->interBurstDelay = 0;
   }
 
+  // TODO: functions to toggle these
   settings->debug_values = true;
   settings->log_raw_data = true;
   settings->debug_to_file = true;
+  settings->continuous_power = true;
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
@@ -307,7 +309,6 @@ void Datalogger::loop()
         lastInteractiveLogTime = timestamp();
       }
     }
-    
   }
   else if (inMode(debugging))
   {
@@ -997,6 +998,7 @@ bool Datalogger::deploy()
   measurementCycle = 0; // reset measurement cycle count when we deploy
   // increment at start of cycle, or after?
   enterFieldLoggingMode();
+
   return true;
 }
 
@@ -1172,26 +1174,21 @@ void Datalogger::stopAndAwaitTrigger()
   clearManualWakeInterrupt();
   setNextAlarmInternalRTC(settings.wakeInterval);
 
+  
   // power down sensors -> function?
   for (unsigned int i = 0; i < sensorCount; i++)
   {
     drivers[i]->stop();
   }
-
-  powerDownSwitchableComponents();
+  
+  if(!settings.continuous_power){
+    powerDownSwitchableComponents();
+  }
   fileSystem->closeFileSystem();
-  //// filesize issue work around, maybe solved by addressing memory leak in drivers?
-  // if(fileSystem->checkFileSize())
-  // {
-  //   notify("newfile");
-  //   // not working, not sure how this is supposed to work
-  //   // initializeFilesystem(); // if file size exceeded, make new file
-  //   // fileSystem->closeFileSystem(); // then close it
 
-  //   nvic_sys_reset(); // or just reset if this isn't working
-  // }
-
-  disableSwitchedPower();
+  if(!settings.continuous_power){
+    disableSwitchedPower();
+  }
 
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 

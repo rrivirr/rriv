@@ -62,7 +62,8 @@ typedef struct datalogger_settings {
     byte withold_incomplete_readings : 1; // only publish complete readings, default to withold.
     byte log_raw_data : 1;
     byte debug_to_file: 1;
-    byte reserved2 : 3;
+    byte continuous_power: 1;
+    byte reserved2 : 2;
 } datalogger_settings_type;
 
 typedef enum mode { interactive, debugging, logging, deploy_on_trigger } mode_type;
