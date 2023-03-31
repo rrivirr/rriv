@@ -1102,11 +1102,15 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
 {
   //TODO: hook for sensors that need to be powered down? separate functions?
   //TODO: hook for actuators that need to be powered down?
-  gpioPinOff(GPIO_PIN_3); //turn off 5v booster
-  gpioPinOff(GPIO_PIN_6); //not in use currently
-  i2c_disable(I2C2);
-  digitalWrite(EXADC_RESET,LOW);
-  // debug(F("Switchable components powered down"));
+
+  //continuous power: need to delete externalADC for a memory leak issue or prevent it from remaking it?
+  if(!settings.continuous_power){
+    gpioPinOff(GPIO_PIN_3); //turn off 5v booster
+    gpioPinOff(GPIO_PIN_6); //not in use currently
+    i2c_disable(I2C2);
+    digitalWrite(EXADC_RESET,LOW);
+    // debug(F("Switchable components powered down"));
+  }
   delete externalADC;
 }
 
@@ -1189,10 +1193,8 @@ void Datalogger::stopAndAwaitTrigger()
     drivers[i]->stop();
   }
   
-  // allows power to remain on in the case of the methane heater
-  if(!settings.continuous_power){
-    powerDownSwitchableComponents();
-  }
+  powerDownSwitchableComponents();
+
   fileSystem->closeFileSystem();
 
   // allows power to remain on in the case of the methane heater
@@ -1222,6 +1224,7 @@ void Datalogger::stopAndAwaitTrigger()
   nvic_irq_disable(NVIC_RTCALARM);
 
   enableSerialLog();
+
   enableSwitchedPower();
 
   setupHardwarePins(); // used from setup steps in datalogger
