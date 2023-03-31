@@ -760,6 +760,14 @@ cJSON * Datalogger::getConfigurationJSON()
   cJSON_AddNumberToObject(json, "startUpDelay(min)", settings.startUpDelay);
   cJSON_AddNumberToObject(json, "burstNumber", settings.burstNumber);
   cJSON_AddNumberToObject(json, "interBurstDelay(min)", settings.interBurstDelay);
+  
+  // boolean settings?
+  cJSON_AddBoolToObject(json, "debug_values", settings.debug_values);
+  // cJSON_AddBoolToObject(json, "withold_incomplete_readings", settings.withold_incomplete_readings);
+  cJSON_AddBoolToObject(json, "log_raw_data", settings.log_raw_data);
+  cJSON_AddBoolToObject(json, "debug_to_file", settings.debug_to_file);
+  cJSON_AddBoolToObject(json, "continuous_power", settings.continuous_power);
+  
   return json;
 }
 
@@ -1181,11 +1189,13 @@ void Datalogger::stopAndAwaitTrigger()
     drivers[i]->stop();
   }
   
+  // allows power to remain on in the case of the methane heater
   if(!settings.continuous_power){
     powerDownSwitchableComponents();
   }
   fileSystem->closeFileSystem();
 
+  // allows power to remain on in the case of the methane heater
   if(!settings.continuous_power){
     disableSwitchedPower();
   }

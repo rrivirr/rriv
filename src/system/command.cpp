@@ -768,7 +768,7 @@ void CommandInterface::setup(){
   // cmdAdd("set-start-up-delay", setStartUpDelay);
   // cmdAdd("set-inter-burst-delay", setInterBurstDelay);
 
-  cmdAdd("calibrate", calibrate);
+  // cmdAdd("calibrate", calibrate);
   
   // cmdAdd("set-user-note", setUserNote);
   // cmdAdd("set-user-value", setUserValue);
