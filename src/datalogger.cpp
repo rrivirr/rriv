@@ -674,6 +674,10 @@ void Datalogger::notifyInvalid(){
   notify("Invalid:");
 }
 
+// void Datalogger::setRTCtimestamp(uint32 setTime){
+//   settings.RTCsetTime = (unsigned long) setTime;
+// }
+
 void Datalogger::setConfiguration(cJSON *config)
 {
   // TODO: use one command for all config set, rather than individual commands, only check errors if respective key found

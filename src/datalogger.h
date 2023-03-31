@@ -51,6 +51,7 @@ typedef struct datalogger_settings {
     char siteName[8]; // 8 bytes
     unsigned long RTCsetTime; // 8 bytes
     unsigned long deploymentTimestamp; // 8 bytes
+    char unused[6]; // 6 bytes unused
     unsigned short wakeInterval;  // 2 bytes minutes
     unsigned short startUpDelay; // 2 bytes minutes
     unsigned short burstNumber; // 2 bytes
@@ -107,6 +108,8 @@ public:
     void setBurstNumber(int number);
     void setStartUpDelay(int delay);
     void setInterBurstDelay(int delay);
+
+    // void setRTCtimestamp(uint32 setTime);
 
     void setConfiguration(cJSON * config);
     cJSON * getConfigurationJSON();

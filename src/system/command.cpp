@@ -510,8 +510,11 @@ void setRTC(int arg_cnt, char **args)
     invalidArgumentsMessage(F("set-rtc UNIX_EPOCH_TIMESTAMP"));
     return;
   }
-  else
+  else{
+    // TODO: not saving to struct correctly, is input correct?  Issue seen on restart
+    // Issue may be hardware not software
     CommandInterface::instance()->_setRTC((uint32)atoi(args[1]));
+  }
 }
 
 void CommandInterface::_setRTC(uint32 setTimestamp)
@@ -519,10 +522,11 @@ void CommandInterface::_setRTC(uint32 setTimestamp)
   int time = timestamp();
   char message[55];
   
-  sprintf(message, "Time diff since:%i =%i", (int)datalogger->settings.RTCsetTime, (int)setTimestamp-time);
+  sprintf(message, "Time diff since:%lu =%lu", this->datalogger->settings.RTCsetTime, setTimestamp-time);
   notify(message);
 
-  datalogger->settings.RTCsetTime = setTimestamp;
+  this->datalogger->settings.RTCsetTime = setTimestamp;
+  // this->datalogger->setRTCtimestamp(setTimestamp);
   setTime(setTimestamp);
   ok();
 }
