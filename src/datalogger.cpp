@@ -1106,11 +1106,11 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //continuous power: need to delete externalADC for a memory leak issue or prevent it from remaking it?
   if(!settings.continuous_power){
     gpioPinOff(GPIO_PIN_3); //turn off 5v booster
-    gpioPinOff(GPIO_PIN_6); //not in use currently
-    i2c_disable(I2C2);
-    digitalWrite(EXADC_RESET,LOW);
-    // debug(F("Switchable components powered down"));
   }
+  // debug(F("Switchable components powered down"));
+  gpioPinOff(GPIO_PIN_6); //not in use currently
+  i2c_disable(I2C2);
+  digitalWrite(EXADC_RESET,LOW);
   delete externalADC;
 }
 
