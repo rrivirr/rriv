@@ -167,12 +167,13 @@ void testExADC();
 
 void workspace()
 {
-  return;
-    Serial2.println("test vin");
+  // return;
+    Serial2.println("tess");
+    // while(1){};
 
   // ledTest();
 
-  // testSwitchedPower();
+  testSwitchedPower();
   // testVinMeasure();
   // testExADCMOSFET();
   // testEnableAVDD();
@@ -266,6 +267,12 @@ void testExADCMOSFET(){
   pinMode(ENABLE_5V, OUTPUT);
 
   digitalWrite(ENABLE_5V, true);
+    // digitalWrite(ENABLE_5V, true);
+  Serial2.println("5V high");
+  while(1){
+      Serial2.println("5V high");
+      delay(2000);
+  }
 
   int delayTime = 10000;
   while(1){
@@ -273,8 +280,7 @@ void testExADCMOSFET(){
   // Serial2.println("5V low");
   // delay(delay  Time);
 
-  digitalWrite(ENABLE_5V, true);
-  Serial2.println("5V high");
+
   // delay(delayTime);
 
   digitalWrite(ENABLE_EX_ADC, false);

@@ -53,7 +53,7 @@
 // #define GPIO_PIN_4 PB8 // CN10 3, not using bluetooth currently
 
 #define ENABLE_VIN_MEASURE PB1
-#define ENABLE_EX_ADC PC4
+#define ENABLE_EX_ADC PC6
 
 
 #define GPIO_PIN_1 PA1
