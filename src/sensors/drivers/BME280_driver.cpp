@@ -52,7 +52,7 @@ void BME280Driver::appendDriverSpecificConfigurationJSON(cJSON * json)
 
 void BME280Driver::setup()
 {
-  BME280ptr = new BME280(wire);
+  BME280ptr = new BME280();
 
 }
 

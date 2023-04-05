@@ -57,16 +57,21 @@ void AdaAHTX0::appendDriverSpecificConfigurationJSON(cJSON * json)
 
 void AdaAHTX0::setup()
 {
-  notify("aht setup");
+  // notify("aht setup");
   aht = new Adafruit_AHTX0();
   if(!aht->begin(wire,1,AHTX0_I2CADDR_DEFAULT)){
-    notify("aht setup fail");
+    // notify("aht setup fail");
   }
 }
 
+// void AdaAHTX0::stop()
+// {
+//   //empty
+// }
+
 bool AdaAHTX0::takeMeasurement()
 {
-  notify("in aht sensor driver take measurement\n");
+  // notify("in aht sensor driver take measurement\n");
   sensors_event_t hum, temp;
   bool measurementTaken = false;
   aht->getEvent(&hum, &temp);
@@ -84,10 +89,11 @@ bool AdaAHTX0::takeMeasurement()
   }
   if(measurementTaken)
   {
-    notify("measurement read");
+    // notify("measurement read");
     addValueToBurstSummaryMean("temperature", temperature);
     addValueToBurstSummaryMean("humidity", humidity);
     lastSuccessfulReadingMillis = millis();
+    // Serial2.print("temp t %d\n",temp.timestamp);
   }
 
   return measurementTaken;
@@ -141,5 +147,6 @@ const char * AdaAHTX0::getRawDataString()
 }
 unsigned int AdaAHTX0::millisecondsUntilNextReadingAvailable()
 {
+  
   return (30000 - (millis() - lastSuccessfulReadingMillis)); // return min by default, a larger number in driver implementation causes correct delay
 }

@@ -88,6 +88,7 @@ void setup(void)
   {
     notify("Device will enter logging mode in 5 seconds");
     notify("Type 'i' to exit to interactive mode");
+    
     Serial2.print("CMD >> ");
     int start = timestamp();
     int now = start;

@@ -19,8 +19,6 @@
 #define ADAFRUIT_AHTX0_SENSOR 0x0007
 // Step 2: Add a #define for the next available integer code
 
-//#define AIR_PUMP 0xFFFD
-//#define GENERIC_ACTUATOR 0xFFFD
 #define DRIVER_TEMPLATE 0xFFFE
 #define NO_SENSOR 0xFFFF
 

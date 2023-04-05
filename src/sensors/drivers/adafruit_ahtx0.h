@@ -47,7 +47,7 @@ class AdaAHTX0 : public I2CProtocolSensorDriver
     void addCalibrationParametersToJSON(cJSON * json);
     
     void setup();
-    void stop();
+    // void stop();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);

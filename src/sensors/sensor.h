@@ -192,15 +192,6 @@ public:
   virtual unsigned int millisecondsUntilNextReadingAvailable();
 
   virtual unsigned int millisecondsUntilNextRequestedReading();
-
-  //actuator functions go here for now
-  virtual void actuateBeforeWarmUp();
-
-  virtual void actuateAfterMeasurementCycle();
-
-  //needs renaiming, function for actuators every X measurement cycles
-  virtual void actuatePeriodicalyMeasurementCycle();
-
   
 
 

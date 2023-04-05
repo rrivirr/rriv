@@ -60,7 +60,7 @@ class BME280Driver : public I2CProtocolSensorDriver
     //sensor specific variables, functions, etc.
     const char *sensorTypeString = BME280_TYPE_STRING;
     driver_config configuration;
-    BME280 * BME280ptr;
+    BME280 *BME280ptr;
     void addCalibrationParametersToJSON(cJSON *json);
 
     /*value(s) to be placed in dataString, should correspond to number of 
