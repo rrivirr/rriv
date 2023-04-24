@@ -130,7 +130,7 @@ void Datalogger::setup()
 
   setupHardwarePins();
   setupSwitchedPower();
-  powerUpSwitchableComponents();
+  powerUpSwitchableComponents(true);
 
   bool externalADCInstalled = scanI2C(&Wire, 0x2f);
   settings.externalADCEnabled = externalADCInstalled;
@@ -1059,9 +1059,9 @@ void Datalogger::initializeFilesystem()
   fileSystemWriteCache = new WriteCache(fileSystem);
 }
 
-void Datalogger::powerUpSwitchableComponents()
+void Datalogger::powerUpSwitchableComponents(bool setup)
 {
-  cycleSwitchablePower();
+  cycleSwitchablePower(setup,settings.continuous_power);
 
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
@@ -1242,7 +1242,7 @@ void Datalogger::stopAndAwaitTrigger()
   // We have woken from the interrupt
   // printInterruptStatus(Serial2);
 
-  powerUpSwitchableComponents();
+  powerUpSwitchableComponents(false);
   
   // power up sensors -> function?
   // relocating so i2c is active for sensors requiring it

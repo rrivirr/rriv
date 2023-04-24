@@ -193,7 +193,7 @@ private:
     // void stopAndAwaitTrigger();
     void writeStatusFields(const char * type);
     void prepareForUserInteraction();
-    void powerUpSwitchableComponents();
+    void powerUpSwitchableComponents(bool setup);
     void powerDownSwitchableComponents();
 
     // utility

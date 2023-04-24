@@ -52,7 +52,7 @@ void setup(void)
 
   // turn on switched power to read from EEPROM
   setupSwitchedPower();
-  cycleSwitchablePower();
+  cycleSwitchablePower(true,false);
   enableI2C1();
   delay(500);
 

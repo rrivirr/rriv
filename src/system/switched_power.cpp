@@ -39,8 +39,15 @@ void disableSwitchedPower()
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 }
 
-void cycleSwitchablePower()
+void cycleSwitchablePower(bool setup, bool continuousPower)
 {
+  // debug("csp?");
+  // debug(setup);
+  // debug(continuousPower);
+  if ((setup==false) && (continuousPower==true)){  
+    debug("cp!");
+    return;
+  }
   debug(F("Cycle switched power"));
   disableSwitchedPower();
   delay(500);
