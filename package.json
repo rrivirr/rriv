@@ -9,9 +9,9 @@
   "author": "WaterBear Team",
   "license": "GPL",
   "devDependencies": {
-    "@commitlint/cli": "^11.0.0",
+    "@commitlint/cli": "^17.6.1",
     "@commitlint/config-conventional": "^11.0.0",
-    "husky": "^4.3.5",
+    "husky": "^8.0.3",
     "version-header": "git+https://github.com/WaterBearSondes/version-header.git"
   }
 }
