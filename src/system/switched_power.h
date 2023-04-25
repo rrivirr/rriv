@@ -22,6 +22,6 @@
 void setupSwitchedPower();
 void enableSwitchedPower();
 void disableSwitchedPower();
-void cycleSwitchablePower(bool setup, bool continuousPower);
+void cycleSwitchablePower();
 
 #endif

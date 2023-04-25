@@ -130,7 +130,7 @@ void Datalogger::setup()
 
   setupHardwarePins();
   setupSwitchedPower();
-  powerUpSwitchableComponents(true);
+  powerUpSwitchableComponents();
 
   bool externalADCInstalled = scanI2C(&Wire, 0x2f);
   settings.externalADCEnabled = externalADCInstalled;
@@ -1059,9 +1059,9 @@ void Datalogger::initializeFilesystem()
   fileSystemWriteCache = new WriteCache(fileSystem);
 }
 
-void Datalogger::powerUpSwitchableComponents(bool setup)
+void Datalogger::powerUpSwitchableComponents()
 {
-  cycleSwitchablePower(setup,settings.continuous_power);
+  cycleSwitchablePower();
 
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
@@ -1178,57 +1178,62 @@ void Datalogger::stopAndAwaitTrigger()
 
   // printInterruptStatus(Serial2);
   debug(F("GoingToSleep"));
-
-  // save enabled interrupts
-  int iser1, iser2, iser3;
-  storeAllInterrupts(iser1, iser2, iser3);
-
-  clearManualWakeInterrupt();
-  setNextAlarmInternalRTC(settings.wakeInterval);
-
-  
-  // power down sensors -> function?
-  for (unsigned int i = 0; i < sensorCount; i++)
-  {
-    drivers[i]->stop();
-  }
-  
-  powerDownSwitchableComponents();
-
-  fileSystem->closeFileSystem();
-
   // allows power to remain on in the case of the methane heater
+  
+  // enabled interrupts
+  int iser1, iser2, iser3;
+
   if(!settings.continuous_power){
+    notify("!cp");
+    // save enabled interrupts
+    storeAllInterrupts(iser1, iser2, iser3);
+
+    clearManualWakeInterrupt();
+    setNextAlarmInternalRTC(settings.wakeInterval);
+
+    // power down sensors or delete new objects
+    for (unsigned int i = 0; i < sensorCount; i++)
+    {
+      drivers[i]->stop();
+    }
+    
+    powerDownSwitchableComponents();
+
+    fileSystem->closeFileSystem();
+
     disableSwitchedPower();
   }
-
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state
 
-  componentsStopMode();
+  if(!settings.continuous_power){
+    componentsStopMode();
+  }
+    disableCustomWatchDog();
+    // debug(F("disabled watchdog"));
+   
+   if(!settings.continuous_power){
+    disableSerialLog();     // TODO
+    hardwarePinsStopMode(); // switch to input mode
 
-  disableCustomWatchDog();
-  // debug(F("disabled watchdog"));
-  disableSerialLog();     // TODO
-  hardwarePinsStopMode(); // switch to input mode
-
-  clearAllInterrupts();
-  clearAllPendingInterrupts();
-
+    clearAllInterrupts();
+    clearAllPendingInterrupts();
+  }
   enableManualWakeInterrupt();    // The button, which is not powered during stop mode on v0.2 hardware
   nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
-  enterStopMode();
+  if(!settings.continuous_power){
+    enterStopMode();
 
-  reenableAllInterrupts(iser1, iser2, iser3);
-  disableManualWakeInterrupt();
-  nvic_irq_disable(NVIC_RTCALARM);
+    reenableAllInterrupts(iser1, iser2, iser3);
+    disableManualWakeInterrupt();
+    nvic_irq_disable(NVIC_RTCALARM);
 
-  enableSerialLog();
+    enableSerialLog();
 
-  enableSwitchedPower();
+    enableSwitchedPower();
 
-  setupHardwarePins(); // used from setup steps in datalogger
-
+    setupHardwarePins(); // used from setup steps in datalogger
+  }
   // debug(F("Awoke"));
 
   startCustomWatchDog(); // could go earlier once working reliably
@@ -1241,19 +1246,20 @@ void Datalogger::stopAndAwaitTrigger()
 
   // We have woken from the interrupt
   // printInterruptStatus(Serial2);
+  if(!settings.continuous_power){
+    powerUpSwitchableComponents();
+    
+    // power up sensors -> function?
+    // relocating so i2c is active for sensors requiring it
+    for (unsigned int i = 0; i < sensorCount; i++)
+    {
+      drivers[i]->setup();
+    }
 
-  powerUpSwitchableComponents(false);
-  
-  // power up sensors -> function?
-  // relocating so i2c is active for sensors requiring it
-  for (unsigned int i = 0; i < sensorCount; i++)
-  {
-    drivers[i]->setup();
+    // turn components back on
+    componentsBurstMode();
+    fileSystem->reopenFileSystem();
   }
-
-  // turn components back on
-  componentsBurstMode();
-  fileSystem->reopenFileSystem();
 
   if (awakenedByUser == true)
   {
