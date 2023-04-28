@@ -1103,10 +1103,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //TODO: hook for sensors that need to be powered down? separate functions?
   //TODO: hook for actuators that need to be powered down?
 
-  //continuous power: need to delete externalADC for a memory leak issue or prevent it from remaking it?
-  if(!settings.continuous_power){
-    gpioPinOff(GPIO_PIN_3); //turn off 5v booster
-  }
+  gpioPinOff(GPIO_PIN_3); //turn off 5v booster
   // debug(F("Switchable components powered down"));
   gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
@@ -1221,9 +1218,9 @@ void Datalogger::stopAndAwaitTrigger()
   enableManualWakeInterrupt();    // The button, which is not powered during stop mode on v0.2 hardware
   nvic_irq_enable(NVIC_RTCALARM); // enable our RTC alarm interrupt
 
-  if(!settings.continuous_power){
-    enterStopMode();
+  enterStopMode();
 
+  if(!settings.continuous_power){
     reenableAllInterrupts(iser1, iser2, iser3);
     disableManualWakeInterrupt();
     nvic_irq_disable(NVIC_RTCALARM);
