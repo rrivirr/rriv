@@ -1104,10 +1104,10 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //TODO: hook for actuators that need to be powered down?
 
   gpioPinOff(GPIO_PIN_3); //turn off 5v booster
-  // debug(F("Switchable components powered down"));
   gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
+  // debug(F("Switchable components powered down"));
   delete externalADC;
 }
 
