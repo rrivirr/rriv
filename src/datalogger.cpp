@@ -1186,8 +1186,11 @@ void Datalogger::stopAndAwaitTrigger()
     storeAllInterrupts(iser1, iser2, iser3);
 
     clearManualWakeInterrupt();
-    setNextAlarmInternalRTC(settings.wakeInterval);
+  }
 
+  setNextAlarmInternalRTC(settings.wakeInterval);
+
+  if(!settings.continuous_power){
     // power down sensors or delete new objects
     for (unsigned int i = 0; i < sensorCount; i++)
     {
