@@ -8,7 +8,6 @@
 // Step 1: Include the header for your driver in sensor_map.h
 //include in registry.h not sensor_map.h??
 
-
 #define GENERIC_ANALOG_SENSOR 0x0000
 #define ATLAS_EC_OEM_SENSOR 0x0001
 #define ADAFRUIT_DHT22_SENSOR 0x0002
@@ -21,9 +20,6 @@
 
 #define DRIVER_TEMPLATE 0xFFFE
 #define NO_SENSOR 0xFFFF
-
-
-
 
 void buildDriverSensorMap()
 {  
@@ -47,6 +43,4 @@ void buildDriverSensorMap()
   setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
 
   //Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
-  
-
 }
