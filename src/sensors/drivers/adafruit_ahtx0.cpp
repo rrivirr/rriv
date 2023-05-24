@@ -64,10 +64,10 @@ void AdaAHTX0::setup()
   }
 }
 
-// void AdaAHTX0::stop()
-// {
-//   //empty
-// }
+void AdaAHTX0::stop()
+{
+  delete aht;
+}
 
 bool AdaAHTX0::takeMeasurement()
 {
