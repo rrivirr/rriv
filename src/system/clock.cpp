@@ -52,8 +52,9 @@ void setNextAlarmInternalRTC(short interval){
   // Serial2.println("minutes");
   // Serial2.println(minutes);
   short nextMinutes = (minutes + interval - (minutes % interval));
-  Serial2.println("next minutes");
+  Serial2.println("wake at min");
   Serial2.println(nextMinutes);
+  Serial2.flush();
   short minutesDiff = nextMinutes - minutes;
   short minutesDiffSeconds = minutesDiff * 60;
   short secondsUntilWake = minutesDiffSeconds - seconds; // -offset.  Offset would allow for some startup time.
