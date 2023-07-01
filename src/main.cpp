@@ -171,9 +171,26 @@ void workspace()
     Serial2.println("tess");
     // while(1){};
 
-  // ledTest();
+  // pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
+  // digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
 
-  testSwitchedPower();
+  // pinMode(ENABLE_5V, OUTPUT);
+  // digitalWrite(ENABLE_5V, true);
+
+  pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  digitalWrite(ENABLE_EX_ADC, LOW); // this appears to be necessary in order to fully start I2C1.
+                                    // can we turn this power back off when we are done?   
+                                    // or should just always cycle this when starting and sleeping to save that power only
+                                    // so ex adc mosfet is mainly for not draining through analog sensors while we sleep
+
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(EXADC_RESET,HIGH);
+  delay(100); // Wait for ADC to start up
+
+  // ledTest();
+  // testSwitchedPower();
   // testVinMeasure();
   // testExADCMOSFET();
   // testEnableAVDD();
@@ -188,9 +205,27 @@ void workspace()
 #include "system/measurement_components.h"
 
 void testExADC(){
-    enableI2C1();
+  pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
+  digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
 
+  pinMode(ENABLE_5V, OUTPUT);
+  digitalWrite(ENABLE_5V, true);
+
+  pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  digitalWrite(ENABLE_EX_ADC, LOW);
+
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(EXADC_RESET,HIGH);
+  delay(100); // Wait for ADC to start up
+
+  delay(1000);
+  enableI2C1();
+  Serial2.println("scan IC21");
   bool externalADCInstalled =  scanIC2(&Wire, 0x2f); // use datalogger setting once method is moved to instance method
+  Serial2.println("scan IC21 done");
+
   if (externalADCInstalled)
   {
       Serial2.println("reset exADC");
@@ -208,12 +243,8 @@ void testExADC(){
     externalADC->enableChannel(1);
     externalADC->enableChannel(2);
     externalADC->enableChannel(3);
-  }
-  else
-  {
-    Serial2.println(F("extADC not installed"));
-  }
-  while(1){
+
+     while(1){
     externalADC->convertEnabledChannels();
     Serial2.println(externalADC->channel0Value());
     Serial2.println(externalADC->channel1Value());
@@ -221,16 +252,25 @@ void testExADC(){
     Serial2.println(externalADC->channel3Value());
     delay(1000);
 
+    } 
   }
+  else
+  {
+    Serial2.println(F("extADC not installed"));
+  }
+ 
 }
 
 void testIntADC(){
+  pinMode(ENABLE_F103_AVDD, OUTPUT); // enables internal ADC
+  digitalWrite(ENABLE_F103_AVDD, 0); // enables internal ADC
   pinMode(ANALOG_INPUT_1_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_2_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_3_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_4_PIN, INPUT_ANALOG);
   pinMode(ANALOG_INPUT_5_PIN, INPUT_ANALOG);
   while(1){
+    Serial2.println("1-5");
     Serial2.println(analogRead(ANALOG_INPUT_1_PIN));
     Serial2.println(analogRead(ANALOG_INPUT_2_PIN));
     Serial2.println(analogRead(ANALOG_INPUT_3_PIN));
@@ -267,12 +307,13 @@ void testExADCMOSFET(){
   pinMode(ENABLE_5V, OUTPUT);
 
   digitalWrite(ENABLE_5V, true);
+  // digitalWrite(ENABLE_EX_ADC, LOW); // enables
     // digitalWrite(ENABLE_5V, true);
   Serial2.println("5V high");
-  while(1){
-      Serial2.println("5V high");
-      delay(2000);
-  }
+  // while(1){
+  //     Serial2.println("5V high");
+  //     delay(2000);
+  // }
 
   int delayTime = 10000;
   while(1){
@@ -337,6 +378,8 @@ void testVinMeasure() {
   // Serial2.println("5V high");
   // delay(delayTime);
 
+  // enable read
+  pinMode(PB0, INPUT_ANALOG);
   digitalWrite(ENABLE_VIN_MEASURE, false);
   Serial2.println(false);
   for(int i=0; i<10; i=i+1){
@@ -344,10 +387,14 @@ void testVinMeasure() {
     delay(1000);
   }
 
-  
+  // disable read, let drain down
   digitalWrite(ENABLE_VIN_MEASURE, true);
+  pinMode(PB0, OUTPUT_OPEN_DRAIN);
+  digitalWrite(PB0, LOW);
+  delay(2000);
+  pinMode(PB0, INPUT_ANALOG);
   Serial2.println(true);
-  for(int i=0; i<10; i=i+1){
+  for(int i=0; i<120; i=i+1){
     Serial2.println(getBatteryValue());
         delay(1000);
 
@@ -475,20 +522,21 @@ void testSwitchedPower() {
   {
     delay(100);
   }
-  Serial2.println("Serial 2 begin");
+  Serial2.println("Serial 2 begin and test");
   // while(1){
   //   delay(1000);
   // }
 
+pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
+
 while(1){
   delay(1000);
   Serial2.println("Set low");
-  pinMode(SWITCHED_POWER_ENABLE, OUTPUT);
   digitalWrite(SWITCHED_POWER_ENABLE, LOW);
 
   delay(1000);
 
-  for(int i=0; i<6; i++){
+  for(int i=0; i<4; i++){
     Serial2.println(i);
     delay(1000);
   }
@@ -496,7 +544,7 @@ while(1){
   Serial2.println("Set high");
   digitalWrite(SWITCHED_POWER_ENABLE, HIGH);
       delay(1000);
-  for(int i=0; i<6; i++){
+  for(int i=0; i<4  ; i++){
     Serial2.println(i);
     delay(1000);
   }

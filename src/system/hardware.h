@@ -40,11 +40,11 @@
 #define INTERRUPT_LINE_7_PIN PC7
 //pinMode(PB10, INPUT_PULLDOWN); // This WAS interrupt line 10, user interrupt. Needs to be reassigned.
 
-#define ANALOG_INPUT_1_PIN PB1 // A2
-#define ANALOG_INPUT_2_PIN PC0 // A3
-#define ANALOG_INPUT_3_PIN PC1 // A4
-#define ANALOG_INPUT_4_PIN PC2 // A5
-#define ANALOG_INPUT_5_PIN PC3 // A6
+#define ANALOG_INPUT_1_PIN PA0 // A1
+#define ANALOG_INPUT_2_PIN PC3 // A2
+#define ANALOG_INPUT_3_PIN PC2 // A3
+#define ANALOG_INPUT_4_PIN PC1 // A4
+#define ANALOG_INPUT_5_PIN PC0 // A5
 
 #define ONBOARD_LED_PIN PA5
 
@@ -54,6 +54,7 @@
 
 #define ENABLE_VIN_MEASURE PB1
 #define ENABLE_EX_ADC PC6
+#define ENABLE_F103_AVDD PA1
 
 
 #define GPIO_PIN_1 PA1

@@ -121,6 +121,10 @@ bool scanIC2(TwoWire *wire, int searchAddress)
 
 void enableI2C1()
 {
+
+  // exADC ref supply on/off must be setup before scanning I2C1, otherwise bus hangs
+  // pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  // digitalWrite(ENABLE_EX_ADC, HIGH);
   
   i2c_disable(I2C1);
   i2c_master_enable(I2C1, 0, 0);
