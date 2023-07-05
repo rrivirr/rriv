@@ -65,13 +65,13 @@ void setup(void)
 
   /* We're ready to go! */
   debug(F("done with setup"));
-  notifyDebugStatus();
 
   startCustomWatchDog(); // printMCUDebugStatus delays with user message, don't want watchdog to trigger
 
   Monitor::instance()->debugToSerial = false;
 
   printWelcomeMessage(dataloggerSettings);
+  notifyDebugStatus();
 
   if (datalogger->inMode(logging))
   {
@@ -108,7 +108,7 @@ void printWelcomeMessage(datalogger_settings_type *dataloggerSettings)
 {
   // Welcome message
 
-   const __FlashStringHelper *welcomeMessage = F("Hi"); //F(R"RRIV(
+   const __FlashStringHelper *welcomeMessage = F(R"RRIV(
 // ____/\\\\\\\\\________/\\\\\\\\\______/\\\\\\\\\\\__/\\\________/\\\_        
 //  __/\\\///////\\\____/\\\///////\\\___\/////\\\///__\/\\\_______\/\\\_       
 //   _\/\\\_____\/\\\___\/\\\_____\/\\\_______\/\\\_____\//\\\______/\\\__      
@@ -177,19 +177,19 @@ void workspace()
   // pinMode(ENABLE_5V, OUTPUT);
   // digitalWrite(ENABLE_5V, true);
 
-  pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
-  digitalWrite(ENABLE_EX_ADC, LOW); // this appears to be necessary in order to fully start I2C1.
-                                    // can we turn this power back off when we are done?   
-                                    // or should just always cycle this when starting and sleeping to save that power only
-                                    // so ex adc mosfet is mainly for not draining through analog sensors while we sleep
+  // pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  // digitalWrite(ENABLE_EX_ADC, LOW); // this appears to be necessary in order to fully start I2C1.
+  //                                   // can we turn this power back off when we are done?   
+  //                                   // or should just always cycle this when starting and sleeping to save that power only
+  //                                   // so ex adc mosfet is mainly for not draining through analog sensors while we sleep
 
-  delay(1); // delay > 50ns before applying ADC reset
-  digitalWrite(EXADC_RESET,LOW); // reset is active low
-  delay(1); // delay > 10ns after starting ADC reset
-  digitalWrite(EXADC_RESET,HIGH);
-  delay(100); // Wait for ADC to start up
+  // delay(1); // delay > 50ns before applying ADC reset
+  // digitalWrite(EXADC_RESET,LOW); // reset is active low
+  // delay(1); // delay > 10ns after starting ADC reset
+  // digitalWrite(EXADC_RESET,HIGH);
+  // delay(100); // Wait for ADC to start up
 
-  // ledTest();
+  // // ledTest();
   // testSwitchedPower();
   // testVinMeasure();
   // testExADCMOSFET();
