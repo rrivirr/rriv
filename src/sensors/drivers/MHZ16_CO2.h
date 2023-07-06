@@ -15,16 +15,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_NDIR_I2C_DRIVER
-#define WATERBEAR_NDIR_I2C_DRIVER
+#ifndef WATERBEAR_MHZ16_CO2_DRIVER
+#define WATERBEAR_MHZ16_CO2_DRIVER
 
 #include "sensors/sensor.h"
-#include <Wire.h>
 #include <NDIR_I2C.h>
 
-#define MHZ16_CO2_TYPE_STRING "driver_template"
+#define MHZ16_CO2_TYPE_STRING "mhz16_co2"
 
-class MHZ16_CO2Driver : public DriverTemplateProtocolSensorDriver
+class MHZ16_CO2Driver : public I2CProtocolSensorDriver
 {
     // configuration parameters specific to this driver
     typedef struct
@@ -59,16 +58,16 @@ protected:
 
 private:
     // sensor specific variables, functions, etc.
-    MHZ16_CO2Driver *modularSensorDriver;
+    NDIR_I2C *modularSensorDriver;
     driver_configuration configuration;
 
     const char *sensorTypeString = MHZ16_CO2_TYPE_STRING;
 
     /*value(s) to be placed in dataString, should correspond to number of
     column headers and entries in dataString*/
-    int value;                                 // sensor raw return(s) to be added to dataString
-    const char *baseColumnHeaders = "raw,cal"; // will be written to .csv
-    char dataString[16];                       // will be written to .csv
+    int ppm; // sensor raw return(s) to be added to dataString
+    const char *baseColumnHeaders = "CO2_ppm";
+    char dataString[30]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);
 };
