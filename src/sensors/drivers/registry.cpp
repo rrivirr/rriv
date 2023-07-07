@@ -16,6 +16,7 @@
 #define AIR_PUMP 0x0005
 #define BME280 0x0006
 #define ADAFRUIT_AHTX0_SENSOR 0x0007
+#define ATLAS_RGB_SENSOR 0x0008
 // Step 2: Add a #define for the next available integer code
 
 #define DRIVER_TEMPLATE 0xFFFE
@@ -32,7 +33,13 @@ void buildDriverSensorMap()
  
   setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
 
+#ifdef RRIV_CO2
   setupSensorMaps<AtlasCO2Driver>(ATLAS_CO2_SENSOR, F(ATLAS_CO2_DRIVER_TYPE_STRING)); // 4848 bytes
+#endif
+
+#ifdef RRIV_RGB
+  setupSensorMaps<rgbDriver>(ATLAS_RGB_SENSOR, F(RGB_DRIVER_TYPE_STRING)); // 4848 bytes
+#endif
 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
   // setupSensorMaps<$CLASS_NAME>($SENSOR_CODE, F($SENSOR_STRING_NAME));
