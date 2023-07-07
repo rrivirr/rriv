@@ -24,6 +24,9 @@
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -425,7 +428,7 @@ void setSlotConfig(int arg_cnt, char **args)
 {
   notify(F("set slot config"));
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON"));
+    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON")); // TODO: kinda useless, tell user json structure
     return;
   }
 
@@ -694,6 +697,29 @@ void help(int arg_cnt, char**args)
   CommandInterface::instance()->_help();
 }
 
+void airpumptest (int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_airpumptest();
+}
+
+void CommandInterface::_airpumptest()
+{
+  
+  // AirPump ap;
+  // ap.actuateBeforeWarmUp();
+  // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
+  // {
+  //   digitalWrite(GPIO_PIN_6, HIGH);
+  //   //delay(dutyCycle*total*1000); //totalTimeCycle not not "declared in scope" other variables are fine tho
+  //   delay(0.5*10*1000);
+  //   digitalWrite(GPIO_PIN_6, LOW);
+  //   // delay((1-dutyCycle)*timeFullCycle*1000);
+  //   delay((1-0.5)*10*1000);
+  // }
+
+  
+}
+
 void CommandInterface::_help()
 {
   // notify("RRIV command list:"); // 48 bytes of flash
@@ -794,10 +820,16 @@ void CommandInterface::setup(){
   // cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
+  cmdAdd("airpump-test", airpumptest);
+  cmdAdd("gpio-test", gpiotest);
+  cmdAdd("airpump-test", airpumptest);
 
-  // cmdAdd("gpio-test", gpiotest);
-  // cmdAdd("factory-reset",factoryReset); // TODO: get rid of this in sensor
+  
+  // cmdAdd("step-test", steptest);
+
 }
+
+
 
 void CommandInterface::poll()
 {

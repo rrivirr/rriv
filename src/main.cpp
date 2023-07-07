@@ -29,6 +29,7 @@
 #include "system/eeprom.h"
 #include "system/logs.h"
 
+
 // Setup and Loop
 Datalogger *datalogger;
 void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
@@ -154,7 +155,7 @@ Type 'help' for command list.
 // space to work our development details
 
 
-void workspace()
+void  workspace()
 {
   // notify(sizeof(long long));
   // notify(sizeof(sone));

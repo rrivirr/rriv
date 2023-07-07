@@ -29,6 +29,11 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
+// #include "sensors/drivers/air_pump.h"
+// #include "sensors/drivers/generic_actuator.h"
 
 void Datalogger::sleepMCU(uint32 milliseconds)
 {
@@ -104,6 +109,9 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
     settings->wakeInterval = 1;
   }
 
+
+
+
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
   switch (settings->mode)
@@ -176,6 +184,7 @@ bool Datalogger::processReadingsCycle()
       fileSystemWriteCache->flushCache();
     }
   }
+  
 
   if (shouldContinueBursting())
   {
@@ -217,6 +226,7 @@ bool Datalogger::processReadingsCycle()
       // wakeSensorsFromStandbyMode(); 
     }
     initializeBurst();
+
     return true;
   }
   return false;
@@ -227,6 +237,7 @@ void Datalogger::testMeasurementCycle()
   initializeMeasurementCycle();
   fileSystemWriteCache->setOutputToSerial(true); // another way to do this would be to set a special write cache
   while(processReadingsCycle()){
+    
     fileSystemWriteCache->flushCache();
     outputLastMeasurement();
   }      
@@ -244,7 +255,8 @@ void Datalogger::loop()
   }
 
   if (inMode(logging))
-  {
+  { 
+    //AE actuate hook before measurement could go here
 
     if (powerCycle)
     {
@@ -265,18 +277,20 @@ void Datalogger::loop()
 
     if (shouldExitLoggingMode())
     {
-      notify("Should exit logging mode");
       changeMode(interactive);
       return;
     }
 
-    if(processReadingsCycle())
+    if(processReadingsCycle() == true) // nothing changes if this true/false
     {
       return;
     }
 
     // otherwise go to sleep
     fileSystemWriteCache->flushCache();
+
+    //AE actuator hook could go here: is this before or after measurement? 
+
   SLEEP:
     stopAndAwaitTrigger(); // sleep and then wake
     initializeMeasurementCycle(); // once we wake up
@@ -512,6 +526,8 @@ void Datalogger::initializeMeasurementCycle()
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
+  // notify("in measure senosr values\n");
+  
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
@@ -522,11 +538,14 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
   for (unsigned int i = 0; i < sensorCount; i++)
   {
+
     if (drivers[i]->takeMeasurement())
     {
+
       if (performingBurst)
       {
         drivers[i]->incrementBurst(); // burst bookkeeping
+
       }
     }
   }
@@ -783,6 +802,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       return;
     }
+
     if (driver->getProtocol() == i2c)
     {
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
@@ -826,8 +846,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       }
       free(drivers);
       drivers = updatedDrivers;
+
     }
   }
+
 }
 
 void Datalogger::clearSlot(unsigned short slot)
@@ -948,7 +970,7 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
 
   if (strcmp(subcommand, "init") == 0)
   {
-    notify("calling init");
+    // notify("calling init");
     driver->initCalibration();
   }
   else

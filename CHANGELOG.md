@@ -26,8 +26,8 @@
 
 * upgraded to maple 14.0.0 ([23a4d48](https://github.com/WaterBearSondes/waterbear-firmware/commit/23a4d48ed5a4cde8f87365d09ca46ac12acf1145))
 * upgraded to maple v14.0.0 ([bea4157](https://github.com/WaterBearSondes/waterbear-firmware/commit/bea4157acd4f2feaba3784daeb0e8326a756bda9))
-
-# [1.1.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.10...v1.1.0) (2021-05-22)
+#
+ [1.1.0](https://github.com/WaterBearSondes/waterbear-firmware/compare/v1.0.10...v1.1.0) (2021-05-22)
 
 
 ### Bug Fixes
