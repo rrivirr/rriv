@@ -145,7 +145,7 @@ const char * AdaAHTX0::getRawDataString()
   sprintf(dataString, "%.2f,%.2f", temperature, humidity);
   return dataString;
 }
-unsigned int AdaAHTX0::millisecondsUntilNextReadingAvailable()
+uint32 AdaAHTX0::millisecondsUntilNextReadingAvailable()
 {
   
   return (30000 - (millis() - lastSuccessfulReadingMillis)); // return min by default, a larger number in driver implementation causes correct delay

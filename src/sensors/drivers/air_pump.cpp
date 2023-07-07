@@ -110,7 +110,7 @@ void AirPump::calibrationStep(char *step, int arg_cnt, char ** args)
 //   //return 5000; // return min by default, a larger number in driver implementation causes correct delay
 // }
 
-unsigned int AirPump::millisecondsUntilNextRequestedReading()
+uint32 AirPump::millisecondsUntilNextRequestedReading()
 {
   //return ((1-configuration.dutyCycle)*configuration.timeCycle*1000); // as slow as possible by default, a smaller number in driver implementation forces faster read
   return(10000);

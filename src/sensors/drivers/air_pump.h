@@ -73,7 +73,7 @@ class AirPump : public GenericActuator
 
   
     //unsigned int millisecondsUntilNextReadingAvailable();
-    unsigned int millisecondsUntilNextRequestedReading();
+    uint32 millisecondsUntilNextRequestedReading();
   
 
 
