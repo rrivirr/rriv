@@ -1,5 +1,5 @@
 /* 
- *  RRIV - Open Source Environmental Data Logging Platform
+ *  RRIV - Open Source Environmental  ata Logging Platform
  *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
  *  
  *  This program is free software: you can redistribute it and/or modify
@@ -76,6 +76,12 @@ void AtlasECDriver::setup()
   oem_ec->setProbeType(1.0);
 }
 
+void AtlasECDriver::stop()
+{
+  delete oem_ec;
+  // debug("stop/delete AtlasCO2Driver");
+}
+
 void AtlasECDriver::hibernate()
 {
   oem_ec->setHibernate();
@@ -113,7 +119,7 @@ bool AtlasECDriver::takeMeasurement()
     {
       value = oem_ec->getConductivity(true);
       addValueToBurstSummaryMean(EC_TAG, value);
-      lastSuccessfulReadingMillis = millis();
+      // lastSuccessfulReadingMillis = millis();
       return true;
     }
     else
@@ -123,9 +129,10 @@ bool AtlasECDriver::takeMeasurement()
     }
 }
 
-unsigned int AtlasECDriver::millisecondsUntilNextReadingAvailable()
+uint32 AtlasECDriver::millisecondsUntilNextReadingAvailable()
 {
-  return 640 - (millis() - lastSuccessfulReadingMillis);
+  // return 640 - (millis() - lastSuccessfulReadingMillis);
+  return 1000; // 1 reading per second
 }
 
 const char * AtlasECDriver::getRawDataString()

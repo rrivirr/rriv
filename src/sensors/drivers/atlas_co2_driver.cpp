@@ -1,3 +1,20 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 #include "sensors/drivers/atlas_co2_driver.h"
 #include "system/logs.h" // for debug() and notify()
 
@@ -35,6 +52,7 @@ void AtlasCO2Driver::appendDriverSpecificConfigurationJSON(cJSON * json)
   addCalibrationParametersToJSON(json);
 }
 
+// TODO: should setup be distinguished from wakeup?
 void AtlasCO2Driver::setup()
 {
   // debug("setup AtlasCO2Driver");
@@ -43,13 +61,22 @@ void AtlasCO2Driver::setup()
     notify("CO2 setup failed");
   }
   modularSensorDriver->wake();
+  setupTime = millis();
 }
 
 void AtlasCO2Driver::stop()
 {
   modularSensorDriver->sleep();
+  delete modularSensorDriver;
   // debug("stop/delete AtlasCO2Driver");
 }
+
+// void AtlasCO2Driver::factoryReset()
+// {
+//   notify("FactoryReset");
+//   wire->beginTransmission(0x69); // default address
+//   wire->write((const uint8_t*)"Factory",8);
+// }
 
 bool AtlasCO2Driver::takeMeasurement()
 {
@@ -70,11 +97,10 @@ bool AtlasCO2Driver::takeMeasurement()
     value = -1;
   }
 
-
   return measurementTaken;
 }
 
-const char * AtlasCO2Driver::getRawDataString()
+const char *AtlasCO2Driver::getRawDataString()
 {
   sprintf(dataString, "%d", value);
   return dataString;
@@ -85,6 +111,13 @@ const char * AtlasCO2Driver::getSummaryDataString()
   sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
   return dataString;
 }
+// const char *AtlasCO2Driver::getRawDataString()
+// {
+//   // debug("configuring driver template dataString");
+//   // process data string for .csv
+//   sprintf(dataString, "%d,%d",value,0);
+//   return dataString;
+// }
 
 const char *AtlasCO2Driver::getBaseColumnHeaders()
 {
@@ -122,4 +155,26 @@ void AtlasCO2Driver::setDriverDefaults()
   // debug("setting driver template driver defaults");
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
+}
+
+uint32 AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
+{
+  return 1000; // 1 reading per second
+}
+
+bool AtlasCO2Driver::isWarmedUp()
+{
+  timeDiff = millis() - setupTime;
+  if (timeDiff < 10000) // need 10 seconds to warm up
+  {
+    return false;
+  }
+  return true;
+}
+
+int AtlasCO2Driver::millisecondsToWarmUp()
+{
+  int warmupTime = 10000 - timeDiff;
+  setupTime -= warmupTime; // account for systick being off when sleeping
+  return warmupTime;
 }

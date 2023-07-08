@@ -1,15 +1,32 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 #include "sensors/drivers/adafruit_dht22.h"
 #include "system/logs.h" // for debug() and notify()
 #include "system/hardware.h" // for pin names
 
 short GPIO_PINS[7] = {
-    GPIO_PIN_1,
-    GPIO_PIN_2,
-    GPIO_PIN_3,
-    GPIO_PIN_4,
-    GPIO_PIN_5,
-    GPIO_PIN_6,
-    GPIO_PIN_7
+    GPIO_PIN_1, // CN7-30
+    GPIO_PIN_2, // CN10-22
+    GPIO_PIN_3, // CN10-24 // 5v booster
+    GPIO_PIN_4, // CN10-16
+    GPIO_PIN_5, // CN7-2
+    GPIO_PIN_6, // CN7-3
+    GPIO_PIN_7 // CN7-23
 };
 
 #define TEMPERATURE_VALUE_TAG "temperature"
@@ -27,7 +44,6 @@ const char * AdaDHT22::getSensorTypeString()
   return sensorTypeString;
 }
 
-
 configuration_bytes_partition AdaDHT22::getDriverSpecificConfigurationBytes()
 {
   configuration_bytes_partition partition;
@@ -39,7 +55,6 @@ void AdaDHT22::configureSpecificConfigurationsFromBytes(configuration_bytes_part
 {
   memcpy(&configuration, &configurationPartition, sizeof(driver_configuration));
 }
-
 
 void AdaDHT22::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
@@ -61,7 +76,7 @@ void AdaDHT22::setup()
 
 void AdaDHT22::stop()
 {
-  free(dht);
+  delete dht;
   pinMode(GPIO_PINS[configuration.sensor_pin], INPUT);
   digitalWrite(GPIO_PINS[configuration.sensor_pin], LOW);
   // notify("AdaDHT22 stopped");
@@ -69,6 +84,7 @@ void AdaDHT22::stop()
 
 bool AdaDHT22::takeMeasurement()
 {
+  // notify("in driver take measurement\n");
   // debug("taking measurement from AdaDHT22");
   sensors_event_t event;
   bool measurementTaken = false;
@@ -77,7 +93,7 @@ bool AdaDHT22::takeMeasurement()
   temperature = event.temperature;
   if(isnan(temperature))
   {
-    notify("Error reading temperature)");
+    notify("Read Error: temperature");
   }
   else
   {
@@ -88,7 +104,7 @@ bool AdaDHT22::takeMeasurement()
   humidity = event.relative_humidity;
   if(isnan(humidity))
   {
-    notify("Error reading humidity");
+    notify("Read Error: humidity");
   }
   else
   {
@@ -166,4 +182,9 @@ void AdaDHT22::setDriverDefaults()
   // debug("setting AdaDHT22 driver defaults");
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
+}
+
+uint32 AdaDHT22::millisecondsUntilNextReadingAvailable()
+{
+  return 2000; // 1 reading per 2 seconds
 }

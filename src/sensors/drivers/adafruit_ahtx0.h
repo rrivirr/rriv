@@ -15,46 +15,39 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ADAFRUIT_DHT22
-#define WATERBEAR_ADAFRUIT_DHT22
+
+#ifndef WATERBEAR_ADAFRUIT_AHTX0
+#define WATERBEAR_ADAFRUIT_AHTX0
 
 #include "sensors/sensor.h"
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+#include <Adafruit_AHTX0.h>
 
-#define DHTTYPE DHT22   // DHT 22 (AM2302)
 
-#define ADAFRUIT_DHT22_TYPE_STRING "adafruit_dht22"
+#define ADAFRUIT_DHTX0_TYPE_STRING "adafruit_ahtx0"
 
-class AdaDHT22 : public GPIOProtocolSensorDriver
+class AdaAHTX0 : public I2CProtocolSensorDriver
 {
-
-  typedef struct 
+  typedef struct // 32 bytes max
   {
-    unsigned long long cal_timestamp;   // 8 bytes for epoch time of calibration (optional)
-    short sensor_pin : 4; // 4 bits (16 states)
+    unsigned long long cal_timestamp; // 8byte epoch timestamp at calibration // TODO: move to common
   } driver_configuration;
-
   public:
-    // Constructor
-    AdaDHT22();
-    ~AdaDHT22();
-
-    //
-    // Interface Implementation
-    //
+  //Constrcutor
+    AdaAHTX0();
+    ~AdaAHTX0();
     const char * getSensorTypeString();
-    void setup();
-    void stop();
+
     bool takeMeasurement();
     const char * getRawDataString();
     const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
+
     void initCalibration();
-    void calibrationStep(char *step, int arg_cnt, char ** args);
+    void calibrationStep(char * step, int arg_cnt, char ** args);
+    void addCalibrationParametersToJSON(cJSON * json);
     
-    uint32 millisecondsUntilNextReadingAvailable();
+    void setup();
+    void stop();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
@@ -62,18 +55,23 @@ class AdaDHT22 : public GPIOProtocolSensorDriver
     bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
+    uint32 millisecondsUntilNextReadingAvailable();
 
   private:
-    const char *sensorTypeString = "adafruit_dht22";
+    const char *sensorTypeString = ADAFRUIT_DHTX0_TYPE_STRING;
     driver_configuration configuration;
-    DHT_Unified *dht;
-
+    Adafruit_AHTX0 *aht; //pointer to I2C driver for Adafruit_AHTX0
+    
     float temperature;
     float humidity;
-    const char *baseColumnHeaders = "C,RH"; // will be written to .csv
-    char dataString[16]; // will be written to .csv
+    const char * baseColumnHeaders = "C,RH";
+    char dataString[16]; // local storage for data string
 
-    void addCalibrationParametersToJSON(cJSON *json);
+    unsigned long long lastSuccessfulReadingMillis = 0;
+    
+
+    
+
 };
 
 #endif

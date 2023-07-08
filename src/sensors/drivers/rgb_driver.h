@@ -15,36 +15,31 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ATLAS_CO2_DRIVER
-#define WATERBEAR_ATLAS_CO2_DRIVER
+#ifndef RGB_DRIVER
+#define RGB_DRIVER
 
 #include "sensors/sensor.h"
-#include <sensors/AtlasScientificCO2.h>
-#include <sensors/CampbellOBS3.h>
-
-//#define any pins/static options used
-
-#define ATLAS_CO2_DRIVER_TYPE_STRING "atlas_co2"
 
 
-class AtlasCO2Driver : public I2CProtocolSensorDriver
+#define RGB_DRIVER_TYPE_STRING "atlas_rgb"
+
+class rgbDriver : public I2CProtocolSensorDriver
 {
+  // configuration parameters specific to this driver
   typedef struct
   {
-    unsigned long long cal_timestamp; // 8 bytes for unix time of calibration (optional)
-  } driver_config;
+    unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration
+  } driver_configuration;
 
   public:
     // Constructor
-    AtlasCO2Driver();
-    ~AtlasCO2Driver();
+    rgbDriver();
+    ~rgbDriver();
 
+    //
+    // Interface Implementation
+    //
     const char * getSensorTypeString();
-
-    // Interface
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-    configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
     bool takeMeasurement();
@@ -53,31 +48,26 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
-    uint32 millisecondsUntilNextReadingAvailable();
-    bool isWarmedUp();
-    int millisecondsToWarmUp();
-    // void factoryReset();
 
   protected:
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
     bool configureDriverFromJSON(cJSON *json);
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 
   private:
     //sensor specific variables, functions, etc.
-    AtlasScientificCO2 *modularSensorDriver;
-    CampbellOBS3 * campbell;
-    driver_config configuration;
-
-    const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
-    uint32 setupTime; // for unix time of setup to track when ready to take samples
-    int timeDiff;
+    const char *sensorTypeString = RGB_DRIVER_TYPE_STRING;
+    driver_configuration configuration;
 
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/
-    int value; // sensor raw return(s) to be added to dataString
-    const char *baseColumnHeaders = "CO2_ppm"; // will be written to .csv
-    // const char *baseColumnHeaders = "CO2_ppm,C"; // will be written to .csv
-    char dataString[30]; // will be written to .csv
+    char value[42]; // sensor raw return(s) to be added to dataString
+    // Example of data string from instrument. May be incorrect.
+    // XXX,XXX,XXX,xyY,X.XXX,X.XXX,XXX,Lux,XXXXX
+    const char *baseColumnHeaders = "value"; // will be written to .csv
+    char dataString[16]; // will be written to .csv
 
     void addCalibrationParametersToJSON(cJSON *json);
 };

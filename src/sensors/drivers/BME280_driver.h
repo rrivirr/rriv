@@ -15,36 +15,29 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-#ifndef WATERBEAR_ATLAS_CO2_DRIVER
-#define WATERBEAR_ATLAS_CO2_DRIVER
+#ifndef WATERBEAR_BME280
+#define WATERBEAR_BME280
 
 #include "sensors/sensor.h"
-#include <sensors/AtlasScientificCO2.h>
-#include <sensors/CampbellOBS3.h>
+#include <Adafruit_BME280.h>
 
-//#define any pins/static options used
+#define BME280_TYPE_STRING "BME280"
 
-#define ATLAS_CO2_DRIVER_TYPE_STRING "atlas_co2"
-
-
-class AtlasCO2Driver : public I2CProtocolSensorDriver
+class BME280Driver : public I2CProtocolSensorDriver
 {
+ 
   typedef struct
   {
-    unsigned long long cal_timestamp; // 8 bytes for unix time of calibration (optional)
+    unsigned long long cal_timestamp; // 8 bytes for epoch time of calibration
   } driver_config;
 
   public:
     // Constructor
-    AtlasCO2Driver();
-    ~AtlasCO2Driver();
+    BME280Driver();
+    ~BME280Driver();
 
+    
     const char * getSensorTypeString();
-
-    // Interface
-    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
-    configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void appendDriverSpecificConfigurationJSON(cJSON * json);
     void setup();
     void stop();
     bool takeMeasurement();
@@ -53,33 +46,31 @@ class AtlasCO2Driver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
-    uint32 millisecondsUntilNextReadingAvailable();
-    bool isWarmedUp();
-    int millisecondsToWarmUp();
-    // void factoryReset();
+    
+    configuration_bytes_partition getDriverSpecificConfigurationBytes();
+    void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
 
   protected:
+    
     bool configureDriverFromJSON(cJSON *json);
+    void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 
   private:
     //sensor specific variables, functions, etc.
-    AtlasScientificCO2 *modularSensorDriver;
-    CampbellOBS3 * campbell;
+    const char *sensorTypeString = BME280_TYPE_STRING;
     driver_config configuration;
-
-    const char * sensorTypeString = ATLAS_CO2_DRIVER_TYPE_STRING;
-    uint32 setupTime; // for unix time of setup to track when ready to take samples
-    int timeDiff;
+    Adafruit_BME280 *BME280ptr;
+    void addCalibrationParametersToJSON(cJSON *json);
 
     /*value(s) to be placed in dataString, should correspond to number of 
     column headers and entries in dataString*/
-    int value; // sensor raw return(s) to be added to dataString
-    const char *baseColumnHeaders = "CO2_ppm"; // will be written to .csv
-    // const char *baseColumnHeaders = "CO2_ppm,C"; // will be written to .csv
+    float temperature; // sensor raw return(s) to be added to dataString
+    float pressure;
+    const char *baseColumnHeaders = "C,hPa "; // will be written to .csv
     char dataString[30]; // will be written to .csv
 
-    void addCalibrationParametersToJSON(cJSON *json);
+    
 };
 
 #endif

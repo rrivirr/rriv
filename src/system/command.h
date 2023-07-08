@@ -27,6 +27,8 @@
 #include "datalogger.h"
 
 
+
+
 // Forward declaration of class
 class Datalogger;
 
@@ -97,20 +99,24 @@ class CommandInterface
     void _setSiteName(char * siteName);
     void _setLoggerName(char * loggerName);
     void _setDeploymentIdentifier(char * deploymentIdentifier);
-    void _setInterval(int size);
+    void _setWakeInterval(int size);
     void _setBurstSize(int size);
     void _setBurstNumber(int number);
     void _setStartUpDelay(int number);
-    void _setBurstDelay(int number);
-    
+    void _setInterBurstDelay(int number);
+  
     void _setUserNote(char * note);
     void _setUserValue(int value);
-
 
     void _getConfig();
     void _setConfig(char * config);
     void _setSlotConfig(char * config);
     void _clearSlot(int slot);
+
+    void _getRTC();
+    // void _getRTC(uint32 currentTimestamp);
+    void _setRTC(uint32 setTimestamp);
+
     void _deployNow();
     void _switchToInteractiveMode();
 
@@ -125,8 +131,12 @@ class CommandInterface
     void _enterStop();
 
     void _help();
+    void _mcuDebugStatus();
 
-    void _gpiotest(); // toggles gpio pin state (low/high)
+    void _gpiotest(int pin); // toggles gpio pin state (low/high)
+
+    void _airpumptest();
+
 
 
 

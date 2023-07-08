@@ -32,7 +32,8 @@ typedef enum protocol
   analog,
   i2c,
   gpio,
-  drivertemplate
+  drivertemplate,
+  genericactuator,
 } protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64
@@ -60,7 +61,7 @@ typedef struct
   unsigned short int sensor_type; // 2 bytes
   unsigned short int warmup;      // 2 bytes - in seconds (65535 max value/60=1092 min)
   byte slot;                      // 1 byte
-  byte burst_size;                // 1 byte
+  byte burst_size;                // 1 byte // reading_count
 
 } common_sensor_driver_config;
 
@@ -95,7 +96,6 @@ public:
   void setConfigurationNeedsSave();
   void clearConfigurationNeedsSave();
   bool getNeedsSave();
-
 
 protected:
   common_sensor_driver_config commonConfigurations;
@@ -177,8 +177,10 @@ public:
    */
   virtual const char *getBaseColumnHeaders() = 0;
 
-
+  // Warm Up time, which is only checked once at the start of the measurement cycle
   virtual bool isWarmedUp();
+  
+  virtual int millisecondsToWarmUp();
 
   // Calibration
   virtual void initCalibration() = 0;
@@ -186,9 +188,11 @@ public:
   virtual void calibrationStep(char *step, int arg_cnt, char **args) = 0;
 
   // Timing
-  virtual unsigned int millisecondsUntilNextReadingAvailable();
+  virtual uint32 millisecondsUntilNextReadingAvailable();
 
-  virtual unsigned int millisecondsUntilNextRequestedReading();
+  virtual uint32 millisecondsUntilNextRequestedReading();
+
+  virtual void factoryReset();
 
 protected:
 
@@ -201,6 +205,7 @@ protected:
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
+
 
 
 };
@@ -240,8 +245,19 @@ public:
   ~DriverTemplateProtocolSensorDriver();
   protocol_type getProtocol();
 };
+/*
+*  Base class for actuators (for now?) AE
+*/
+
+class GenericActuatorProtocolSensorDriver : public SensorDriver
+{
+public: 
+  ~GenericActuatorProtocolSensorDriver();
+  protocol_type getProtocol();
+};
 
 void getDefaultsCommon(common_sensor_driver_config *fillValues);
 void readCommonConfigOnly(common_sensor_driver_config *readValues); // not made //TODO: what is this
+
 
 #endif

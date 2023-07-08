@@ -24,6 +24,9 @@
 #include "utilities/qos.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
 
 #define MAX_REQUEST_LENGTH 70 // serial commands
 
@@ -155,8 +158,6 @@ void testMeasurementCycle(int arg_cnt, char **args)
   CommandInterface::instance()->_testMeasurementCycle();
 }
 
-
-
 void CommandInterface::_testMeasurementCycle()
 {
   this->datalogger->testMeasurementCycle();
@@ -252,7 +253,7 @@ void CommandInterface::_setDeploymentIdentifier(char * deploymentIdentifier)
   ok();
 }
 
-void setInterval(int arg_cnt, char **args)
+void setWakeInterval(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
     invalidArgumentsMessage(F("set-interval INTERVAL_BETWEEN_MEASUREMENT_WAKE_MINUTES"));
@@ -261,12 +262,12 @@ void setInterval(int arg_cnt, char **args)
 
   // use singleton to get back into OOP context
   int number = atoi(args[1]);
-  CommandInterface::instance()->_setInterval(number);
+  CommandInterface::instance()->_setWakeInterval(number);
 }
 
-void CommandInterface::_setInterval(int size)
+void CommandInterface::_setWakeInterval(int size)
 {
-  this->datalogger->setInterval(size);
+  this->datalogger->setWakeInterval(size);
   ok();
 }
 
@@ -324,21 +325,21 @@ void CommandInterface::_setStartUpDelay(int number)
   ok();
 }
 
-void setBurstDelay(int arg_cnt, char **args)
+void setInterBurstDelay(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-burst-day DELAY_BETWEEN_BURSTS_SECONDS"));
+    invalidArgumentsMessage(F("set-inter-burst-delay DELAY_BETWEEN_BURSTS_MINUTES"));
     return;
   }
 
   // use singleton to get back into OOP context
   int number = atoi(args[1]);
-  CommandInterface::instance()->_setBurstDelay(number);
+  CommandInterface::instance()->_setInterBurstDelay(number);
 }
 
-void CommandInterface::_setBurstDelay(int number)
+void CommandInterface::_setInterBurstDelay(int number)
 {
-  this->datalogger->setIntraBurstDelay(number);
+  this->datalogger->setInterBurstDelay(number);
   notify(F("OK"));
 }
 
@@ -358,31 +359,13 @@ void printConditions(int arg_cng, char **args)
 void getConfig(int arg_cnt, char **args)
 {
   // notify(F("getting config"));
-  // int free1 = freeMemory();
   CommandInterface::instance()->_getConfig();
-  // notify(F("got config"));
-  // int free2 = freeMemory();
-  // notify(free1);
-  // notify(free2);
-  // notify(freeMemory());
 }
 
 #define BUFFER_SIZE 400
 void CommandInterface::_getConfig()
 {
-  datalogger_settings_type dataloggerSettings = this->datalogger->settings;
-  this->datalogger->getConfiguration(&dataloggerSettings);
- 
-  cJSON* dataloggerConfiguration = cJSON_CreateObject();
-  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("device_uuid")), this->datalogger->getUUIDString());
-  // cJSON_AddStringToObject(json, reinterpretCharPtr(F("device_name")), dataloggerSettings.deviceName);
-  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("site_name")), dataloggerSettings.siteName);
-  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("logger_name")), dataloggerSettings.loggerName);
-  cJSON_AddStringToObject(dataloggerConfiguration, reinterpretCharPtr(F("deployment_identifier")), dataloggerSettings.deploymentIdentifier);
-  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("interval(min)")), dataloggerSettings.interval);
-  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("burst_number")), dataloggerSettings.burstNumber);
-  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("start_up_delay(min)")), dataloggerSettings.startUpDelay);
-  cJSON_AddNumberToObject(dataloggerConfiguration, reinterpretCharPtr(F("burst_delay(min)")), dataloggerSettings.interBurstDelay);
+  cJSON * dataloggerConfiguration = this->datalogger->getConfigurationJSON();
 
   char string[BUFFER_SIZE];
   cJSON_PrintPreallocated(dataloggerConfiguration, string, BUFFER_SIZE, true);
@@ -425,6 +408,7 @@ void setConfig(int arg_cnt, char **args)
 
 void CommandInterface::_setConfig(char * config)
 {
+  // TODO: use one command for all config set, rather than individual commands, always require json
   cJSON *json = cJSON_Parse(config);
   if(json == NULL){
     notify(F("Invalid JSON"));
@@ -444,7 +428,7 @@ void setSlotConfig(int arg_cnt, char **args)
 {
   notify(F("set slot config"));
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON"));
+    invalidArgumentsMessage(F("set-slot-config SLOT_CONFIG_JSON")); // TODO: kinda useless, tell user json structure
     return;
   }
 
@@ -473,7 +457,7 @@ void CommandInterface::_setSlotConfig(char * config)
 
   if(slotJSON != NULL && cJSON_IsNumber(slotJSON)){
     short slot = slotJSON->valueint;
-    if(slot >= EEPROM_TOTAL_SENSOR_SLOTS || slot == 0)
+    if(slot > EEPROM_TOTAL_SENSOR_SLOTS || slot == 0)
     {
       notify(F("Invalid slot"));
       return;
@@ -529,20 +513,58 @@ void setRTC(int arg_cnt, char **args)
     invalidArgumentsMessage(F("set-rtc UNIX_EPOCH_TIMESTAMP"));
     return;
   }
+  else{
+    // TODO: not saving to struct correctly, is input correct?  Issue seen on restart
+    // Issue may be hardware not software
+    CommandInterface::instance()->_setRTC((uint32)atoi(args[1]));
+  }
+}
 
-  int timestamp = atoi(args[1]);
-  setTime(timestamp);
+void CommandInterface::_setRTC(uint32 setTimestamp)
+{
+  int time = timestamp();
+  char message[55];
+  
+  sprintf(message, "Time diff since:%lu =%lu", this->datalogger->settings.RTCsetTime, setTimestamp-time);
+  notify(message);
+
+  this->datalogger->settings.RTCsetTime = setTimestamp;
+  // this->datalogger->setRTCtimestamp(setTimestamp);
+  setTime(setTimestamp);
   ok();
 }
 
 void getRTC(int arg_cnt, char **args)
+{ 
+  // if(arg_cnt == 2){
+  //   CommandInterface::instance()->_getRTC((uint32)atoi(args[1]));
+  // }
+  // else
+    CommandInterface::instance()->_getRTC();
+}
+
+// An overload that could be useful for debugging time with the CLI client, things like drift or larger time based issues
+// void CommandInterface::_getRTC(uint32 currentTimestamp)
+// {
+//   int time = timestamp();
+//   char message[55];
+//   char humanTimeString[25];
+//   t_t2ts(time, 0, humanTimeString);
+//   sprintf(message, "exRTC: %i, %s", time, humanTimeString);
+//   notify(message);
+
+//   // sprintf(message, "Time diff since:%i =%i", (int)datalogger->settings.RTCsetTime, (int)currentTimestamp-time);
+//   // notify(message);
+// }
+
+
+void CommandInterface::_getRTC()
 {
   int time = timestamp();
-  char message[100];
+  char message[60];
   char humanTimeString[25];
-  // t_t2ts(time, millis(), humanTimeString); // throws off the seconds
-  t_t2ts(time, 0, humanTimeString); // don't have an offset to count millis correctly
-  sprintf(message, "current timestamp: %i, %s", time, humanTimeString);
+  t_t2ts(time, 0, humanTimeString);
+  sprintf(message, "exRTC: %i, %s", time, humanTimeString);
   notify(message);
 }
 
@@ -633,10 +655,10 @@ void checkMemory(int arg_cnt, char **args)
   printFreeMemory();
 }
 
-void doScanIC2(int arg_cnt, char**args)
+void doScanI2C(int arg_cnt, char**args)
 {
-  // scanIC2(&Wire);
-  // scanIC2(&Wire2);
+  // scanI2C(&Wire);
+  // scanI2C(&WireTwo);
 }
 
 void switchedPowerOff(int arg_cnt, char**args)
@@ -675,74 +697,86 @@ void help(int arg_cnt, char**args)
   CommandInterface::instance()->_help();
 }
 
+void airpumptest (int arg_cnt, char**args)
+{
+  CommandInterface::instance()->_airpumptest();
+}
+
+void CommandInterface::_airpumptest()
+{
+  
+  // AirPump ap;
+  // ap.actuateBeforeWarmUp();
+  // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
+  // {
+  //   digitalWrite(GPIO_PIN_6, HIGH);
+  //   //delay(dutyCycle*total*1000); //totalTimeCycle not not "declared in scope" other variables are fine tho
+  //   delay(0.5*10*1000);
+  //   digitalWrite(GPIO_PIN_6, LOW);
+  //   // delay((1-dutyCycle)*timeFullCycle*1000);
+  //   delay((1-0.5)*10*1000);
+  // }
+
+  
+}
+
 void CommandInterface::_help()
 {
-  char commands[] = "Command List:\n"
-  "version\n"
-  "show-warranty\n"
-  "show-conditions\n"
-  "get-config\n"
-  "set-config\n"
-  "set-slot-config\n"
-  "clear-slot\n"
-  "set-rtc\n"
-  "get-rtc\n"
-  "restart\n"
-  "set-site-name\n"
-  "set-deployment-identifier\n"
-  "set-logger-name\n"
-  "set-interval\n"
-  "set-burst-number\n"
-  "set-start-up-delay\n"
-  "set-burst-delay\n"
-  "calibrate\n"
-  "set-user-note\n"
-  "set-user-value\n"
-  "start-logging\n"
-  "stop-logging\n"
-  "deploy-now\n"
-  "interactive or i\n"
-  "trace\n"
-  "check-memory\n"
-  "scan-ic2\n"
-  "go\n"
-  "reload-sensors\n"
-  "switched-power-off\n"
-  "enter-stop\n"
-  "mcu-debug-status\n";
-
-  notify(commands);
+  // notify("RRIV command list:"); // 48 bytes of flash
+  cmdList();
 }
 
 void gpiotest(int arg_cnt, char**args)
 {
-  CommandInterface::instance()->_gpiotest();
+  if(arg_cnt < 2){
+    invalidArgumentsMessage(F("gpiotest PIN_INT"));
+    return;
+  }
+  CommandInterface::instance()->_gpiotest(atoi(args[1]));
 }
 
-void CommandInterface::_gpiotest()
+void CommandInterface::_gpiotest(int pin)
 {
-  // TODO: currently hardcoded pin test, change to allow user input with command
-  if (digitalRead(GPIO_PIN_6) == HIGH)
-    digitalWrite(GPIO_PIN_6, LOW);
+  // requires the exact pin value from the board.h enum
+  if (digitalRead(pin) == HIGH)
+    digitalWrite(pin, LOW);
   else
-    digitalWrite(GPIO_PIN_6, HIGH);
+    digitalWrite(pin, HIGH);
 }
+
+
+// void enterSleep(int arg_cnt, char**args)
+// {
+//   if(arg_cnt < 2){
+//     invalidArgumentsMessage(F("sleep-mcu MINUTES"));
+//     return;
+//   }
+//   int minutes = atoi(args[1]);
+//   CommandInterface::instance()->_enterSleep(minutes);
+// }
+
+// void CommandInterface::_enterSleep(int minutes)
+// {
+//   notify("sleep test");
+//   this->datalogger->sleepMCU(minutes*60000);
+// }
 
 void reloadSensorConfigurations(int arg_cnt, char**args)
 {
   CommandInterface::instance()->_reloadSensorConfigurations();
 }
 
-
 void CommandInterface::_reloadSensorConfigurations()
 {
   this->datalogger->reloadSensorConfigurations();
 }
 
+// Note: commands commented out here will lower flash used
+// and not require commenting out code elsewhere
 void CommandInterface::setup(){
-  cmdAdd("version", printVersion);
-  cmdAdd("show-warranty", printWarranty);
-  cmdAdd("show-conditions", printConditions);
+  // cmdAdd("version", printVersion);
+  // cmdAdd("show-warranty", printWarranty);
+  // cmdAdd("show-conditions", printConditions);
 
   cmdAdd("get-config", getConfig);
   cmdAdd("set-config", setConfig);
@@ -752,45 +786,48 @@ void CommandInterface::setup(){
   cmdAdd("set-rtc", setRTC);
   cmdAdd("get-rtc", getRTC);
 
-  cmdAdd("set-site-name", setSiteName);
-  cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
-  cmdAdd("set-logger-name", setLoggerName);
-  cmdAdd("set-interval", setInterval);
-  cmdAdd("set-burst-number", setBurstNumber);
-  cmdAdd("set-start-up-delay", setStartUpDelay);
-  cmdAdd("set-burst-delay", setBurstDelay);
+  // cmdAdd("set-site-name", setSiteName);
+  // cmdAdd("set-deployment-identifier", setDeploymentIdentifier);
+  // cmdAdd("set-logger-name", setLoggerName);
+  // cmdAdd("set-wake-interval", setWakeInterval);
+  // cmdAdd("set-burst-number", setBurstNumber);
+  // cmdAdd("set-start-up-delay", setStartUpDelay);
+  // cmdAdd("set-inter-burst-delay", setInterBurstDelay);
 
-  cmdAdd("calibrate", calibrate);
+  // cmdAdd("calibrate", calibrate);
   
-  cmdAdd("set-user-note", setUserNote);
-  cmdAdd("set-user-value", setUserValue);
+  // cmdAdd("set-user-note", setUserNote);
+  // cmdAdd("set-user-value", setUserValue);
 
-  cmdAdd("trace", toggleTrace);
+  // cmdAdd("trace", toggleTrace);
   cmdAdd("start-logging", startLogging);
   cmdAdd("stop-logging", stopLogging);
-  cmdAdd("measurement-cycle", testMeasurementCycle);
+  // cmdAdd("measurement-cycle", testMeasurementCycle);
 
   cmdAdd("deploy-now", deployNow);
-  cmdAdd("interactive", switchToInteractiveMode);
+  // cmdAdd("interactive", switchToInteractiveMode);
   cmdAdd("i", switchToInteractiveMode);
 
   // qos commands / debug commands
   cmdAdd("restart", restart);
-  cmdAdd("check-memory", checkMemory);
-  cmdAdd("scan-ic2", doScanIC2);
-  cmdAdd("go", go);
-  cmdAdd("reload-sensors", reloadSensorConfigurations);
-  cmdAdd("switched-power-off", switchedPowerOff);
+  // cmdAdd("check-memory", checkMemory);
+  // cmdAdd("scan-i2c", doScanI2C);
+  // cmdAdd("go", go);
+  // cmdAdd("reload-sensors", reloadSensorConfigurations);
+  // cmdAdd("switched-power-off", switchedPowerOff);
   // cmdAdd("enter-sleep", enterSleep);
-  cmdAdd("enter-stop", enterStop);
-  cmdAdd("mcu-debug-status", mcuDebugStatus);
+  // cmdAdd("enter-stop", enterStop);
+  // cmdAdd("mcu-debug-status", mcuDebugStatus);
 
   cmdAdd("help", help);
-
+  cmdAdd("airpump-test", airpumptest);
   cmdAdd("gpio-test", gpiotest);
+  cmdAdd("airpump-test", airpumptest);
+
+  
+  // cmdAdd("step-test", steptest);
 
 }
-
 
 
 
@@ -798,8 +835,6 @@ void CommandInterface::poll()
 {
   cmdPoll();
 }
-
-
 
 //    Old code for reference - download process
 //     // else if(strncmp(request, ">WT_DOWNLOAD",12) == 0)
