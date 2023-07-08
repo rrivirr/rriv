@@ -1,10 +1,11 @@
 #include "sensors/drivers/rgb_driver.h"
-#include "sensors/sensor_types.h"
-#include "system/monitor.h" // for debug() and notify()
-// #include "system/measurement_components.h" // if external adc is used
+#include "system/logs.h" // for debug() and notify()
+
 
 #define RGBI2CADDRESS 0x70
 #define RGBDELAY 300
+
+#define RGB_TAG "rgb"
 
 rgbDriver::rgbDriver()
 {
@@ -25,7 +26,7 @@ configuration_bytes_partition rgbDriver::getDriverSpecificConfigurationBytes()
   return partition;
 }
 
-void rgbDriver::configureDriverFromJSON(cJSON *json)
+bool rgbDriver::configureDriverFromJSON(cJSON *json)
 {
 }
 
@@ -127,12 +128,18 @@ bool rgbDriver::takeMeasurement()
   return true;
 }
 
-const char *rgbDriver::getDataString()
+const char *rgbDriver::getRawDataString()
 {
   // debug("configuring driver template dataString");
   // process data string for .csv
   //sprintf(dataString, "%d,%d",value,int(value*31.83));
   sprintf(dataString, "%s",value);
+  return dataString;
+}
+
+const char * rgbDriver::getSummaryDataString()
+{
+  sprintf(dataString, "%0.2f", getBurstSummaryMean(RGB_TAG));
   return dataString;
 }
 

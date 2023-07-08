@@ -24,14 +24,19 @@
 
 void buildDriverSensorMap()
 {  
-
+#ifdef RRIV_ANALOG
   setupSensorMaps<GenericAnalogDriver>(GENERIC_ANALOG_SENSOR, F(GENERIC_ANALOG_DRIVER_TYPE_STRING));
+#endif
 
-  // setupSensorMaps<AtlasECDriver>(ATLAS_EC_OEM_SENSOR, F(ATLAS_EC_OEM_TYPE_STRING));
+#ifdef RRIV_ATLAS_EC
+  setupSensorMaps<AtlasECDriver>(ATLAS_EC_OEM_SENSOR, F(ATLAS_EC_OEM_TYPE_STRING));
+#endif
 
-  // setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
- 
+// setupSensorMaps<DriverTemplate>(DRIVER_TEMPLATE, F(DRIVER_TEMPLATE_TYPE_STRING));
+
+#ifdef RRIV_DHT22
   setupSensorMaps<AdaDHT22>(ADAFRUIT_DHT22_SENSOR, F(ADAFRUIT_DHT22_TYPE_STRING));
+#endif
 
 #ifdef RRIV_CO2
   setupSensorMaps<AtlasCO2Driver>(ATLAS_CO2_SENSOR, F(ATLAS_CO2_DRIVER_TYPE_STRING)); // 4848 bytes

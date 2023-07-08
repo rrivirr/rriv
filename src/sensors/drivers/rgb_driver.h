@@ -43,7 +43,8 @@ class rgbDriver : public I2CProtocolSensorDriver
     void setup();
     void stop();
     bool takeMeasurement();
-    const char * getDataString();
+    const char * getRawDataString();
+    const char * getSummaryDataString();
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
@@ -51,7 +52,7 @@ class rgbDriver : public I2CProtocolSensorDriver
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
     configuration_bytes_partition getDriverSpecificConfigurationBytes();
-    void configureDriverFromJSON(cJSON *json);
+    bool configureDriverFromJSON(cJSON *json);
     void appendDriverSpecificConfigurationJSON(cJSON *json);
     void setDriverDefaults();
 
