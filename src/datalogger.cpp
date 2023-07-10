@@ -190,7 +190,7 @@ bool Datalogger::processReadingsCycle()
     if (settings.interBurstDelay > 0)
     {
       notify(F("burst delay"));
-      int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
+      int interBurstDelay = settings.interBurstDelay;
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
