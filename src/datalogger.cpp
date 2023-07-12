@@ -96,7 +96,7 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   settings->debug_values = true;
   settings->log_raw_data = true;
   settings->debug_to_file = true;
-  settings->continuous_power = true;
+  settings->continuous_power = false;
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
