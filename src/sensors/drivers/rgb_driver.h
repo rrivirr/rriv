@@ -48,6 +48,7 @@ class rgbDriver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
+    int millisecondsToWarmUp();
 
   protected:
     void configureSpecificConfigurationsFromBytes(configuration_bytes_partition configurations);
@@ -68,6 +69,8 @@ class rgbDriver : public I2CProtocolSensorDriver
     // XXX,XXX,XXX,xyY,X.XXX,X.XXX,XXX,Lux,XXXXX
     const char *baseColumnHeaders = "value"; // will be written to .csv
     char dataString[16]; // will be written to .csv
+    uint32 setupTime; // for unix time of setup to track when ready to take samples
+    int timeDiff;
 
     void addCalibrationParametersToJSON(cJSON *json);
 };
