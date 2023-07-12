@@ -174,3 +174,12 @@ void rgbDriver::setDriverDefaults()
   // set default values for driver struct specific values
   configuration.cal_timestamp = 0;
 }
+
+
+int rgbDriver::millisecondsToWarmUp()
+{
+//  int warmupTime = 10000 - timeDiff;
+  int warmupTime = 10000;
+//  setupTime -= warmupTime; // account for systick being off when sleeping
+  return warmupTime;
+}

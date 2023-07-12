@@ -174,7 +174,8 @@ bool AtlasCO2Driver::isWarmedUp()
 
 int AtlasCO2Driver::millisecondsToWarmUp()
 {
-  int warmupTime = 10000 - timeDiff;
-  setupTime -= warmupTime; // account for systick being off when sleeping
+//  int warmupTime = 10000 - timeDiff;
+  int warmupTime = 10000;
+//  setupTime -= warmupTime; // account for systick being off when sleeping
   return warmupTime;
 }
