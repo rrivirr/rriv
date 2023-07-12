@@ -213,15 +213,18 @@ bool Datalogger::processReadingsCycle()
     if (settings.interBurstDelay > 0)
     {
       // notify(F("burstDelay"));
-      int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
+      //int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
+      int interBurstDelay = settings.interBurstDelay; // note: interburstdelay is now set in seconds
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
       
       // notify(interBurstDelay);
       uint32 millisElapsed = millis() - burstCycleStartMillis;
-      notify(interBurstDelay - (millisElapsed/1000)); // convert to seconds
-      sleepMCU(interBurstDelay * 1000 - millisElapsed); // convert second to millisecond, subtract time passed
+      //notify(interBurstDelay - (millisElapsed/1000)); // convert to seconds
+      notify(interBurstDelay); // convert to seconds
+      //sleepMCU(interBurstDelay * 1000 - millisElapsed); // convert second to millisecond, subtract time passed
+      sleepMCU(interBurstDelay * 1000); // convert second to millisecond, subtract time passed
       
       // wakeSensorsFromStandbyMode(); 
     }
