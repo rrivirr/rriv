@@ -6,6 +6,7 @@
 #include "driver_template.h"
 #include "adafruit_dht22.h"
 // #include "miniec.h"
+#include "mhz16_co2.h"
 
 #define MAX_SENSOR_TYPE 0xFFFE
 

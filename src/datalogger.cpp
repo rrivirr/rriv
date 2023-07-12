@@ -87,6 +87,26 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   {
     settings->interBurstDelay = 0;
   }
+  if (settings->interval > 60*24)
+  {
+    settings->interval = 15;
+  }
+  if (settings->startUpDelay > 60)
+  {
+    settings->startUpDelay = 0;
+  }
+  if( !isalnum(settings->loggerName[0]))
+  {
+    strcpy(settings->loggerName, "logger");
+  }
+  if( !isalnum(settings->siteName[0]))
+  {
+    strcpy(settings->siteName, "site");
+  }
+  if( !isalnum(settings->deploymentIdentifier[0]))
+  {
+    strcpy(settings->deploymentIdentifier, "first_deploy");
+  }
 
   settings->debug_values = true;
   settings->log_raw_data = true;

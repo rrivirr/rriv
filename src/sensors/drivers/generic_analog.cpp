@@ -82,7 +82,7 @@ bool GenericAnalogDriver::configureDriverFromJSON(cJSON *json)
   }
   if (sensorPortJSON != NULL && cJSON_IsNumber(sensorPortJSON) && sensorPortJSON->valueint > 0 && sensorPortJSON->valueint <= maxSensorPorts)
   {
-    configurations.sensor_port = (byte)sensorPortJSON->valueint - 1;
+    configurations.sensor_port = (byte)sensorPortJSON->valueint;
   }
   else
   {
@@ -121,7 +121,7 @@ void GenericAnalogDriver::configureSpecificConfigurationsFromBytes(configuration
 
 void GenericAnalogDriver::appendDriverSpecificConfigurationJSON(cJSON * json)
 {
-  cJSON_AddNumberToObject(json, "sensor_port", configurations.sensor_port + 1);
+  cJSON_AddNumberToObject(json, "sensor_port", configurations.sensor_port );
   switch (configurations.adc_select)
   {
   case ADC_SELECT_INTERNAL:
@@ -145,21 +145,31 @@ void GenericAnalogDriver::setup()
 {
   if (configurations.adc_select == ADC_SELECT_INTERNAL)
   {
-    pinMode(ADC_PINS[configurations.sensor_port], INPUT_ANALOG);
+    int sensorPortIndex = configurations.sensor_port - 1;
+    pinMode(ADC_PINS[sensorPortIndex], INPUT_ANALOG);
     // notify("Internal ADC Pin setup");
   }
 
   
-  // turn off power pin
-  pinMode(PA8, OUTPUT);
-  digitalWrite(PA8, HIGH);
+  // turn off power pin for EC sensor experiment
+  if(false) {
+    pinMode(PA8, OUTPUT);
+    digitalWrite(PA8, HIGH);
+  } 
+  
+  // ensure AVCC power is on
+  pinMode(ENABLE_F103_AVDD, OUTPUT_OPEN_DRAIN);
+  digitalWrite(ENABLE_F103_AVDD, false);
+  
+
 
 }
 
 void GenericAnalogDriver::stop()
 {
-  pinMode(ADC_PINS[configurations.sensor_port], INPUT);
-  digitalWrite(ADC_PINS[configurations.sensor_port], LOW);
+  int sensorPortIndex = configurations.sensor_port - 1;
+  pinMode(ADC_PINS[sensorPortIndex], INPUT);
+  digitalWrite(ADC_PINS[sensorPortIndex], LOW);
   // notify("ADC port stopped");
 }
 
@@ -182,7 +192,8 @@ bool GenericAnalogDriver::takeMeasurement()
   {
   case ADC_SELECT_INTERNAL:
   {
-    int adcPin = ADC_PINS[configurations.sensor_port];
+    int sensorPortIndex = configurations.sensor_port - 1;
+    int adcPin = ADC_PINS[configurations.sensor_port - 1];
     this->value = analogRead(adcPin);
   }
   break;
@@ -190,7 +201,7 @@ bool GenericAnalogDriver::takeMeasurement()
   case ADC_SELECT_EXTERNAL:
   {
     // debug("get extADC value");
-    this->value = externalADC->getChannelValue(configurations.sensor_port);
+    this->value = externalADC->getChannelValue(configurations.sensor_port - 1);
   }
   break;
 

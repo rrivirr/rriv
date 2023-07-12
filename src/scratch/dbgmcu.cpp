@@ -32,7 +32,7 @@ void notifyDebugStatus()
 {
   if(DBGMCU_BASE->CR != 0){
     // notify(warningMessage);
-    notify("**** A MANUAL POWER CYCLE IS REQUIRED TO ENABLE LOW POWER MODES *****");
+    notify("*****\n***** A MANUAL POWER CYCLE IS REQUIRED TO ENABLE LOW POWER MODES *****\n*****");
   }
 }
 

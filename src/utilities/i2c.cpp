@@ -121,6 +121,20 @@ bool scanIC2(TwoWire *wire, int searchAddress)
 
 void enableI2C1()
 {
+
+  // exADC ref supply on/off must be setup before scanning I2C1, otherwise bus hangs
+  pinMode(ENABLE_EX_ADC, OUTPUT_OPEN_DRAIN);
+  digitalWrite(ENABLE_EX_ADC, LOW); // this appears to be necessary in order to fully start I2C1.
+                                    // can we turn this power back off when we are done?   
+                                    // or should just always cycle this when starting and sleeping to save that power only
+                                    // so ex adc mosfet is mainly for not draining through analog sensors while we sleep
+
+  delay(1); // delay > 50ns before applying ADC reset
+  digitalWrite(EXADC_RESET,LOW); // reset is active low
+  delay(1); // delay > 10ns after starting ADC reset
+  digitalWrite(EXADC_RESET,HIGH);
+  delay(100); // Wait for ADC to start up
+
   
   i2c_disable(I2C1);
   i2c_master_enable(I2C1, 0, 0);
