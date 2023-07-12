@@ -1,4 +1,4 @@
-#include "sensors/drivers/MHZ16_CO2.h"
+#include "sensors/drivers/mhz16_co2.h"
 #include "system/logs.h" // for debug() and notify()
 // #include "system/measurement_components.h" // if external adc is used
 
@@ -44,7 +44,7 @@ void MHZ16_CO2Driver::appendDriverSpecificConfigurationJSON(cJSON *json)
 void MHZ16_CO2Driver::setup()
 {
     // debug("setup MHZ16_CO2Driver");
-    modularSensorDriver = new NDIR_I2C(wire, 0);
+    modularSensorDriver = new NDIR_I2C(wire, 0x4D);
     if (!modularSensorDriver->begin())
     {
         notify("CO2 setup failed");
