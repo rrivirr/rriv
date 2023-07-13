@@ -1213,6 +1213,7 @@ void Datalogger::stopAndAwaitTrigger()
     clearManualWakeInterrupt();
   }
 
+  setupInternalRTC();
   setNextAlarmInternalRTC(settings.wakeInterval);
 
   if(!settings.continuous_power){
