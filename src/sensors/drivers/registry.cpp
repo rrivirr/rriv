@@ -52,7 +52,8 @@ void buildDriverSensorMap()
   // $SENSOR_CODE is the define added in step 2 above for this sensor
   // $SENSOR_STRING_NAME is the define for human readable sensor name found in the .h for this sensor driver
 
+#ifdef RRIV_AHT
   setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
-
+#endif
   //Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
 }

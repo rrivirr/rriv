@@ -164,18 +164,12 @@ uint32 AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
 
 bool AtlasCO2Driver::isWarmedUp()
 {
-  timeDiff = millis() - setupTime;
-  if (timeDiff < 10000) // need 10 seconds to warm up
-  {
-    return false;
-  }
   return true;
 }
 
 int AtlasCO2Driver::millisecondsToWarmUp()
 {
-  int warmupTime = 10000 - timeDiff;
-//  int warmupTime = 10000;
-  setupTime -= warmupTime; // account for systick being off when sleeping
+//  int warmupTime = 10000 - timeDiff;
+  int warmupTime = 1000;
   return warmupTime;
 }

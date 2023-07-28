@@ -188,7 +188,9 @@ bool Datalogger::processReadingsCycle()
 
   if (shouldContinueBursting())
   {
-    uint32 waitBetweenReadings = minMillisecondsUntilNextReading() - measureSensorDuration;
+    // uint32 waitBetweenReadings = minMillisecondsUntilNextReading() - measureSensorDuration;
+    uint32 waitBetweenReadings = 100;
+    notify("right before 192");
     notify(waitBetweenReadings);
     if (waitBetweenReadings > 0)
     {
@@ -1218,15 +1220,17 @@ void Datalogger::stopAndAwaitTrigger()
 
   if(!settings.continuous_power){
     // power down sensors or delete new objects
+    notify("this is line 1223");
     for (unsigned int i = 0; i < sensorCount; i++)
     {
+      notify(i);
       drivers[i]->stop();
     }
-    
+    notify("this is line 1227");
     powerDownSwitchableComponents();
-
+    notify("this is line 1229");
     fileSystem->closeFileSystem();
-
+    notify("this is line 1230");
     disableSwitchedPower();
   }
   awakenedByUser = false; // Don't go into sleep mode with any interrupt state

@@ -175,11 +175,18 @@ void rgbDriver::setDriverDefaults()
   configuration.cal_timestamp = 0;
 }
 
+uint32 rgbDriver::millisecondsUntilNextReadingAvailable()
+{
+  return 1000; // 1 reading per second
+}
+
+bool rgbDriver::isWarmedUp()
+{
+  return true;
+}
 
 int rgbDriver::millisecondsToWarmUp()
 {
-  int warmupTime = 10000 - timeDiff;
-//int warmupTime = 10000;
-  setupTime -= warmupTime; // account for systick being off when sleeping
+  int warmupTime = 5000;
   return warmupTime;
 }

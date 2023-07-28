@@ -48,6 +48,8 @@ class rgbDriver : public I2CProtocolSensorDriver
     const char * getBaseColumnHeaders();
     void initCalibration();
     void calibrationStep(char *step, int arg_cnt, char ** args);
+    uint32 millisecondsUntilNextReadingAvailable();
+    bool isWarmedUp();
     int millisecondsToWarmUp();
 
   protected:
