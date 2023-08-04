@@ -159,7 +159,7 @@ void AtlasCO2Driver::setDriverDefaults()
 
 uint32 AtlasCO2Driver::millisecondsUntilNextReadingAvailable()
 {
-  return 1000; // 1 reading per second
+  return 5000; // 1 reading per second
 }
 
 bool AtlasCO2Driver::isWarmedUp()
@@ -170,6 +170,6 @@ bool AtlasCO2Driver::isWarmedUp()
 int AtlasCO2Driver::millisecondsToWarmUp()
 {
 //  int warmupTime = 10000 - timeDiff;
-  int warmupTime = 1000;
+  int warmupTime = 5000;
   return warmupTime;
 }

@@ -96,7 +96,12 @@ void Datalogger::readConfiguration(datalogger_settings_type *settings)
   settings->debug_values = true;
   settings->log_raw_data = true;
   settings->debug_to_file = true;
+  #ifdef RRIV_CP
+  settings->continuous_power = true;
+  #endif
+  #ifdef RRIV_LP
   settings->continuous_power = false;
+  #endif
 }
 
 Datalogger::Datalogger(datalogger_settings_type *settings)
@@ -1221,11 +1226,13 @@ void Datalogger::stopAndAwaitTrigger()
   if(!settings.continuous_power){
     // power down sensors or delete new objects
     notify("this is line 1223");
+    #ifdef RRIV_STOP
     for (unsigned int i = 0; i < sensorCount; i++)
     {
       notify(i);
       drivers[i]->stop();
     }
+    #endif
     notify("this is line 1227");
     powerDownSwitchableComponents();
     notify("this is line 1229");
