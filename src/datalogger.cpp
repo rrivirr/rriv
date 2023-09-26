@@ -29,6 +29,11 @@
 #include "utilities/STM32-UID.h"
 #include "scratch/dbgmcu.h"
 #include "system/logs.h"
+#include "sensors/drivers/air_pump.h"
+#include "sensors/drivers/generic_actuator.h"
+
+// #include "sensors/drivers/air_pump.h"
+// #include "sensors/drivers/generic_actuator.h"
 
 void Datalogger::sleepMCU(uint32 milliseconds)
 {
@@ -96,11 +101,14 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 {
   powerCycle = true;
 
-  // defaults
+  //defaults
   if (settings->interval < 1)
   {
     settings->interval = 1;
   }
+
+
+
 
   memcpy(&this->settings, settings, sizeof(datalogger_settings_type));
 
@@ -165,15 +173,19 @@ bool Datalogger::processReadingsCycle()
   {
     writeRawMeasurementToLogFile();
   }
+  
 
   if (shouldContinueBursting())
   {
+
     // sleep for maximum time before next reading
     // ask all drivers for maximum time until next burst reading
     // ask all drivers for maximum time until next available reading
     // sleep for whichever is less
+
     notify(minMillisecondsUntilNextReading());
     sleepMCU(minMillisecondsUntilNextReading());
+
     return true;
   }
 
@@ -189,8 +201,7 @@ bool Datalogger::processReadingsCycle()
 
     if (settings.interBurstDelay > 0)
     {
-      notify(F("burst delay"));
-      int interBurstDelay = settings.interBurstDelay;
+      int interBurstDelay = settings.interBurstDelay * 60; // convert to seconds
       // todo: we should sleep any sensors that can be slept without re-warming
       // this could be called 'standby' mode
       // placeSensorsInStandbyMode();
@@ -199,9 +210,9 @@ bool Datalogger::processReadingsCycle()
     }
 
     initializeBurst();
+
     return true;
   }
-
   return false;
 }
 
@@ -210,6 +221,7 @@ void Datalogger::testMeasurementCycle()
   initializeMeasurementCycle();
   fileSystemWriteCache->setOutputToSerial(true); // another way to do this would be to set a special write cache
   while(processReadingsCycle()){
+    
     fileSystemWriteCache->flushCache();
     outputLastMeasurement();
   }      
@@ -227,7 +239,8 @@ void Datalogger::loop()
   }
 
   if (inMode(logging))
-  {
+  { 
+    //AE actuate hook before measurement could go here
 
     if (powerCycle)
     {
@@ -248,18 +261,20 @@ void Datalogger::loop()
 
     if (shouldExitLoggingMode())
     {
-      notify("Should exit logging mode");
       changeMode(interactive);
       return;
     }
 
-    if(processReadingsCycle())
+    if(processReadingsCycle() == true) // nothing changes if this true/false
     {
       return;
     }
 
     // otherwise go to sleep
     fileSystemWriteCache->flushCache();
+
+    //AE actuator hook could go here: is this before or after measurement? 
+
   SLEEP:
     stopAndAwaitTrigger();
     initializeMeasurementCycle();
@@ -335,13 +350,13 @@ void Datalogger::loadSensorConfigurations()
   }
   if (sensorCount == 0)
   {
-    notify("no sensor configurations found");
+    notify("no sensor config");
   }
   notify("FREE MEM");
   printFreeMemory();
 
   // construct the drivers
-  notify("construct drivers");
+  // notify("construct drivers");
   drivers = (SensorDriver **)malloc(sizeof(SensorDriver *) * sensorCount);
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
@@ -458,6 +473,8 @@ void Datalogger::initializeBurst()
 
 void Datalogger::initializeMeasurementCycle()
 {
+  //AE actuate hook before measurement could go here
+
   // notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
@@ -473,10 +490,9 @@ void Datalogger::initializeMeasurementCycle()
     // delay(20000);
     // startCustomWatchDog();
 
-    notify(F("wait for start up delay"));
     int startUpDelay = settings.startUpDelay*60; // convert to seconds and print
     // startUpDelay = 2;
-    notify(startUpDelay);
+    // notify(startUpDelay);
     sleepMCU(startUpDelay * 1000); // convert seconds to milliseconds
     notify("sleep done");
   }
@@ -487,7 +503,7 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      notify("check isWarmed");
+      // notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
@@ -496,11 +512,15 @@ void Datalogger::initializeMeasurementCycle()
       }
     }
   }
+  //AE actuator call could go here 
+  
 
 }
 
 void Datalogger::measureSensorValues(bool performingBurst)
 {
+  // notify("in measure senosr values\n");
+  
   if (settings.externalADCEnabled)
   {
     // get readings from the external ADC
@@ -511,11 +531,14 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
   for (unsigned int i = 0; i < sensorCount; i++)
   {
+
     if (drivers[i]->takeMeasurement())
     {
+
       if (performingBurst)
       {
         drivers[i]->incrementBurst(); // burst bookkeeping
+
       }
     }
   }
@@ -677,7 +700,7 @@ void Datalogger::setConfiguration(cJSON *config)
   {
     strcpy(settings.deploymentIdentifier, deploymentIdentifierJSON->valuestring);
   } else {
-    notify("Invalid deployment identifier");
+    notify("Invalid deployment ID");
   }
 
   const cJSON * intervalJson = cJSON_GetObjectItemCaseSensitive(config, "interval");
@@ -745,6 +768,7 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
     {
       return;
     }
+
     if (driver->getProtocol() == i2c)
     {
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
@@ -788,8 +812,10 @@ void Datalogger::setSensorConfiguration(char *type, cJSON *json)
       }
       free(drivers);
       drivers = updatedDrivers;
+
     }
   }
+
 }
 
 void Datalogger::clearSlot(unsigned short slot)
@@ -910,7 +936,7 @@ void Datalogger::calibrate(unsigned short slot, char *subcommand, int arg_cnt, c
 
   if (strcmp(subcommand, "init") == 0)
   {
-    notify("calling init");
+    // notify("calling init");
     driver->initCalibration();
   }
   else
@@ -958,8 +984,9 @@ bool Datalogger::deploy()
   notifyDebugStatus();
   if (checkDebugSystemDisabled() == false)
   {
-    notify("**** ABORTING DEPLOYMENT *****");
-    notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    // notify("**** ABORTING DEPLOYMENT *****");
+    // notify("**** PLEASE POWER CYCLE THIS UNIT AND TRY AGAIN *****");
+    notify("ABORT TRY AGAIN");
     return false;
   }
 
@@ -1248,31 +1275,27 @@ const char *Datalogger::getUUIDString()
 }
 
 
-int Datalogger::minMillisecondsUntilNextReading()
+unsigned int Datalogger::minMillisecondsUntilNextReading()
 {
-  unsigned int minimumNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  unsigned int minimumDelayUntilNextRequestedReading = MAX_REQUESTED_READING_DELAY; 
+  unsigned int maxDelayUntilNextAvailableReading = 0;
   for(int i=0; i<sensorCount; i++)
   {
-    minimumNextRequestedReading = min(minimumNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
-  }
+    // retrieve the fastest time requested for sampling
+    minimumDelayUntilNextRequestedReading = min(minimumDelayUntilNextRequestedReading, drivers[i]->millisecondsUntilNextRequestedReading());
 
-  unsigned int maxDelayUntilNextAvailableReading = 0; 
-  for(int i=0; i<sensorCount; i++)
-  {
+    // retrieve the slowest response time for sampling
     maxDelayUntilNextAvailableReading = max(maxDelayUntilNextAvailableReading, drivers[i]->millisecondsUntilNextReadingAvailable());
   }
-  
-  // we want to read as fast the speed requested by the fastest sensor
-  // or as slow as the slowest sensor has a new reading available
-  if(maxDelayUntilNextAvailableReading == 0)
-  {
-    return minimumNextRequestedReading;
-  }
-  else 
-  {
-    return min(minimumNextRequestedReading, maxDelayUntilNextAvailableReading);
-  }
 
+  // return max to prioritize sampling as soon as ALL sensors are ready to sample
+  return max(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
+  // return min to prioritize sampling at desired speed for ONE specific sensor
+  // if (maxDelayUntilNextAvailableReading == 0) // meaning all sensors have no delay between readings available
+  // {
+  //   return minimumDelayUntilNextRequestedReading;
+  // }
+  // return min(minimumDelayUntilNextRequestedReading, maxDelayUntilNextAvailableReading);
 }
 
 

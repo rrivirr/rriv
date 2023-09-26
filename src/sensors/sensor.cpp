@@ -219,7 +219,7 @@ void SensorDriver::configureFromBytes(configuration_bytes configurationBytes)
 void SensorDriver::setup()
 {
   // by default no setup
-  return;
+  //return;
 }
 
 void SensorDriver::stop()
@@ -312,6 +312,14 @@ DriverTemplateProtocolSensorDriver::~DriverTemplateProtocolSensorDriver(){}
 
 protocol_type DriverTemplateProtocolSensorDriver::getProtocol()
 {
-  // debug("getting driver template protocol");
+  // debug("getting driver template");
   return drivertemplate;
+}
+
+GenericActuatorProtocolSensorDriver::~GenericActuatorProtocolSensorDriver(){}
+
+protocol_type GenericActuatorProtocolSensorDriver::getProtocol()
+{
+  // debug("getting generic actuator template");
+  return genericactuator;
 }

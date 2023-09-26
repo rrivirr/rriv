@@ -29,6 +29,7 @@
 #include "system/eeprom.h"
 #include "system/logs.h"
 
+
 // Setup and Loop
 Datalogger *datalogger;
 void printWelcomeMessage(datalogger_settings_type *dataloggerSettings);
@@ -56,6 +57,16 @@ void setup(void)
   enableI2C1();
   delay(500);
 
+
+  
+
+  
+
+
+
+
+
+
   debug("creating datalogger");
   datalogger_settings_type *dataloggerSettings = (datalogger_settings_type *)malloc(sizeof(datalogger_settings_type));
   Datalogger::readConfiguration(dataloggerSettings);
@@ -77,6 +88,7 @@ void setup(void)
   {
     notify("Device will enter logging mode in 5 seconds");
     notify("Type 'i' to exit to interactive mode");
+    
     Serial2.print("CMD >> ");
     int start = timestamp();
     int now = start;
@@ -153,7 +165,7 @@ Type 'help' for command list.
 // space to work our development details
 
 
-void workspace()
+void  workspace()
 {
   // notify(sizeof(long long));
   // notify(sizeof(sone));

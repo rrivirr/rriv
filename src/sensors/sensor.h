@@ -32,7 +32,8 @@ typedef enum protocol
   analog,
   i2c,
   gpio,
-  drivertemplate
+  drivertemplate,
+  genericactuator,
 } protocol_type;
 
 #define SENSOR_CONFIGURATION_SIZE 64
@@ -60,7 +61,7 @@ typedef struct
   unsigned short int sensor_type; // 2 bytes
   unsigned short int warmup;      // 2 bytes - in seconds (65535 max value/60=1092 min)
   byte slot;                      // 1 byte
-  byte burst_size;                // 1 byte
+  byte burst_size;                // 1 byte // reading_count
 
 } common_sensor_driver_config;
 
@@ -95,6 +96,8 @@ public:
   void setConfigurationNeedsSave();
   void clearConfigurationNeedsSave();
   bool getNeedsSave();
+
+ 
 
 
 protected:
@@ -189,6 +192,8 @@ public:
   virtual unsigned int millisecondsUntilNextReadingAvailable();
 
   virtual unsigned int millisecondsUntilNextRequestedReading();
+  
+
 
 protected:
 
@@ -201,6 +206,7 @@ protected:
   virtual void appendDriverSpecificConfigurationJSON(cJSON * json) = 0;
   
   virtual void setDriverDefaults() = 0;
+
 
 
 };
@@ -240,8 +246,19 @@ public:
   ~DriverTemplateProtocolSensorDriver();
   protocol_type getProtocol();
 };
+/*
+*  Base class for actuators (for now?) AE
+*/
+
+class GenericActuatorProtocolSensorDriver : public SensorDriver
+{
+public: 
+  ~GenericActuatorProtocolSensorDriver();
+  protocol_type getProtocol();
+};
 
 void getDefaultsCommon(common_sensor_driver_config *fillValues);
 void readCommonConfigOnly(common_sensor_driver_config *readValues); // not made //TODO: what is this
+
 
 #endif

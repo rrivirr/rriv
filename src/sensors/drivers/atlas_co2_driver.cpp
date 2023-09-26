@@ -1,3 +1,20 @@
+/* 
+ *  RRIV - Open Source Environmental Data Logging Platform
+ *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
+ *  
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 #include "sensors/drivers/atlas_co2_driver.h"
 #include "system/logs.h" // for debug() and notify()
 
@@ -85,6 +102,13 @@ const char * AtlasCO2Driver::getSummaryDataString()
   sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
   return dataString;
 }
+// const char *AtlasCO2Driver::getRawDataString()
+// {
+//   // debug("configuring driver template dataString");
+//   // process data string for .csv
+//   sprintf(dataString, "%d,%d",value,0);
+//   return dataString;
+// }
 
 const char *AtlasCO2Driver::getBaseColumnHeaders()
 {
