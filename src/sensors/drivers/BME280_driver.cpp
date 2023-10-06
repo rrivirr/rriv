@@ -88,7 +88,7 @@ bool BME280Driver::takeMeasurement()
   measurementTaken = true;
   // if(measurementTaken)
   // {
-  //   addValueToBurstSummaryMean("temperature", temperature);
+    // addValueToBurstSummaryMean("temperature", temperature);
   //   addValueToBurstSummaryMean("pressure", pressure);
   // }
 

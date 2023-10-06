@@ -35,6 +35,8 @@
 // #include "sensors/drivers/air_pump.h"
 // #include "sensors/drivers/generic_actuator.h"
 
+
+
 void Datalogger::sleepMCU(uint32 milliseconds)
 {
   if(milliseconds < 5)
@@ -131,6 +133,9 @@ Datalogger::Datalogger(datalogger_settings_type *settings)
 
 void Datalogger::setup()
 {
+  #ifdef CONT_PWR
+    debug("continuous power ON");
+  #endif
   startCustomWatchDog();
 
   setupHardwarePins();
@@ -231,6 +236,7 @@ void Datalogger::testMeasurementCycle()
 
 void Datalogger::loop()
 {
+ 
   if (inMode(deploy_on_trigger))
   {
     deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
@@ -270,11 +276,10 @@ void Datalogger::loop()
       return;
     }
 
-    // otherwise go to sleep
     fileSystemWriteCache->flushCache();
 
-    //AE actuator hook could go here: is this before or after measurement? 
 
+  
   SLEEP:
     stopAndAwaitTrigger();
     initializeMeasurementCycle();
@@ -288,7 +293,13 @@ void Datalogger::loop()
   if (inMode(logging) || inMode(deploy_on_trigger))
   {
     // processCLI may have moved logger into a deployed mode
-    goto SLEEP;
+    #ifdef CONT_PWR
+      debug("skip sleep");
+    #endif
+    #ifndef CONT_PWR
+      debug("to sleep");
+      goto SLEEP;
+    #endif
   }
   else if (inMode(interactive))
   {
@@ -473,8 +484,6 @@ void Datalogger::initializeBurst()
 
 void Datalogger::initializeMeasurementCycle()
 {
-  //AE actuate hook before measurement could go here
-
   // notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
@@ -503,7 +512,7 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      // notify("check isWarmed");
+      notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
@@ -512,7 +521,6 @@ void Datalogger::initializeMeasurementCycle()
       }
     }
   }
-  //AE actuator call could go here 
   
 
 }
@@ -687,7 +695,7 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid site name");
   }
 
-  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
+  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "logger_name");
   if(loggerNameJSON != NULL && cJSON_IsString(loggerNameJSON) && strlen(loggerNameJSON->valuestring) <= 7)
   {
     strcpy(settings.loggerName, loggerNameJSON->valuestring);
@@ -695,7 +703,7 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid logger name");
   }
   
-  const cJSON* deploymentIdentifierJSON = cJSON_GetObjectItemCaseSensitive(config, "deploymentIdentifier");
+  const cJSON* deploymentIdentifierJSON = cJSON_GetObjectItemCaseSensitive(config, "deployment_identifier");
   if(deploymentIdentifierJSON != NULL && cJSON_IsString(deploymentIdentifierJSON) && strlen(deploymentIdentifierJSON->valuestring) <= 15)
   {
     strcpy(settings.deploymentIdentifier, deploymentIdentifierJSON->valuestring);
@@ -711,7 +719,7 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid interval");
   }
 
-  const cJSON * burstNumberJson = cJSON_GetObjectItemCaseSensitive(config, "burstNumber");
+  const cJSON * burstNumberJson = cJSON_GetObjectItemCaseSensitive(config, "burst_number");
   if(burstNumberJson != NULL && cJSON_IsNumber(burstNumberJson) && burstNumberJson->valueint > 0)
   {
     settings.burstNumber = (byte) burstNumberJson->valueint;
@@ -719,7 +727,7 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid burst number");
   }
 
-  const cJSON * startUpDelayJson = cJSON_GetObjectItemCaseSensitive(config, "startUpDelay");
+  const cJSON * startUpDelayJson = cJSON_GetObjectItemCaseSensitive(config, "start_up_delay");
   if(startUpDelayJson != NULL && cJSON_IsNumber(startUpDelayJson) && startUpDelayJson->valueint >= 0)
   {
     settings.startUpDelay = (byte) startUpDelayJson->valueint;
@@ -727,12 +735,12 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid start up delay");
   }
 
-  const cJSON * interBurstDelayJson = cJSON_GetObjectItemCaseSensitive(config, "interBurstDelay");
+  const cJSON * interBurstDelayJson = cJSON_GetObjectItemCaseSensitive(config, "burst_delay");
   if(interBurstDelayJson != NULL && cJSON_IsNumber(interBurstDelayJson) && interBurstDelayJson->valueint >= 0)
   {
     settings.interBurstDelay = (byte) interBurstDelayJson->valueint;
   } else {
-    notify("Invalid inter burst delay");
+    notify("Invalid burst delay");
   }
 
   storeDataloggerConfiguration();

@@ -276,7 +276,7 @@ void CommandInterface::_setInterval(int size)
 void setBurstSize(int arg_cnt, char **args)
 {
   if(arg_cnt < 2){
-    invalidArgumentsMessage(F("set-burst_size NUMBER_OF_MEASUREMENTS_IN_BURST"));
+    invalidArgumentsMessage(F("set-burst-size NUMBER_OF_MEASUREMENTS_IN_BURST"));
     return;
   }
 
@@ -398,8 +398,8 @@ void CommandInterface::_getConfig()
   
   cJSON_Delete(dataloggerConfiguration);
 
-  debug("sensorCount is:");
-  debug(short(this->datalogger->sensorCount));
+  // debug("sensorCount is:");
+  // debug(short(this->datalogger->sensorCount));
   for(unsigned short i=0; i<this->datalogger->sensorCount; i++)
   {
     cJSON * sensorConfiguration= this->datalogger->getSensorConfiguration(i);
