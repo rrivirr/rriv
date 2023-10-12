@@ -1174,11 +1174,13 @@ void Datalogger::stopAndAwaitTrigger()
   clearManualWakeInterrupt();
   setNextAlarmInternalRTC(settings.interval);
 
+  #ifdef RRIV_STOP
   // power down sensors -> function?
   for (unsigned int i = 0; i < sensorCount; i++)
   {
     drivers[i]->stop();
   }
+  #endif
 
   powerDownSwitchableComponents();
   fileSystem->closeFileSystem(); // close file, filesystem
