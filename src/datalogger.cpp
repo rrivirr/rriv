@@ -1168,15 +1168,23 @@ void Datalogger::stopAndAwaitTrigger()
   int iser1, iser2, iser3;
   storeAllInterrupts(iser1, iser2, iser3);
 
+  debug(F("line 1171"));
+
   clearManualWakeInterrupt();
   setNextAlarmInternalRTC(settings.interval);
 
+  debug(F("line 1176"));
+
+  #ifdef RRIV_STOP
+
   // power down sensors -> function?
-  for (unsigned int i = 0; i < sensorCount; i++)
+  for (unsigned int i = 0; i < sensorCount; i++)-
   {
     drivers[i]->stop();
   }
+  #endif
 
+  debug(F("line 1184"));
   powerDownSwitchableComponents();
   fileSystem->closeFileSystem(); // close file, filesystem
   disableSwitchedPower();
