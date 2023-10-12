@@ -698,7 +698,7 @@ void Datalogger::setConfiguration(cJSON *config)
     notify("Invalid site name");
   }
 
-  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "logger_name");
+  const cJSON* loggerNameJSON = cJSON_GetObjectItemCaseSensitive(config, "loggerName");
   if(loggerNameJSON != NULL && cJSON_IsString(loggerNameJSON) && strlen(loggerNameJSON->valuestring) <= 7)
   {
     strcpy(settings.loggerName, loggerNameJSON->valuestring);
