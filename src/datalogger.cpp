@@ -274,10 +274,11 @@ void Datalogger::loop()
     fileSystemWriteCache->flushCache();
 
     //AE actuator hook could go here: is this before or after measurement? 
-
+  #ifdef RRIV_CONTINUOUS
   SLEEP:
     stopAndAwaitTrigger();
     initializeMeasurementCycle();
+  #endif
     return;
   }
 
