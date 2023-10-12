@@ -103,6 +103,13 @@ const char * AtlasCO2Driver::getSummaryDataString()
   sprintf(dataString, "%0.2f", getBurstSummaryMean(CO2_TAG));
   return dataString;
 }
+// const char *AtlasCO2Driver::getRawDataString()
+// {
+//   // debug("configuring driver template dataString");
+//   // process data string for .csv
+//   sprintf(dataString, "%d,%d",value,0);
+//   return dataString;
+// }
 
 const char *AtlasCO2Driver::getBaseColumnHeaders()
 {

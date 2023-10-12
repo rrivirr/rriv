@@ -278,11 +278,12 @@ void Datalogger::loop()
 
     fileSystemWriteCache->flushCache();
 
-
-  
+    //AE actuator hook could go here: is this before or after measurement? 
+  #ifndef RRIV_CONTINUOUS
   SLEEP:
     stopAndAwaitTrigger();
     initializeMeasurementCycle();
+  #endif
     return;
   }
 
@@ -484,6 +485,8 @@ void Datalogger::initializeBurst()
 
 void Datalogger::initializeMeasurementCycle()
 {
+  //AE actuate hook before measurement could go here
+
   // notify(F("setting base time"));
   currentEpoch = timestamp();
   offsetMillis = millis();
@@ -512,7 +515,7 @@ void Datalogger::initializeMeasurementCycle()
     sensorsWarmedUp = true;
     for (unsigned short i = 0; i < sensorCount; i++)
     {
-      notify("check isWarmed");
+      // notify("check isWarmed");
       if (!drivers[i]->isWarmedUp())
       {
         // TODO: enhancement, ask the sensor driver if we should sleep MCU for a while
