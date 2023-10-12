@@ -60,7 +60,7 @@ void AdaAHTX0::setup()
   // notify("aht setup");
   aht = new Adafruit_AHTX0();
   if(!aht->begin(wire,1,AHTX0_I2CADDR_DEFAULT)){
-    // notify("aht setup fail");
+    notify("aht setup fail");
   }
 }
 

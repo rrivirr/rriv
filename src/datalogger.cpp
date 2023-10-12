@@ -350,7 +350,7 @@ void Datalogger::loadSensorConfigurations()
     readSensorConfigurationFromEEPROM(i, &sensorConfigs[i]);
 
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
-
+    // notify("sensor type:");
     notify(commonConfiguration->sensor_type);
     if( sensorTypeCodeExists(commonConfiguration->sensor_type) )
     {
@@ -363,7 +363,7 @@ void Datalogger::loadSensorConfigurations()
   {
     notify("no sensor config");
   }
-  notify("FREE MEM");
+  // notify("FREE MEM");
   printFreeMemory();
 
   // construct the drivers
@@ -372,7 +372,7 @@ void Datalogger::loadSensorConfigurations()
   int j = 0;
   for (int i = 0; i < EEPROM_TOTAL_SENSOR_SLOTS; i++)
   {
-    notify("FREE MEM");
+    // notify("FREE MEM");
     printFreeMemory();
     common_sensor_driver_config * commonConfiguration = (common_sensor_driver_config *) &sensorConfigs[i].common;
 
@@ -382,7 +382,7 @@ void Datalogger::loadSensorConfigurations()
       continue;
     }
 
-    debug("getting driver for sensor type");
+    // debug("getting driver for sensor type");
     debug(commonConfiguration->sensor_type);
     SensorDriver *driver = driverForSensorTypeCode(commonConfiguration->sensor_type);
     debug("got sensor driver");
@@ -395,14 +395,14 @@ void Datalogger::loadSensorConfigurations()
     {
       debug("got i2c sensor");
       ((I2CProtocolSensorDriver *)driver)->setWire(&WireTwo);
-      debug("set wire");
+      // debug("set wire");
     }
     debug("do setup");
     driver->setup();
 
-    debug("configure sensor driver");
+    // debug("configure sensor driver");
     driver->configureFromBytes(sensorConfigs[i]); //pass configuration struct to the driver
-    debug("configured sensor driver");
+    // debug("configured sensor driver");
   }
 
 }

@@ -24,6 +24,7 @@ std::map<std::string, short> sensorTypeCodeMap;
 
 bool sensorTypeCodeExists(short type)
 {
+  // notify("sc exist?");
   return sensorTypeMap.count(type) > 0;
 }
 
