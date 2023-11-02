@@ -17,6 +17,7 @@
 #define BME280 0x0006
 #define ADAFRUIT_AHTX0_SENSOR 0x0007
 #define ATLAS_RGB_SENSOR 0x0008
+#define AIRPUMP 0x0009
 // Step 2: Add a #define for the next available integer code
 
 #define DRIVER_TEMPLATE 0xFFFE
@@ -45,15 +46,19 @@ void buildDriverSensorMap()
 #ifdef RRIV_RGB
   setupSensorMaps<rgbDriver>(ATLAS_RGB_SENSOR, F(RGB_DRIVER_TYPE_STRING)); // 4848 bytes
 #endif
+#ifdef RRIV_AHT
+  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
+#endif
+
+#ifdef RRIV_AIRPUMP
+  setupSensorMaps<GenericActuator>(GENERIC_ACTUATOR, F(GENERIC_ACTUATOR_TYPE_STRING));
+  setupSensorMaps<AirPump>(AIR_PUMP, F(AIR_PUMP_TYPE_STRING));
+#endif
 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
   // setupSensorMaps<$CLASS_NAME>($SENSOR_CODE, F($SENSOR_STRING_NAME));
   // $CLASS_NAME is the C++ class of the sensor
   // $SENSOR_CODE is the define added in step 2 above for this sensor
   // $SENSOR_STRING_NAME is the define for human readable sensor name found in the .h for this sensor driver
-
-#ifdef RRIV_AHT
-  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
-#endif
   //Step 3: call setupSensorMaps with the class name, code, and type string for your sensor
 }

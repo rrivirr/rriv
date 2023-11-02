@@ -160,9 +160,9 @@ void Datalogger::setup()
 
   checkMemory();
   buildDriverSensorMap();
-  debug("Built driver sensor map");
+  // debug("Built driver sensor map");
   loadSensorConfigurations();
-  debug("Loaded sensor configurations");
+  // debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
 }
@@ -340,7 +340,7 @@ void Datalogger::loop()
 
 void Datalogger::loadSensorConfigurations()
 {
-
+  debug("loading SC");
   // load sensor configurations from EEPROM and count them
   sensorCount = 0;
   configuration_bytes sensorConfigs[EEPROM_TOTAL_SENSOR_SLOTS];
@@ -687,7 +687,7 @@ void Datalogger::storeSensorConfigurationIfNeedsSave()
 
 void Datalogger::setConfiguration(cJSON *config)
 {
-  const cJSON* siteNameJSON = cJSON_GetObjectItemCaseSensitive(config, "siteName");
+  const cJSON* siteNameJSON = cJSON_GetObjectItemCaseSensitive(config, "site_name");
   if(siteNameJSON != NULL && cJSON_IsString(siteNameJSON) && strlen(siteNameJSON->valuestring) <= 7)
   {
     strcpy(settings.siteName, siteNameJSON->valuestring);
@@ -1094,7 +1094,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //TODO: hook for actuators that need to be powered down?
   gpioPinOff(GPIO_PIN_3); //turn off 5v booster
   gpioPinOff(GPIO_PIN_6); //not in use currently
-  i2c_disable(I2C2);
+  // i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
   debug(F("Switchable components powered down"));
 }

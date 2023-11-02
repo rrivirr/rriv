@@ -54,7 +54,7 @@ void setupInternalRTC()
 
 void setupHardwarePins()
 {
-  // debug(F("setup pins"));
+  debug(F("setup pins"));
   //pinMode(BLE_COMMAND_MODE_PIN, OUTPUT); // Command Mode pin for BLE
   
   pinMode(INTERRUPT_LINE_7_PIN, INPUT_PULLUP); // This the interrupt line 7
@@ -99,8 +99,6 @@ void setupHardwarePins()
   pinMode(PB12, OUTPUT); //yes
   pinMode(PB2, OUTPUT);  //yes
 
-
-
   //testing all pins
   pinMode(PC10, OUTPUT); //no
   pinMode(PC11, OUTPUT);
@@ -112,7 +110,6 @@ void setupHardwarePins()
   pinMode(PC15, OUTPUT); //no
   pinMode(PA1, OUTPUT);
 
-
   //pinMode(GPIO_PIN_29, OUTPUT);  //not in board.h
   //pinMode(GPIO_PIN_31, OUTPUT); //not in board.h
   pinMode(PB4, OUTPUT);
@@ -120,8 +117,6 @@ void setupHardwarePins()
   pinMode(PB3, OUTPUT); //no
   pinMode(PB12, OUTPUT); //yes
   pinMode(PB2, OUTPUT);  //yes
-
-
 
   // pinMode(PA4, INPUT_PULLDOWN); // mosfet for battery measurement - should be OUTPUT ??
 
