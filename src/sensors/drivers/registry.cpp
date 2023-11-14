@@ -47,7 +47,7 @@ void buildDriverSensorMap()
   setupSensorMaps<rgbDriver>(ATLAS_RGB_SENSOR, F(RGB_DRIVER_TYPE_STRING)); // 4848 bytes
 #endif
 #ifdef RRIV_AHT
-  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
+  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_AHTX0_TYPE_STRING));
 #endif
 
 #ifdef RRIV_AIRPUMP
