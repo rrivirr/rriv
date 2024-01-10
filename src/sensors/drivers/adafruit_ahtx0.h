@@ -23,7 +23,7 @@
 #include <Adafruit_AHTX0.h>
 
 
-#define ADAFRUIT_DHTX0_TYPE_STRING "adafruit_ahtx0"
+#define ADAFRUIT_AHTX0_TYPE_STRING "adafruit_ahtx0"
 
 class AdaAHTX0 : public I2CProtocolSensorDriver
 {
@@ -58,7 +58,7 @@ class AdaAHTX0 : public I2CProtocolSensorDriver
     unsigned int millisecondsUntilNextReadingAvailable();
 
   private:
-    const char *sensorTypeString = ADAFRUIT_DHTX0_TYPE_STRING;
+    const char *sensorTypeString = ADAFRUIT_AHTX0_TYPE_STRING;
     driver_configuration configuration;
     Adafruit_AHTX0 *aht; //pointer to I2C driver for Adafruit_AHTX0
     
