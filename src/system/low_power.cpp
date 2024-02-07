@@ -92,7 +92,7 @@ void componentsAlwaysOff()
 
   rcc_turn_off_clk(RCC_CLK_LSI);  
 
-  usb_power_off();
+  // usb_power_off();
 
   usart_disable(Serial1.c_dev());
 

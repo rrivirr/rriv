@@ -21,6 +21,7 @@
 
 #include <Arduino.h>
 #include <Wire_slave.h> // Communicate with I2C/TWI devices
+#include <USBComposite.h>
 
 // For F103RB
 #define Serial Serial2
@@ -84,6 +85,10 @@
 //#define BLUEFRUIT_SPI_CS    PB8  // Pullup
 #define BLUEFRUIT_SPI_IRQ   PB9
 #define BLUEFRUIT_SPI_RST   PC4
+
+extern USBCompositeSerial USBSerial;
+extern USBMassStorage USBStorage;
+
 
 void gpioPinOff(uint8 pin);
 void gpioPinOn(uint8 pin);
