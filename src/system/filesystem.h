@@ -28,7 +28,8 @@ class WaterBear_FileSystem : public OutputDevice
 
 private:
   // File system object.
-  SdFat sd;
+  SdFat * sd;
+  SPIClass * spiClass;
   File logfile;
   int chipSelectPin;
   char filename[15];

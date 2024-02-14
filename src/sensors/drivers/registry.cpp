@@ -47,12 +47,15 @@ void buildDriverSensorMap()
   setupSensorMaps<rgbDriver>(ATLAS_RGB_SENSOR, F(RGB_DRIVER_TYPE_STRING)); // 4848 bytes
 #endif
 #ifdef RRIV_AHT
-  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_DHTX0_TYPE_STRING));
+  setupSensorMaps<AdaAHTX0>(ADAFRUIT_AHTX0_SENSOR, F(ADAFRUIT_AHTX0_TYPE_STRING));
 #endif
 
 #ifdef RRIV_AIRPUMP
-  setupSensorMaps<GenericActuator>(GENERIC_ACTUATOR, F(GENERIC_ACTUATOR_TYPE_STRING));
   setupSensorMaps<AirPump>(AIR_PUMP, F(AIR_PUMP_TYPE_STRING));
+#endif
+
+#ifdef RRIV_GENACTUATOR
+    setupSensorMaps<GenericActuator>(GENERIC_ACTUATOR, F(GENERIC_ACTUATOR_TYPE_STRING));
 #endif
 
   // Step 3: call setupSensorMaps with the class name, code, and type string for your sensor

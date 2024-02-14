@@ -160,9 +160,9 @@ void Datalogger::setup()
 
   checkMemory();
   buildDriverSensorMap();
-  // debug("Built driver sensor map");
+  debug("Built driver sensor map");
   loadSensorConfigurations();
-  // debug("Loaded sensor configurations");
+  debug("Loaded sensor configurations");
   initializeFilesystem();
   setUpCLI();
 }
@@ -340,7 +340,7 @@ void Datalogger::loop()
 
 void Datalogger::loadSensorConfigurations()
 {
-  debug("loading SC");
+
   // load sensor configurations from EEPROM and count them
   sensorCount = 0;
   configuration_bytes sensorConfigs[EEPROM_TOTAL_SENSOR_SLOTS];
@@ -1094,7 +1094,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //TODO: hook for actuators that need to be powered down?
   gpioPinOff(GPIO_PIN_3); //turn off 5v booster
   gpioPinOff(GPIO_PIN_6); //not in use currently
-  // i2c_disable(I2C2);
+  i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
   debug(F("Switchable components powered down"));
 }
@@ -1168,23 +1168,15 @@ void Datalogger::stopAndAwaitTrigger()
   int iser1, iser2, iser3;
   storeAllInterrupts(iser1, iser2, iser3);
 
-  debug(F("line 1171"));
-
   clearManualWakeInterrupt();
   setNextAlarmInternalRTC(settings.interval);
 
-  debug(F("line 1176"));
-
-  #ifdef RRIV_STOP
-
   // power down sensors -> function?
-  for (unsigned int i = 0; i < sensorCount; i++)-
+  for (unsigned int i = 0; i < sensorCount; i++)
   {
     drivers[i]->stop();
   }
-  #endif
 
-  debug(F("line 1184"));
   powerDownSwitchableComponents();
   fileSystem->closeFileSystem(); // close file, filesystem
   disableSwitchedPower();
