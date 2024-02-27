@@ -77,7 +77,7 @@ void setupHardwarePins()
   pinMode(ONBOARD_LED_PIN, OUTPUT); // This is the onboard LED ? Turns out this is also the SPI1 clock.  niiiiice.
 
   //pinMode(GPIO_PIN_6, OUTPUT); // GPIO pin available
-  pinMode(GPIO_PIN_3, OUTPUT); // in use for 5v booster
+  pinMode(BOOST_5V_ENABLE, OUTPUT); // in use for 5v booster
 
   //testing all pins
   pinMode(PC10, OUTPUT); //no

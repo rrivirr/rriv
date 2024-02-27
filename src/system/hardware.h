@@ -45,6 +45,7 @@
 #define ANALOG_INPUT_5_PIN PC3 // A6
 
 #define ONBOARD_LED_PIN PA5
+#define BOOST_5V_ENABLE PB12
 
 
 #define GPIO_PIN_1 PA1
