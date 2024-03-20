@@ -1,5 +1,5 @@
 /* 
- *  RRIV - Open Source Environmental Data Logging Platform
+ *  RRIV - Open Source Environmental ` Logging Platform
  *  Copyright (C) 20202  Zaven Arra  zaven.arra@gmail.com
  *  
  *  This program is free software: you can redistribute it and/or modify
