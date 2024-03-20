@@ -1092,7 +1092,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
 {
   //TODO: hook for sensors that need to be powered down? separate functions?
   //TODO: hook for actuators that need to be powered down?
-  gpioPinOff(GPIO_PIN_3); //turn off 5v booster
+  gpioPinOff(BOOST_5V_ENABLE); //turn off 5v booster // TODO: change to PB12, and update other use of GPIO_PIN_3
   gpioPinOff(GPIO_PIN_6); //not in use currently
   // i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
