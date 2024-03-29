@@ -1055,7 +1055,8 @@ void Datalogger::powerUpSwitchableComponents()
 
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
-  gpioPinOn(GPIO_PIN_3);
+  gpioPinOn(BOOST_5V_ENABLE);
+  // gpioPinOn(GPIO_PIN_3);
   
   delay(250);
   enableI2C1();
@@ -1093,7 +1094,7 @@ void Datalogger::powerDownSwitchableComponents() // called in stopAndAwaitTrigge
   //TODO: hook for sensors that need to be powered down? separate functions?
   //TODO: hook for actuators that need to be powered down?
   gpioPinOff(BOOST_5V_ENABLE); //turn off 5v booster // TODO: change to PB12, and update other use of GPIO_PIN_3
-  gpioPinOff(GPIO_PIN_6); //not in use currently
+  // gpioPinOff(GPIO_PIN_6); //not in use currently
   i2c_disable(I2C2);
   digitalWrite(EXADC_RESET,LOW);
   debug(F("Switchable components powered down"));

@@ -51,7 +51,7 @@
 #define GPIO_PIN_1 PA1
 #define GPIO_PIN_2 PB2
 #define GPIO_PIN_3 PB8 // 5v booster
-#define GPIO_PIN_4 PB12
+// #define GPIO_PIN_4 PB12
 #define GPIO_PIN_5 PC11 // DHT22
 #define GPIO_PIN_6 PC12 // actuator tests
 #define GPIO_PIN_7 PC13
