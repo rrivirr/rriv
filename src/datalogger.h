@@ -94,7 +94,11 @@ public:
 
     void processCLI();
 
+    // actuator timing
 
+    unsigned long pumpStopTime = timestamp() + 10800;
+    unsigned long pumpResetTime = timestamp() + 21600;
+    unsigned int powermode = 2;
 
     // settings
     void setSiteName(char * siteName);

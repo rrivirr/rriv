@@ -151,14 +151,6 @@ void Datalogger::setup()
 
   clearAllAlarms(); // don't respond to alarms during setup
 
-  // actuator timestamp setup
-  // actuator variables
-  unsigned long pumpStopTime = timestamp() + 10800;
-  unsigned long pumpResetTime = timestamp() + 21600;
-  unsigned int powermode = 2;
-  debug(pumpStopTime);
-  debug(pumpResetTime);
-
   //initBLE();
 
   unsigned char uuid[UUID_LENGTH];
@@ -244,30 +236,7 @@ void Datalogger::testMeasurementCycle()
 
 void Datalogger::loop()
 {
-    // actuator timestamp setup
-  // actuator variables
-  unsigned long pumpStopTime = timestamp() + 10800;
-  unsigned long pumpResetTime = timestamp() + 21600;
-  unsigned int powermode = 2;
-  debug(pumpStopTime);
-  debug(pumpResetTime);
-  unsigned long timeCheck = timestamp();
-  if(powermode==2) {
-    digitalWrite(GPIO_PIN_6, HIGH);
-  }
-
-  if(timeCheck>=pumpStopTime&&powermode==1) {
-    powermode=1;
-    digitalWrite(GPIO_PIN_6, LOW);
-  }
-
-  if(timeCheck>=pumpResetTime&&powermode==2) {
-    powermode=1;
-    digitalWrite(GPIO_PIN_6, HIGH);
-    pumpStopTime = timestamp() + 10800;
-    pumpResetTime = timestamp() + 21600;
-  }  
-
+ 
   if (inMode(deploy_on_trigger))
   {
     deploy(); // if deploy returns false here, the trigger setup has a fatal coding defect not detecting invalid conditions for deployment
@@ -278,6 +247,27 @@ void Datalogger::loop()
   if (inMode(logging))
   { 
     //AE actuate hook before measurement could go here
+    
+    debug(pumpStopTime);
+    debug(pumpResetTime);
+    unsigned long timeCheck = timestamp();
+    if(powermode==2) {
+    digitalWrite(GPIO_PIN_6, HIGH);
+    powermode=1;
+  }
+
+  if(timeCheck>=pumpStopTime&&powermode==1) {
+    powermode=0;
+    digitalWrite(GPIO_PIN_6, LOW);
+  }
+
+  if(timeCheck>=pumpResetTime&&powermode==0) {
+    powermode=1;
+    digitalWrite(GPIO_PIN_6, HIGH);
+    pumpStopTime = timestamp() + 10800;
+    pumpResetTime = timestamp() + 21600;
+  }  
+  delay(10000);
 
     if (powerCycle)
     {
