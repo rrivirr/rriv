@@ -124,8 +124,8 @@ void setupHardwarePins()
   //pinMode(PA2, OUTPUT); // USART2_TX/ADC12_IN2/TIM2_CH3
   //pinMode(PA3, INPUT); // USART2_RX/ADC12_IN3/TIM2_CH4
 
-  pinMode(PC5, OUTPUT); // external ADC reset
-  digitalWrite(PC5, HIGH);
+  pinMode(EXADC_RESET, OUTPUT); // external ADC reset
+  digitalWrite(EXADC_RESET, HIGH);
 }
 
 int getBatteryValue()

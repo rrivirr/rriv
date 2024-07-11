@@ -212,8 +212,8 @@ void hardwarePinsAlwaysOff() // not currently used
   pinMode(PB15, INPUT);
 
   pinMode(PC4, INPUT);
-  // pinMode(PC5, INPUT); // external ADC reset
-  // pinMode(PC6, INPUT); // this is the switch power pin
+  // pinMode(PC5, INPUT); // external ADC reset WRONG
+  // pinMode(PC6, INPUT); // this is the switch power pin WRONG
 
   pinMode(PC9, INPUT);
   pinMode(PC10, INPUT);
@@ -342,7 +342,7 @@ void restorePinDefaults()
   pinMode(PC2, OUTPUT); // ADC12_IN12
   pinMode(PC3, OUTPUT); // ADC12_IN13
   pinMode(PC4, OUTPUT); // ADC12_IN14
-  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5)
+  pinMode(PC5, OUTPUT); // External ADC Reset  (ADC_RESET_PC5) WRONG
   pinMode(PC6, OUTPUT);
   pinMode(PC7, OUTPUT);
   pinMode(PC8, OUTPUT);
