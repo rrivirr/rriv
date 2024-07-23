@@ -1082,6 +1082,11 @@ void Datalogger::powerUpSwitchableComponents()
   delay(250);
   enableI2C1();
   enableI2C2();
+  
+  debug("turn on exADC");
+  pinMode(ENABLE_EXADC, OUTPUT_OPEN_DRAIN);
+  digitalWrite(ENABLE_EXADC, HIGH);
+  delay(500);
 
   debug("reset exADC");
   // Reset external ADC (if it's installed)

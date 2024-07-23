@@ -31,7 +31,7 @@
 // extern TwoWire WireTwo;
 #define WireTwo Wire1
 
-#define SWITCHED_POWER_ENABLE PC6
+#define SWITCHED_POWER_ENABLE PC5
 #define SD_ENABLE_PIN PC8
 
 #define BLE_COMMAND_MODE_PIN PB5
@@ -75,8 +75,8 @@
 //A2-A6 work as GPIO, currently used 
 
 
-
-#define EXADC_RESET PC5
+#define ENABLE_EXADC PC6
+#define EXADC_RESET PA4
 
 // Bluefruit on SPI
 #define BLUEFRUIT_SPI_SCK   PB13
