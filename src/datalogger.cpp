@@ -251,23 +251,35 @@ void Datalogger::loop()
     debug(pumpStopTime);
     debug(pumpResetTime);
     unsigned long timeCheck = timestamp();
+    
+
+    notify(timeCheck);
+    notify(pumpStopTime);
+
     if(powermode==2) {
     digitalWrite(GPIO_PIN_6, HIGH);
     powermode=1;
+    notify("moving to mode 1");
+    notify(powermode);
   }
 
   if(timeCheck>=pumpStopTime&&powermode==1) {
     powermode=0;
+    notify("moving to mode 0");
+    notify(powermode);
     digitalWrite(GPIO_PIN_6, LOW);
   }
 
   if(timeCheck>=pumpResetTime&&powermode==0) {
     powermode=1;
+    notify("moving to mode 1");
+    notify(powermode);
     digitalWrite(GPIO_PIN_6, HIGH);
     pumpStopTime = timestamp() + 10800;
     pumpResetTime = timestamp() + 21600;
   }  
-  delay(10000);
+  
+  //delay(10000);
 
     if (powerCycle)
     {
@@ -302,7 +314,7 @@ void Datalogger::loop()
 
   
   SLEEP:
-    stopAndAwaitTrigger();
+    //stopAndAwaitTrigger();
     initializeMeasurementCycle();
     return;
   }

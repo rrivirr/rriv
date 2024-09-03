@@ -685,7 +685,11 @@ void airpumptest (int arg_cnt, char**args)
 
 void CommandInterface::_airpumptest()
 {
-  
+  Serial2.println("pump test start");
+  digitalWrite(GPIO_PIN_6, HIGH);
+  delay(10000);
+  digitalWrite(GPIO_PIN_6, LOW);
+  Serial2.println("pump test stop");
   // AirPump ap;
   // ap.actuateBeforeWarmUp();
   // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
