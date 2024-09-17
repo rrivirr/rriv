@@ -209,9 +209,8 @@ time_t timestamp()
   bool century = false;
 	bool h24Flag;
 	bool pmFlag;
-
   ts.tm_year = Clock.getYear();
-  ts.tm_mon = Clock.getMonth(century);
+  ts.tm_mon = Clock.getMonth(century)-1;
   ts.tm_mday = Clock.getDate();
   ts.tm_wday = Clock.getDoW();
   ts.tm_hour = Clock.getHour(h24Flag, pmFlag);
@@ -225,18 +224,9 @@ time_t timestamp()
 
 void setTime(time_t toSet)
 {
-  struct tm ts;
-
-  ts = *gmtime(&toSet); // Convert time_t epoch timestamp to tm as UTC time
-  Clock.setClockMode(false); //true for 12h false for 24h
-  Clock.setYear(ts.tm_year);
-  Clock.setMonth(ts.tm_mon);
-  Clock.setDate(ts.tm_mday);
-  Clock.setDoW(ts.tm_wday);
-  Clock.setHour(ts.tm_hour);
-  Clock.setMinute(ts.tm_min);
-  Clock.setSecond(ts.tm_sec);
+  Clock.setEpoch(toSet);
 }
+
 
 void t_t2ts(time_t epochTS, uint32 currentMillis, char *humanTime)
 {
