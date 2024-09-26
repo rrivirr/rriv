@@ -690,10 +690,10 @@ void CommandInterface::_airpumptest()
   // ap.actuateBeforeWarmUp();
   // for(int i = 0; i < 5; i++)  //only doing 2 cycles before stoping WHY 
   // {
-  //   digitalWrite(GPIO_PIN_6, HIGH);
+       digitalWrite(GPIO_PIN_6, HIGH);
   //   //delay(dutyCycle*total*1000); //totalTimeCycle not not "declared in scope" other variables are fine tho
-  //   delay(0.5*10*1000);
-  //   digitalWrite(GPIO_PIN_6, LOW);
+       delay(0.5*10*1000);
+       digitalWrite(GPIO_PIN_6, LOW);
   //   // delay((1-dutyCycle)*timeFullCycle*1000);
   //   delay((1-0.5)*10*1000);
   // }
