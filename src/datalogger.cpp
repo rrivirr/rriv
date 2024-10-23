@@ -275,8 +275,8 @@ void Datalogger::loop()
     notify("moving to mode 1");
     notify(powermode);
     digitalWrite(GPIO_PIN_6, HIGH);
-    pumpStopTime = timestamp() + 10800;
-    pumpResetTime = timestamp() + 21600;
+    pumpStopTime = timestamp() + 60;
+    pumpResetTime = timestamp() + 120;
   }  
   
   //delay(10000);
