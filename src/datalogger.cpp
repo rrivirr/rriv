@@ -1108,6 +1108,10 @@ void Datalogger::powerUpSwitchableComponents()
   // turn on 5v booster for exADC reference voltage, needs the delay
   // might be possible to turn off after exADC discovered, not certain.
   gpioPinOn(BOOST_5V_ENABLE);
+  
+  pinMode(GPIO_PIN_5, OUTPUT);
+  digitalWrite(GPIO_PIN_5, HIGH);
+  
   delay(250);
   Serial2.println("1:");
 
