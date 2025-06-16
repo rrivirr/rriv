@@ -1099,6 +1099,9 @@ void Datalogger::powerUpSwitchableComponents()
 {
   gpioPinOff(BOOST_5V_ENABLE);
   delay(250);
+  pinMode(GPIO_PIN_5, OUTPUT);
+  digitalWrite(GPIO_PIN_5, LOW); // make sure the verter is totally off
+  delay(250);
 
   disableExADC();
 
@@ -1110,7 +1113,6 @@ void Datalogger::powerUpSwitchableComponents()
   // might be possible to turn off after exADC discovered, not certain.
   gpioPinOn(BOOST_5V_ENABLE);
   
-  pinMode(GPIO_PIN_5, OUTPUT);
   digitalWrite(GPIO_PIN_5, HIGH);
   
   delay(250);
