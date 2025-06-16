@@ -123,7 +123,13 @@ void enableI2C1()
 {
   // WireOne.end();
   i2c_disable(I2C1);
-  // delay(1000);
+  
+  pinMode(PB6, OUTPUT);
+  pinMode(PB7, OUTPUT);
+  digitalWrite(PB6, LOW);
+  digitalWrite(PB7, LOW);
+  delay(1000);
+
   i2c_master_enable(I2C1, 0, 0);
   debug(F("Enabled I2C1"));
 

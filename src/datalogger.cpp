@@ -587,12 +587,13 @@ void Datalogger::measureSensorValues(bool performingBurst)
 
 void Datalogger::writeStatusFieldsToLogFile(const char * type)
 {
+  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
+
   // debug(F("Write status fields"));
 
   fileSystemWriteCache->writeString(type);
   fileSystemWriteCache->writeString((char *)",");
 
-  // Fetch and Log time from DS3231 RTC as epoch and human readable timestamps
   uint32 currentMillis = millis();
 
   double currentTime = (double) currentEpoch + ( (double) ( currentMillis - offsetMillis) ) / 1000;
