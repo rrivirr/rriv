@@ -1100,7 +1100,7 @@ void Datalogger::powerUpSwitchableComponents()
   gpioPinOff(BOOST_5V_ENABLE);
   delay(250);
   pinMode(GPIO_PIN_5, OUTPUT);
-  digitalWrite(GPIO_PIN_5, LOW); // make sure the verter is totally off
+  digitalWrite(GPIO_PIN_5, LOW); // make sure the verter is initially off
   delay(250);
 
   disableExADC();
@@ -1126,6 +1126,7 @@ void Datalogger::powerUpSwitchableComponents()
   resetExADC(); // reset exADC in case it's crashed and not power cycled.
   Serial2.println("gonna enable i2c1");
   enableI2C1();
+  debug(F("Enabled I2C1 Complete"));
   enableI2C2();
   resetExADC();
 
