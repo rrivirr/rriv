@@ -65,13 +65,14 @@ void setup(void)
   digitalWrite(EXTERNAL_ADC_ENABLE, HIGH); // initialize to 'off'
   delay(500);
 
-  gpioPinOn(BOOST_5V_ENABLE); // burn on 5v boost for exadc
+  gpioPinOn(BOOST_5V_ENABLE); // turn on 5v boost for exadc
+  // alternate supplies for 5V need to turned on here if they are being used
   delay(500);
 
   enableExADC(); // turn on the power supply for exadc
   delay(500);
 
-  // resetExADC();
+  resetExADC();
 
   enableI2C1();
   delay(500);

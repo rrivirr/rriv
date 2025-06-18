@@ -119,10 +119,70 @@ bool scanIC2(TwoWire *wire, int searchAddress)
   return found;
 }
 
+
+// #define US_PER_SECOND 1000000
+#define SDA1 PB7
+#define SCL1 PB6
+
 void enableI2C1()
 {
+  //recover the i2c if we need to
+
   // WireOne.end();
-  i2c_disable(I2C1);
+  // i2c_disable(I2C1);
+
+  pinMode(SDA1, OUTPUT); // SDA
+  pinMode(SCL1, OUTPUT); // SCL
+  digitalWrite(SDA1, LOW);
+  digitalWrite(SCL1, LOW);
+  delay(2000);
+
+
+  digitalWrite(SDA1, HIGH);
+
+
+  //manually try to unhang the i2c1
+  int us_per_second = 1000000;
+  int delay_us = us_per_second / (100000 * 2);
+  debug(delay_us);
+  delayMicroseconds(delay_us);  // wait one period
+
+
+  // The i2c clock idles high
+  digitalWrite(SCL1, HIGH);
+  delay(delay_us);  // wait one period
+
+  bool was_hung = false;
+  bool fixed = false;
+
+  for(int i=0; i<50; i++){ // i is max clock cycles
+    if( digitalRead(SDA1) == HIGH){
+      fixed = true;
+      break;
+    }
+
+    was_hung = true;
+
+    digitalWrite(SCL1, LOW);
+    delay(delay_us);  // wait one period
+
+    digitalWrite(SCL1, HIGH);
+    delay(delay_us);  // wait one period          
+  }
+
+  if(fixed) {
+    if(was_hung){
+      debug(F("Fixed hung bus"));
+    } else {
+      debug(F("Bus not hung"));
+    }
+  } else {
+    debug(F("Bus still hung"));
+    delay(4000);
+    nvic_sys_reset();
+  }
+   
+
   // delay(1000);
   i2c_master_enable(I2C1, 0, 0);
   debug(F("Enabled I2C1"));
